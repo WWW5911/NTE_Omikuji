@@ -66,7 +66,7 @@
         @switch (_page)
         {
             case Page.Share:
-                <ShareView @key="_shareVisit" Target="_shareTarget" OnBack="BackFromShare" />
+                <ShareView @key="_shareVisit" Target="_shareTarget" StartTemplate="@_shareTemplate" OnBack="BackFromShare" />
                 break;
             case Page.Settings:
                 <SettingsView @key="_settingsVisit" StartOnBanners="_settingsOnBanners" />
@@ -77,7 +77,7 @@
             case Page.Pool:
                 @if (State.Histories.FirstOrDefault(history => history.Banner.Kind == _pool) is { } poolHistory)
                 {
-                    <AnalysisView History="poolHistory" NameOf="State.DisplayName" BannerId="@_banner" Title="@PoolTitle(poolHistory)" OnShare="() => OpenShare(new ShareTarget(_pool, _banner))" OnOpenBanner="banner => OpenPool(_pool, banner)" BannerName="State.BannerName" UnsetBanners="State.UnsetBanners" />
+                    <AnalysisView History="poolHistory" NameOf="State.DisplayName" BannerId="@_banner" Title="@PoolTitle(poolHistory)" OnShare="() => OpenShare(new ShareTarget(_pool, _banner))" OnShareLuck="OpenLuckShare" OnOpenBanner="banner => OpenPool(_pool, banner)" BannerName="State.BannerName" UnsetBanners="State.UnsetBanners" />
                 }
                 else
                 {
@@ -125,6 +125,7 @@
     private bool _settingsOnBanners;
     private int _settingsVisit;
     private ShareTarget? _shareTarget;
+    private string _shareTemplate = "pool";
     private int _shareVisit;
 
     private bool IsCapturing => State.Status is ExporterStatus.Capturing or ExporterStatus.Stopping;
@@ -176,12 +177,15 @@
         Show(Page.Settings);
     }
 
-    private void OpenShare(ShareTarget? target)
+    private void OpenShare(ShareTarget? target, string template = "pool")
     {
         _shareTarget = target;
+        _shareTemplate = template;
         _shareVisit++;
         Show(Page.Share);
     }
+
+    private void OpenLuckShare() => OpenShare(new ShareTarget(_pool, _banner), "luck");
 
     /// <summary>Only a share reached from a pool's page has a page to return to.</summary>
     private EventCallback BackFromShare => _shareTarget is { } target

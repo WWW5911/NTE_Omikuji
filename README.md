@@ -149,10 +149,11 @@ most-obtained rewards. Boards also show dice rolls and result types.
 | Template | Size | Shows |
 | --- | --- | --- |
 | 總覽 | 1920×1080 | Overall luck and all three pools with their pity and S history |
-| 運氣 | 1080×1080 | The luck tier, where it falls on the bell curve, and each pool |
+| 運氣 | 1080×1080 | The luck tier and where it falls on the bell curve, overall or for one pool or event |
 | 單池 | 1080 wide, up to 1350 tall | One pool's or event's figures and how many pulls each S took |
 
-The **分享** button on a pool's or event's page opens 單池 with it selected. An event's
+**分享抽卡** on a pool's or event's page opens 單池 with it selected, and **分享運氣**
+opens 運氣 the same way. An event's
 image counts only that event's pulls and rewards, but each reward's pull count runs
 back across earlier events because pity carries over, and it has no pity meter of
 its own.

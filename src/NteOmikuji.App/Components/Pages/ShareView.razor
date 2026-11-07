@@ -16,12 +16,16 @@
         <div class="tabs" role="group" aria-label="範本">
             @foreach (var (id, label) in Templates)
             {
-                <button id="share-template-@id" class="@(_template == id ? "tab active" : "tab")" aria-pressed="@(_template == id)" @onclick="() => _template = id">@label</button>
+                <button id="share-template-@id" class="@(_template == id ? "tab active" : "tab")" aria-pressed="@(_template == id)" @onclick="() => SetTemplate(id)">@label</button>
             }
         </div>
-        @if (_template == "pool")
+        @if (_template != "overview")
         {
             <select id="share-pool" aria-label="卡池或活動" @bind="_selected">
+                @if (_template == "luck")
+                {
+                    <option value="@WholeAccount">整體</option>
+                }
                 @foreach (var (kind, label) in Pools)
                 {
                     <optgroup label="@label">
@@ -80,15 +84,20 @@
     // Kept for the session, so moving between pages does not reset the chosen colors.
     private static string _theme = "sakura";
 
+    private const string WholeAccount = "Overall|";
+
     [Parameter]
     public ShareTarget? Target { get; set; }
+
+    [Parameter]
+    public string StartTemplate { get; set; } = "pool";
 
     [Parameter]
     public EventCallback OnBack { get; set; }
 
     private ElementReference _canvas;
     private string _template = "overview";
-    private string _selected = Key(new ShareTarget(HistoryKind.LimitedCharacter));
+    private string _selected = WholeAccount;
     private bool _showUid;
     private bool _busy;
     private bool _savedFile;
@@ -99,17 +108,31 @@
         State.Changed += OnStateChanged;
         if (Target is { } target)
         {
-            _template = "pool";
+            _template = StartTemplate;
             _selected = Key(target);
         }
     }
 
     private static string Key(ShareTarget target) => $"{target.Kind}|{target.BannerId}";
 
-    private ShareTarget SelectedTarget
+    /// <summary>Only the luck template has a whole account to show, so the other falls back to the first pool.</summary>
+    private void SetTemplate(string template)
+    {
+        _template = template;
+        if (template == "pool" && _selected == WholeAccount)
+        {
+            _selected = Key(new ShareTarget(HistoryKind.LimitedCharacter));
+        }
+    }
+
+    private ShareTarget? SelectedTarget
     {
         get
         {
+            if (_selected == WholeAccount)
+            {
+                return null;
+            }
             var parts = _selected.Split('|', 2);
             return new ShareTarget(Enum.Parse<HistoryKind>(parts[0]), parts[1].Length == 0 ? null : parts[1]);
         }
@@ -126,12 +149,17 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         var card = ShareCardBuilder.Build(State.Histories, State.DisplayName, State.UnsetBanners, DateOnly.FromDateTime(DateTime.Now), _showUid ? State.Account : null, State.BannerName, SelectedTarget);
-        await JS.InvokeVoidAsync("nteShare.draw", _canvas, card, _template, _theme);
+        await JS.InvokeVoidAsync("nteShare.draw", _canvas, card, _template, _theme, _selected == WholeAccount);
     }
 
     private async Task<byte[]> ImageAsync() => Convert.FromBase64String(await JS.InvokeAsync<string>("nteShare.png", _canvas));
 
-    private string FileLabel => _template == "pool" ? ShareCardBuilder.FileLabel(SelectedTarget) : _template;
+    private string FileLabel => (_template, SelectedTarget) switch
+    {
+        ("overview", _) or (_, null) => _template,
+        ("luck", { } target) => $"luck_{ShareCardBuilder.FileLabel(target)}",
+        (_, { } target) => ShareCardBuilder.FileLabel(target),
+    };
 
     private async Task SaveAsync()
     {

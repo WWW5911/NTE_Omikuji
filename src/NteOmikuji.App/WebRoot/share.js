@@ -285,43 +285,63 @@ window.nteShare = (() => {
         }
     }
 
-    function drawLuck(card, w, h) {
+    /** Draws overall luck, or one pool's or event's when one is given. */
+    function drawLuck(card, pool, w, h) {
         const margin = 72;
         background(w, h);
-        text("NTE 抽卡運氣", margin, 104, 44, theme.text, { weight: 700 });
-        const facts = [period(card.firstDate, card.lastDate), `${number(card.totalPulls)} 抽`];
+        text(pool ? `${pool.label} 運氣` : "NTE 抽卡運氣", margin, 104, 44, theme.text, { weight: 700, max: w - margin * 2 - 260 });
+        const facts = pool
+            ? [pool.context, period(pool.firstDate, pool.lastDate), `${number(pool.totalPulls)} 抽`]
+            : [period(card.firstDate, card.lastDate), `${number(card.totalPulls)} 抽`];
         if (card.maskedUid) facts.push(`UID ${card.maskedUid}`);
-        text(facts.filter(Boolean).join("・"), margin, 146, 26, theme.muted);
+        text(facts.filter(Boolean).join("・"), margin, 146, 26, theme.muted, { max: w - margin * 2 });
 
-        const overall = card.overall;
-        if (!overall) {
-            text("抽數還不足以判定運氣", w / 2, h / 2, 44, theme.muted, { align: "center" });
+        const luck = pool ? pool.luck : card.overall;
+        if (!luck) {
+            text(pool?.luckNote ?? "尚無紀錄", w / 2, h / 2, 44, theme.muted, { align: "center" });
             footer(card, w, h, margin, "");
             return;
         }
         const size = 118;
-        tag(overall.label, overall.tier, margin, 182, size);
-        const tagWidth = width(overall.label, size, 700) + size * 1.44;
-        text(signed(overall.sigma), margin + tagWidth + 36, 268, 72, theme.text, { weight: 700 });
-        text(`同抽數理論上${overall.topText}`, margin + tagWidth + 38, 318, 30, theme.muted);
-        text(`實際 ${overall.hits} 個，期望 ${overall.expected.toFixed(1)} ± ${overall.standardDeviation.toFixed(1)} 個${overall.smallSample ? "・樣本少，僅供參考" : ""}`, margin, 412, 32, theme.text);
+        tag(luck.label, luck.tier, margin, 182, size);
+        const tagWidth = width(luck.label, size, 700) + size * 1.44;
+        text(signed(luck.sigma), margin + tagWidth + 36, 268, 72, theme.text, { weight: 700 });
+        text(`同抽數理論上${luck.topText}`, margin + tagWidth + 38, 318, 30, theme.muted);
+        text(`實際 ${luck.hits} 個，期望 ${luck.expected.toFixed(1)} ± ${luck.standardDeviation.toFixed(1)} 個${luck.smallSample ? "・樣本少，僅供參考" : ""}`, margin, 412, 32, theme.text);
 
-        bell(overall.sigma, overall.tier, margin, 440, w - margin * 2, 300, card.tierLabels);
+        bell(luck.sigma, luck.tier, margin, 440, w - margin * 2, 300, card.tierLabels);
 
         const rowsTop = 800, rowH = 72;
-        card.pools.forEach((pool, index) => {
+        const row = (index, label, draw) => {
             const y = rowsTop + index * rowH;
             box(margin, y, w - margin * 2, rowH - 10, 12, theme.surface, theme.border);
-            text(pool.label, margin + 24, y + 42, 30, theme.text, { weight: 650 });
-            const luck = pool.luck;
-            const detail = luck
-                ? `${luck.smallSample ? "樣本少・" : ""}${luck.hits} 個／期望 ${luck.expected.toFixed(1)}・${signed(luck.sigma)}・${luck.topText}`
-                : pool.totalPulls > 0 ? `${number(pool.totalPulls)} 抽` : "";
-            const tagLabel = luck?.label ?? pool.luckNote ?? "—";
-            const tagWidth = width(tagLabel, 24, 700) + 24 * 1.44;
-            text(detail, w - margin - 20 - tagWidth - 28, y + 41, 26, theme.muted, { align: "right" });
-            poolTag(pool, w - margin - 20, y + 12, 24);
-        });
+            text(label, margin + 24, y + 42, 30, theme.text, { weight: 650 });
+            draw(y);
+        };
+        if (pool) {
+            const target = pool.kind === "ArcMiracleBox" ? "限定" : "S";
+            const meter = pool.limitedPity ?? pool.pity;
+            const values = [
+                ["總抽數", `${number(pool.totalPulls)} 抽`],
+                [`${target} 數量`, `${luck.hits} 個`],
+                ["已墊", pool.context
+                    ? `開始 ${pool.carriedPulls} 抽・結束 ${pool.endedPulls} 抽`
+                    : meter ? `${meter.isLowerBound ? "至少 " : ""}${meter.current} / ${meter.threshold} 抽` : "—"],
+            ];
+            values.forEach(([label, value], index) => row(index, label, y =>
+                text(value, w - margin - 24, y + 41, 28, theme.text, { weight: 600, align: "right" })));
+        } else {
+            card.pools.forEach((item, index) => row(index, item.label, y => {
+                const score = item.luck;
+                const detail = score
+                    ? `${score.smallSample ? "樣本少・" : ""}${score.hits} 個／期望 ${score.expected.toFixed(1)}・${signed(score.sigma)}・${score.topText}`
+                    : item.totalPulls > 0 ? `${number(item.totalPulls)} 抽` : "";
+                const tagLabel = score?.label ?? item.luckNote ?? "—";
+                const tagW = width(tagLabel, 24, 700) + 24 * 1.44;
+                text(detail, w - margin - 20 - tagW - 28, y + 41, 26, theme.muted, { align: "right" });
+                poolTag(item, w - margin - 20, y + 12, 24);
+            }));
+        }
         footer(card, w, h, margin, "前 N% 是理論排序，不是跟玩家比較。");
     }
 
@@ -472,13 +492,14 @@ window.nteShare = (() => {
         return Math.max(POOL_MIN_HEIGHT, Math.min(POOL_MAX_HEIGHT, needed));
     }
 
-    function draw(canvas, card, template, themeName) {
+    /** The luck template shows overall luck when wholeAccount is set, and the selection otherwise. */
+    function draw(canvas, card, template, themeName, wholeAccount) {
         const [w, h] = template === "pool" ? [POOL_WIDTH, poolHeight(card.selected)] : SIZES[template];
         canvas.width = w;
         canvas.height = h;
         ctx = canvas.getContext("2d");
         theme = THEMES[themeName] ?? THEMES.sakura;
-        if (template === "luck") drawLuck(card, w, h);
+        if (template === "luck") drawLuck(card, wholeAccount ? null : card.selected, w, h);
         else if (template === "pool") drawPool(card, card.selected, w, h);
         else drawOverview(card, w, h);
     }

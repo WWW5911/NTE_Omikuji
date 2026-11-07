@@ -18,7 +18,8 @@
             <span class="hint">範圍 @_data.FirstDate 至 @_data.LastDate</span>
             @if (OnShare.HasDelegate && _data.TotalPulls > 0)
             {
-                <button id="share-this" @onclick="() => OnShare.InvokeAsync()">分享</button>
+                <button id="share-this" @onclick="() => OnShare.InvokeAsync()">分享抽卡</button>
+                <button id="share-luck" @onclick="() => OnShareLuck.InvokeAsync()">分享運氣</button>
             }
         </div>
     </div>
@@ -274,6 +275,9 @@
 
     [Parameter]
     public EventCallback OnShare { get; set; }
+
+    [Parameter]
+    public EventCallback OnShareLuck { get; set; }
 
     [Parameter]
     public EventCallback<string> OnOpenBanner { get; set; }
