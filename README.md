@@ -191,7 +191,8 @@ at commit `1816e23`. They are not updated automatically; a new reward still
 exports, flagged as unmapped, until someone maintains it.
 
 The interface uses pale Morandi tones centered on dusty rose, defined in
-`WebRoot/app.css`.
+`WebRoot/app.css`. Luck tags use Japanese traditional colors: golds for the lucky
+tiers and brown-blacks for the unlucky ones.
 
 ## Arbitrary result strings
 

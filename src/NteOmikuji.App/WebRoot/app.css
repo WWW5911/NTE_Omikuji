@@ -19,10 +19,14 @@
     --error-text: #8c4a50;
     --series: #b4838d;
     --track: #f1e4e2;
-    --cool-soft: #eef1f2;
-    --cool-bg: #dfe5e8;
-    --cool-ink: #4f5d67;
-    --cool-strong: #606f79;
+    /* Luck tags use Japanese traditional colors, the same in both color modes. */
+    --yamabuki: #f8b400;    /* 山吹色 */
+    --kiniro: #ffd700;      /* 金色 */
+    --torinoko: #fff1cf;    /* 鳥の子色 */
+    --kogecha: #6a4d32;     /* 焦茶 */
+    --kenpo: #543f32;       /* 憲法色 */
+    --kuri: #433634;        /* 涅色 */
+    --susutake: #6f514c;    /* 煤竹色 */
     --tier-s: #8b5864;
     --tier-s2: #a57783;
     --tier-a: #c7a0a8;
@@ -49,10 +53,6 @@
         --error-text: #f3d6d4;
         --series: #cf9fa8;
         --track: #4a4142;
-        --cool-soft: #393e41;
-        --cool-bg: #454c51;
-        --cool-ink: #d3dce1;
-        --cool-strong: #b3bfc7;
         --tier-s: #eecdd1;
         --tier-s2: #d7aeb6;
         --tier-a: #b78b94;
@@ -146,12 +146,13 @@ h3 { font-size: 13px; font-weight: 600; }
 .luck-tag { display: inline-block; font-size: 12px; font-weight: 650; padding: 1px 10px; border-radius: 999px; white-space: nowrap; }
 .luck-normal { background: var(--surface-2); color: var(--text); }
 .luck-none { background: transparent; color: var(--muted); font-weight: 500; border: 1px solid var(--border); }
-.luck-good-1 { background: var(--accent-soft); color: var(--accent-ink); }
-.luck-good-2 { background: var(--tier-a); color: #2f2526; }
-.luck-good-3 { background: var(--accent); color: var(--accent-text); }
-.luck-bad-1 { background: var(--cool-soft); color: var(--cool-ink); }
-.luck-bad-2 { background: var(--cool-bg); color: var(--cool-ink); }
-.luck-bad-3 { background: var(--cool-strong); color: var(--accent-text); }
+.luck-good-1 { background: var(--torinoko); color: var(--kenpo); box-shadow: inset 0 0 0 1px var(--yamabuki); }
+.luck-good-2 { background: var(--kiniro); color: var(--kenpo); }
+.luck-good-3 { background: var(--yamabuki); color: var(--kuri); }
+/* The outline keeps these dark fills visible on the dark surface. */
+.luck-bad-1 { background: var(--kogecha); color: var(--torinoko); box-shadow: inset 0 0 0 1px var(--susutake); }
+.luck-bad-2 { background: var(--kenpo); color: var(--torinoko); box-shadow: inset 0 0 0 1px var(--susutake); }
+.luck-bad-3 { background: var(--kuri); color: var(--torinoko); box-shadow: inset 0 0 0 1px var(--susutake); }
 .luck-headline { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .luck-detail { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .luck-scale { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
