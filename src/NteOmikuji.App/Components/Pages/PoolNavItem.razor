@@ -2,28 +2,28 @@
 
 <div class="pool-nav">
     <div class="pool-nav-row">
-        <button id="nav-pool-@Kind" class="@(Active && ActiveBanner is null ? "side-link active" : "side-link")" aria-current="@(Active && ActiveBanner is null ? "page" : null)" @onclick="() => OnOpen.InvokeAsync(null)">
+        <button id="nav-pool-@Kind" class="@(Active && ActiveEvent is null ? "side-link active" : "side-link")" aria-current="@(Active && ActiveEvent is null ? "page" : null)" @onclick="() => OnOpen.InvokeAsync(null)">
             <span>@Label</span>
             @if (Count is { } count)
             {
                 <small>@count.ToString("N0") 抽</small>
             }
         </button>
-        @if (Banners.Count > 0)
+        @if (Events.Count > 0)
         {
             <button class="pool-toggle" id="toggle-@Kind" aria-expanded="@(Expanded ? "true" : "false")" aria-label="@ToggleLabel" @onclick="OnToggle">@(Expanded ? "▾" : "▸")</button>
         }
     </div>
-    @if (Expanded && Banners.Count > 0)
+    @if (Expanded && Events.Count > 0)
     {
-        <ul class="banner-list" id="banners-@Kind">
-            @foreach (var banner in Banners)
+        <ul class="event-list" id="events-@Kind">
+            @foreach (var group in Events)
             {
-                var id = banner.Id;
+                var id = group.Id;
                 <li>
-                    <button class="@(Active && ActiveBanner == id ? "banner-link active" : "banner-link")" data-banner="@id" aria-current="@(Active && ActiveBanner == id ? "page" : null)" title="@id" @onclick="() => OnOpen.InvokeAsync(id)">
-                        <span class="banner-name">@banner.Name</span>
-                        <small>@DateOf(banner.LastDate)・@banner.Pulls 抽</small>
+                    <button class="@(Active && ActiveEvent == id ? "event-link active" : "event-link")" data-event="@id" aria-current="@(Active && ActiveEvent == id ? "page" : null)" title="@id" @onclick="() => OnOpen.InvokeAsync(id)">
+                        <span class="event-name">@group.Name</span>
+                        <small>@DateOf(group.LastDate)・@group.Pulls 抽</small>
                     </button>
                 </li>
             }
@@ -42,13 +42,13 @@
     public int? Count { get; set; }
 
     [Parameter]
-    public IReadOnlyList<BannerGroup> Banners { get; set; } = [];
+    public IReadOnlyList<EventGroup> Events { get; set; } = [];
 
     [Parameter]
     public bool Active { get; set; }
 
     [Parameter]
-    public string? ActiveBanner { get; set; }
+    public string? ActiveEvent { get; set; }
 
     [Parameter]
     public bool Expanded { get; set; }

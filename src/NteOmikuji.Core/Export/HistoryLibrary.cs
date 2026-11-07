@@ -55,7 +55,7 @@ public sealed class HistoryLibrary(string folder)
                 {
                     case ImportKind.HistoryExport:
                         var history = ImportedFiles.ReadHistory(bytes);
-                        Merge(history.UserUid, history.Banner.Kind, history.Rows, history.ServerId, history.Source, history.CaptureSource, catalog, markDirty: false);
+                        Merge(history.UserUid, history.Pool.Kind, history.Rows, history.ServerId, history.Source, history.CaptureSource, catalog, markDirty: false);
                         Find(history.UserUid).LastChanged = Later(Find(history.UserUid).LastChanged, changed);
                         break;
                     case ImportKind.AchievementExport:
@@ -98,7 +98,7 @@ public sealed class HistoryLibrary(string folder)
         if (markDirty)
         {
             account.LastChanged = DateTime.UtcNow;
-            _dirty.Add((account.Uid, BannerInfo.For(kind).FilePrefix));
+            _dirty.Add((account.Uid, PoolInfo.For(kind).FilePrefix));
         }
     }
 
@@ -122,7 +122,7 @@ public sealed class HistoryLibrary(string folder)
             Apply(row, kind, catalog);
         }
         account.LastChanged = DateTime.UtcNow;
-        _dirty.Add((account.Uid, BannerInfo.For(kind).FilePrefix));
+        _dirty.Add((account.Uid, PoolInfo.For(kind).FilePrefix));
         return (added.Count, rows.Count - added.Count);
     }
 
@@ -147,7 +147,7 @@ public sealed class HistoryLibrary(string folder)
             foreach (var (kind, rows) in account.Rows)
             {
                 rows.ForEach(row => Apply(row, kind, catalog));
-                _dirty.Add((account.Uid, BannerInfo.For(kind).FilePrefix));
+                _dirty.Add((account.Uid, PoolInfo.For(kind).FilePrefix));
             }
             if (account.Achievements.Count > 0)
             {
@@ -166,7 +166,7 @@ public sealed class HistoryLibrary(string folder)
         account.ServerId = serverId;
         foreach (var kind in account.Rows.Keys)
         {
-            _dirty.Add((account.Uid, BannerInfo.For(kind).FilePrefix));
+            _dirty.Add((account.Uid, PoolInfo.For(kind).FilePrefix));
         }
         if (account.Achievements.Count > 0)
         {
@@ -176,13 +176,13 @@ public sealed class HistoryLibrary(string folder)
 
     public string? ServerOf(string? uid) => _accounts.GetValueOrDefault(Key(uid))?.ServerId;
 
-    public IReadOnlyList<BannerHistory> Histories(string? uid)
+    public IReadOnlyList<PoolHistory> Histories(string? uid)
     {
         var account = _accounts.GetValueOrDefault(Key(uid));
         return account is null
             ? []
             : Enum.GetValues<HistoryKind>().Where(account.Rows.ContainsKey)
-                .Select(kind => new BannerHistory(BannerInfo.For(kind), account.Rows[kind], [], []))
+                .Select(kind => new PoolHistory(PoolInfo.For(kind), account.Rows[kind], [], []))
                 .ToList();
     }
 
@@ -205,7 +205,7 @@ public sealed class HistoryLibrary(string folder)
             var document = label == AchievementsLabel
                 ? HistoryJsonWriter.BuildAchievements(account.Achievements, catalog, ContextFor(uid))
                 : HistoryJsonWriter.BuildHistory(
-                    Histories(uid).Single(history => history.Banner.FilePrefix == label),
+                    Histories(uid).Single(history => history.Pool.FilePrefix == label),
                     ContextFor(uid));
             if (WriteIfChanged(Path.Combine(Folder, HistoryJsonWriter.LibraryFileName(uid, label)), HistoryJsonWriter.ToJson(document), backUp: true))
             {
@@ -220,10 +220,10 @@ public sealed class HistoryLibrary(string folder)
     /// Saves a capture that missed page 1 on its own. Its timestamp ordinals may not
     /// match the real group, so merging could collide with the wrong saved pull.
     /// </summary>
-    public string SavePartial(string? uid, BannerHistory history, ExportContext context, DateTime stamp)
+    public string SavePartial(string? uid, PoolHistory history, ExportContext context, DateTime stamp)
     {
         Directory.CreateDirectory(Folder);
-        var path = Path.Combine(Folder, HistoryJsonWriter.FileName(uid, history.Banner.FilePrefix + PartialMarker.TrimEnd('_'), stamp));
+        var path = Path.Combine(Folder, HistoryJsonWriter.FileName(uid, history.Pool.FilePrefix + PartialMarker.TrimEnd('_'), stamp));
         WriteIfChanged(path, HistoryJsonWriter.ToJson(HistoryJsonWriter.BuildHistory(history, context)));
         return path;
     }
@@ -277,13 +277,13 @@ public sealed class HistoryLibrary(string folder)
     {
         var isArc = kind == HistoryKind.ArcMiracleBox;
         // Only one limited board was open at launch, so a row without an event can only be from it.
-        if (kind == HistoryKind.LimitedCharacter && string.IsNullOrEmpty(row.BannerId) && GameCalendar.IsLaunchPeriod(row.TimestampDecoded))
+        if (kind == HistoryKind.LimitedCharacter && string.IsNullOrEmpty(row.EventId) && GameCalendar.IsLaunchPeriod(row.TimestampDecoded))
         {
-            row.BannerId = GameCalendar.FirstLimitedEvent;
+            row.EventId = GameCalendar.FirstLimitedEvent;
         }
         var meta = catalog.Find(row.RewardId);
         row.IsMappedReward = meta is not null;
-        row.Focus = catalog.FocusOf(row.RewardId, row.BannerId);
+        row.Focus = catalog.FocusOf(row.RewardId, row.EventId);
         row.RewardId = meta?.Id ?? row.RewardId;
         row.RewardName = meta?.Name ?? (isArc ? "UNKNOWN" : "");
         row.RewardRank = meta?.Rank ?? (isArc ? "" : null);

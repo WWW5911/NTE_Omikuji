@@ -17,14 +17,14 @@ public class GameCalendarTests
         [],
         CsvTable.Parse($"id,featured\r\n{GameCalendar.FirstLimitedEvent},1010\r\n"));
 
-    private static HistoryRow Row(string time, string reward = "1010", string? banner = null, string uid = "a", int dice = 3) => new()
+    private static HistoryRow Row(string time, string reward = "1010", string? eventId = null, string uid = "a", int dice = 3) => new()
     {
         Uid = uid,
         TimestampDecoded = time,
         RewardId = reward,
         ResultType = "dice",
         Dice = dice,
-        BannerId = banner,
+        EventId = eventId,
     };
 
     private static HistoryRow Merged(HistoryKind kind, HistoryRow row)
@@ -51,7 +51,7 @@ public class GameCalendarTests
     {
         var row = Merged(HistoryKind.LimitedCharacter, Row(AtLaunch));
 
-        Assert.Equal(GameCalendar.FirstLimitedEvent, row.BannerId);
+        Assert.Equal(GameCalendar.FirstLimitedEvent, row.EventId);
     }
 
     [Fact]
@@ -63,19 +63,19 @@ public class GameCalendarTests
     [Fact]
     public void ARowAlreadyWithAnEventKeepsIt()
     {
-        Assert.Equal("Lottery_Other", Merged(HistoryKind.LimitedCharacter, Row(AtLaunch, banner: "Lottery_Other")).BannerId);
+        Assert.Equal("Lottery_Other", Merged(HistoryKind.LimitedCharacter, Row(AtLaunch, eventId: "Lottery_Other")).EventId);
     }
 
     [Fact]
     public void ALaterRowStaysWithoutAnEvent()
     {
-        Assert.Null(Merged(HistoryKind.LimitedCharacter, Row(Later)).BannerId);
+        Assert.Null(Merged(HistoryKind.LimitedCharacter, Row(Later)).EventId);
     }
 
     [Fact]
     public void OtherPoolsAreLeftAlone()
     {
-        Assert.Null(Merged(HistoryKind.Permanent, Row(AtLaunch)).BannerId);
+        Assert.Null(Merged(HistoryKind.Permanent, Row(AtLaunch)).EventId);
     }
 
     [Fact]
@@ -85,14 +85,14 @@ public class GameCalendarTests
         var writing = new HistoryLibrary(folder.Path);
         writing.Merge(Uid, HistoryKind.Permanent, [Row(AtLaunch)], null, null, null, Catalog());
         var limitedFile = Path.Combine(folder.Path, $"{Uid}_Limited.json");
-        var document = HistoryJsonWriter.BuildHistory(new BannerHistory(BannerInfo.LimitedCharacter, [Row(Later, uid: "b")], [], []), writing.ContextFor(Uid));
+        var document = HistoryJsonWriter.BuildHistory(new PoolHistory(PoolInfo.LimitedCharacter, [Row(Later, uid: "b")], [], []), writing.ContextFor(Uid));
         var text = HistoryJsonWriter.ToJson(document).Replace(Later, AtLaunch, StringComparison.Ordinal);
         File.WriteAllText(limitedFile, text);
 
         var reading = new HistoryLibrary(folder.Path);
         Assert.Empty(reading.Load(Catalog()));
 
-        var row = reading.Histories(Uid).Single(history => history.Banner.Kind == HistoryKind.LimitedCharacter).Rows.Single();
-        Assert.Equal(GameCalendar.FirstLimitedEvent, row.BannerId);
+        var row = reading.Histories(Uid).Single(history => history.Pool.Kind == HistoryKind.LimitedCharacter).Rows.Single();
+        Assert.Equal(GameCalendar.FirstLimitedEvent, row.EventId);
     }
 }

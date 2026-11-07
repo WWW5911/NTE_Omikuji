@@ -241,7 +241,7 @@ public static class LuckModel
         return pmf;
     }
 
-    /// <summary>Walks pulls since the last S, because an off-banner S resets the S guarantee but not the limited one.</summary>
+    /// <summary>Walks pulls since the last S, because an ordinary S resets the S guarantee but not the limited one.</summary>
     private static double[] LimitedDistribution(PityRule rule, int limitedAt, double chance)
     {
         var pmf = new double[limitedAt];

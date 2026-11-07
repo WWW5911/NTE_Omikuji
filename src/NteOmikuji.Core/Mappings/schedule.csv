@@ -1,4 +1,4 @@
-﻿id,version,phase,pool,rerun,name.zh-hant,name.en,featured.zh-hant,featured.en,banner_id,starts,ends,estimate
+﻿id,version,phase,pool,rerun,name.zh-hant,name.en,featured.zh-hant,featured.en,event_id,starts,ends,estimate
 1.5-1-board-elyms,1.5,1,board,,電子人之夢,Android Dreams,曳爾沐,Elyms,,2026-11-11,2026-12-02,
 1.5-1-board-shinku,1.5,1,board,yes,破曉前,Before the Dawn,真紅,Shinku,Lottery_ZhenHong,2026-11-11,2026-12-02,
 1.5-1-arc-elyms,1.5,1,arc,,回音特刊,,靜候彩鈴,Echoes on Hold,,2026-11-11,2026-12-02,

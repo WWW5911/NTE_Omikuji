@@ -41,7 +41,7 @@ public class ExportSnapshotTests
     [InlineData(HistoryKind.ArcMiracleBox, "arc")]
     public void ReplayedExportRecordsMatchTheSnapshot(HistoryKind kind, string goldenKey)
     {
-        var history = Replay().BuildHistories().Single(entry => entry.Banner.Kind == kind);
+        var history = Replay().BuildHistories().Single(entry => entry.Pool.Kind == kind);
         var export = HistoryJsonWriter.BuildHistory(history, new ExportContext("packet_capture"));
 
         // The event ID is additive to format version 1, and the stored export does not have it.
@@ -58,8 +58,8 @@ public class ExportSnapshotTests
     {
         var expected = Fixture.GetProperty("expected");
         var histories = Replay().BuildHistories();
-        var permanent = histories.Single(entry => entry.Banner.Kind == HistoryKind.Permanent);
-        var arc = histories.Single(entry => entry.Banner.Kind == HistoryKind.ArcMiracleBox);
+        var permanent = histories.Single(entry => entry.Pool.Kind == HistoryKind.Permanent);
+        var arc = histories.Single(entry => entry.Pool.Kind == HistoryKind.ArcMiracleBox);
 
         Assert.Equal(expected.GetProperty("permanent_records").GetInt32(), permanent.Rows.Count);
         Assert.Equal(expected.GetProperty("arc_records").GetInt32(), arc.Rows.Count);

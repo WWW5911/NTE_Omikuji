@@ -33,11 +33,11 @@
         {
             <div class="alert" id="old-decoding" role="status">這份紀錄的集點贈禮比遊戲實際給的多，可能有抽數被舊版誤判，以下的抽數與間隔會不準。重新擷取一次歷史紀錄即可更正。</div>
         }
-        @if (BannerId is not null && _data.CarriedPulls > 0)
+        @if (EventId is not null && _data.CarriedPulls > 0)
         {
             <p class="hint" id="carried-note">這期開始時已墊 @_data.CarriedPulls 抽（距上次@(LimitedAt is null ? " S" : "限定")），運氣的期望已把這些算進去。</p>
         }
-        @if (BannerId is not null)
+        @if (EventId is not null)
         {
             <p class="hint" id="ended-note">這期結束時已墊 @_data.EndedPulls 抽（距上次@(LimitedAt is null ? " S" : "限定")）。</p>
         }
@@ -64,7 +64,7 @@
                             @foreach (var (group, data) in _events)
                             {
                                 <tr data-event="@group.Id">
-                                    <th scope="row"><button class="link-inline" @onclick="() => OnOpenBanner.InvokeAsync(group.Id)">@group.Name</button></th>
+                                    <th scope="row"><button class="link-inline" @onclick="() => OnOpenEvent.InvokeAsync(group.Id)">@group.Name</button></th>
                                     <td class="num">@group.Pulls.ToString("N0")</td>
                                     <td class="num">@data.CarriedPulls</td>
                                     <td class="num">@data.EndedPulls</td>
@@ -81,12 +81,12 @@
                 <p class="hint">已墊是距上次@(LimitedAt is null ? " S" : "限定")的抽數。保底會跨期延續，所以每期的期望都從開始已墊的抽數算起。排名是同樣抽數下所有可能結果的理論排序，不是跟其他玩家比較。各期不能相加成整體運氣，整體請看頁面上方的標籤。</p>
             </section>
         }
-        @if (BannerId is null && History.Banner.Kind != HistoryKind.Permanent && History.Rows.All(row => row.BannerId is null))
+        @if (EventId is null && History.Pool.Kind != HistoryKind.Permanent && History.Rows.All(row => row.EventId is null))
         {
-            <p class="hint" id="no-banners">這份紀錄沒有活動資訊，所以無法分期查看。重新擷取一次就會在左側列出各期。</p>
+            <p class="hint" id="no-events">這份紀錄沒有活動資訊，所以無法分期查看。重新擷取一次就會在左側列出各期。</p>
         }
         <div class="tiles">
-            @if (BannerId is null)
+            @if (EventId is null)
             {
                 <div class="tile hero">
                     <span>距上次 S</span>
@@ -113,22 +113,22 @@
         {
             <div class="tiles" id="limited-stats">
                 <div class="tile"><span>S 限定數量</span><strong id="limited-count">@_data.LimitedCount</strong></div>
-                @if (BannerId is null && _data.PullsSinceLimited is { } sinceLimited)
+                @if (EventId is null && _data.PullsSinceLimited is { } sinceLimited)
                 {
                     <div class="tile"><span>距上次限定</span><strong id="since-limited">@sinceLimited</strong></div>
                 }
-                <div class="tile"><span>非限定 S</span><strong id="off-banner">@(_data.TopRankCount - _data.LimitedCount)</strong></div>
+                <div class="tile"><span>非限定 S</span><strong id="off-event">@(_data.TopRankCount - _data.LimitedCount)</strong></div>
                 <div class="tile"><span>@guaranteeAt 抽保底觸發</span><strong id="guaranteed">@_data.GuaranteedLimitedCount 次</strong></div>
                 <div class="tile">
                     <span>限定比例（不含保底）</span>
                     <strong id="observed-rate">@Percent(_data.ObservedLimitedRate)</strong>
-                    <small>規則 @(History.Banner.Pity!.LimitedChance?.ToString("0%"))</small>
+                    <small>規則 @(History.Pool.Pity!.LimitedChance?.ToString("0%"))</small>
                 </div>
             </div>
         }
         <p class="hint">
             S 指設定裡歸類為 S 角色、S 弧盤及其限定的項目；時裝、載具外觀與滑翔翼只統計，不影響間隔。
-            @(BannerId is null ? "" : "這裡的總抽數只算這一期，每次 S 花的抽數則包含從前幾期累積過來的。")
+            @(EventId is null ? "" : "這裡的總抽數只算這一期，每次 S 花的抽數則包含從前幾期累積過來的。")
             最舊一筆 S 之前的紀錄可能超出遊戲保留範圍，因此標為「至少」且不計入平均。
         </p>
 
@@ -258,17 +258,17 @@
 </div>
 
 @code {
-    private BannerAnalysis _data = null!;
+    private PoolAnalysis _data = null!;
     private int _maxInterval = 1;
 
     [Parameter, EditorRequired]
-    public BannerHistory History { get; set; } = null!;
+    public PoolHistory History { get; set; } = null!;
 
     [Parameter]
     public Func<HistoryRow, string>? NameOf { get; set; }
 
     [Parameter]
-    public string? BannerId { get; set; }
+    public string? EventId { get; set; }
 
     [Parameter]
     public string Title { get; set; } = "";
@@ -280,19 +280,19 @@
     public EventCallback OnShareLuck { get; set; }
 
     [Parameter]
-    public EventCallback<string> OnOpenBanner { get; set; }
+    public EventCallback<string> OnOpenEvent { get; set; }
 
     [Parameter]
-    public Func<string, string?>? BannerName { get; set; }
+    public Func<string, string?>? EventName { get; set; }
 
-    private List<(BannerGroup Group, BannerAnalysis Data)> _events = [];
+    private List<(EventGroup Group, PoolAnalysis Data)> _events = [];
 
     [Parameter]
-    public IReadOnlyList<string> UnsetBanners { get; set; } = [];
+    public IReadOnlyList<string> UnsetEvents { get; set; } = [];
 
-    private int? RisesFrom => History.Banner.Pity?.RisesFrom;
+    private int? RisesFrom => History.Pool.Pity?.RisesFrom;
 
-    private int? LimitedAt => History.Banner.Pity?.LimitedAt;
+    private int? LimitedAt => History.Pool.Pity?.LimitedAt;
 
     private List<TopRankPull> LimitedPulls => _data.TopRankPulls.Where(pull => pull.IsLimited).ToList();
 
@@ -304,13 +304,13 @@
 
     protected override void OnParametersSet()
     {
-        _data = HistoryAnalyzer.Analyze(History, NameOf, BannerId, UnsetBanners);
+        _data = HistoryAnalyzer.Analyze(History, NameOf, EventId, UnsetEvents);
         // The standard board has one lasting event, which would only repeat the page's own figures.
-        _events = BannerId is null && History.Banner.Kind != HistoryKind.Permanent
-            ? HistoryAnalyzer.Banners(History, NameOf, BannerName).Select(group => (group, HistoryAnalyzer.Analyze(History, NameOf, group.Id, UnsetBanners))).ToList()
+        _events = EventId is null && History.Pool.Kind != HistoryKind.Permanent
+            ? HistoryAnalyzer.Events(History, NameOf, EventName).Select(group => (group, HistoryAnalyzer.Analyze(History, NameOf, group.Id, UnsetEvents))).ToList()
             : [];
         // Bars share the guaranteed count as their scale, so a long bar reads as close to pity.
-        _maxInterval = Math.Max(History.Banner.Pity?.TopRankAt ?? 1, _data.TopRankPulls.Select(pull => pull.PullsSpent).DefaultIfEmpty(1).Max());
+        _maxInterval = Math.Max(History.Pool.Pity?.TopRankAt ?? 1, _data.TopRankPulls.Select(pull => pull.PullsSpent).DefaultIfEmpty(1).Max());
     }
 
     private static string Percent(double? value) => value is null ? "—" : value.Value.ToString("0.0%");

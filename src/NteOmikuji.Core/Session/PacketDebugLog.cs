@@ -130,7 +130,7 @@ public sealed class PacketDebugLog : IDisposable
         ["result_text"] = row.ResultText,
         ["reward_id"] = row.RewardId,
         ["quantity"] = row.Quantity,
-        ["pool"] = row.BannerId,
+        ["pool"] = row.EventId,
         ["timestamp"] = row.TimestampDecoded,
         ["timestamp_raw_hex"] = row.TimestampRawHex,
         ["decode_mode"] = row.DecoderMode,

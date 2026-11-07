@@ -34,7 +34,7 @@
                         <div class="tabs" role="tablist">
                             @foreach (var history in State.Histories)
                             {
-                                var kind = history.Banner.Kind;
+                                var kind = history.Pool.Kind;
                                 <button role="tab" class="@(kind == ActiveKind ? "tab active" : "tab")" aria-selected="@(kind == ActiveKind)" @onclick="() => _activeKind = kind">
                                     @PoolLabel(kind) <small>@history.Rows.Count</small>
                                 </button>
@@ -122,10 +122,10 @@
     private bool _unmappedOnly;
     private string? _exported;
 
-    private BannerHistory? Active =>
-        State.Histories.FirstOrDefault(history => history.Banner.Kind == _activeKind) ?? State.Histories.FirstOrDefault();
+    private PoolHistory? Active =>
+        State.Histories.FirstOrDefault(history => history.Pool.Kind == _activeKind) ?? State.Histories.FirstOrDefault();
 
-    private HistoryKind? ActiveKind => Active?.Banner.Kind;
+    private HistoryKind? ActiveKind => Active?.Pool.Kind;
 
     private int UnmappedCount => Active?.Rows.Count(row => !row.IsMappedReward) ?? 0;
 
@@ -195,7 +195,7 @@
     {
         if (Active is { } active)
         {
-            Remember(State.ExportCsv([active], active.Banner.FilePrefix));
+            Remember(State.ExportCsv([active], active.Pool.FilePrefix));
         }
     }
 

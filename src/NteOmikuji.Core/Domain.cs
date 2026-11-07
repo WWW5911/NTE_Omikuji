@@ -40,14 +40,14 @@ public enum HistoryKind
 /// <param name="PullsPerDraw">How many pulls the game makes at once at the least. Arcs only come as ten.</param>
 public sealed record PityRule(int TopRankAt, int? LimitedAt = null, double? LimitedChance = null, int? RisesFrom = null, int? SecondRankAt = null, double BaseRate = 0, double? RaisedRate = null, int PullsPerDraw = 1);
 
-public sealed record BannerInfo(HistoryKind Kind, string Id, string Name, string System, bool SharedPity, string FilePrefix, PityRule? Pity = null)
+public sealed record PoolInfo(HistoryKind Kind, string Id, string Name, string System, bool SharedPity, string FilePrefix, PityRule? Pity = null)
 {
-    public static readonly BannerInfo Permanent = new(HistoryKind.Permanent, "Lottery_Permanent", "Standard Board", "Monopoly", false, "Permanent", new PityRule(90, RisesFrom: 70, SecondRankAt: 10, BaseRate: 0.0099, RaisedRate: 0.1959));
-    public static readonly BannerInfo LimitedCharacter = new(HistoryKind.LimitedCharacter, "Lottery_LimitedCharacter", "Limited Character Board", "Monopoly", true, "Limited", new PityRule(90, RisesFrom: 70, SecondRankAt: 10, BaseRate: 0.0099, RaisedRate: 0.1959));
-    public static readonly BannerInfo ArcMiracleBox = new(HistoryKind.ArcMiracleBox, "Arc_MiracleBox", "Arc Miracle Box", "Gashapon", true, "Arc", new PityRule(60, 80, 0.25, SecondRankAt: 10, BaseRate: 0.03, PullsPerDraw: 10));
-    public static readonly BannerInfo MysteryBox = new(HistoryKind.MysteryBox, "Gashapon_MysteryBox", "Mystery Box", "Gashapon", false, "MysteryBox");
+    public static readonly PoolInfo Permanent = new(HistoryKind.Permanent, "Lottery_Permanent", "Standard Board", "Monopoly", false, "Permanent", new PityRule(90, RisesFrom: 70, SecondRankAt: 10, BaseRate: 0.0099, RaisedRate: 0.1959));
+    public static readonly PoolInfo LimitedCharacter = new(HistoryKind.LimitedCharacter, "Lottery_LimitedCharacter", "Limited Character Board", "Monopoly", true, "Limited", new PityRule(90, RisesFrom: 70, SecondRankAt: 10, BaseRate: 0.0099, RaisedRate: 0.1959));
+    public static readonly PoolInfo ArcMiracleBox = new(HistoryKind.ArcMiracleBox, "Arc_MiracleBox", "Arc Miracle Box", "Gashapon", true, "Arc", new PityRule(60, 80, 0.25, SecondRankAt: 10, BaseRate: 0.03, PullsPerDraw: 10));
+    public static readonly PoolInfo MysteryBox = new(HistoryKind.MysteryBox, "Gashapon_MysteryBox", "Mystery Box", "Gashapon", false, "MysteryBox");
 
-    public static BannerInfo For(HistoryKind kind) => kind switch
+    public static PoolInfo For(HistoryKind kind) => kind switch
     {
         HistoryKind.Permanent => Permanent,
         HistoryKind.LimitedCharacter => LimitedCharacter,
@@ -64,7 +64,7 @@ public sealed class HistoryRow
     public string PoolGroupId { get; set; } = "";
 
     /// <summary>The event the row was pulled on, such as Lottery_MingYin. Null when it could not be read.</summary>
-    public string? BannerId { get; set; }
+    public string? EventId { get; set; }
 
     public int? Dice { get; set; }
     public string ResultType { get; set; } = "unknown";
@@ -105,8 +105,8 @@ public sealed record CaptureWarning(string Code, string Reason, IReadOnlyList<in
 
 public sealed record CapturedPage(int Page, HistoryKind Kind, byte[] Payload, int SliceStart, int SliceCount, string? Pool = null);
 
-public sealed record BannerHistory(
-    BannerInfo Banner,
+public sealed record PoolHistory(
+    PoolInfo Pool,
     IReadOnlyList<HistoryRow> Rows,
     IReadOnlyList<CaptureWarning> Warnings,
     IReadOnlyList<int> PagesSeen);

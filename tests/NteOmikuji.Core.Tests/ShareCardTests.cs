@@ -9,7 +9,7 @@ public class ShareCardTests
     private const string Uid = "214283000156";
     private static readonly DateOnly Today = new(2026, 11, 7);
 
-    private static HistoryRow Row(int second, RewardFocus focus = RewardFocus.None, string name = "x", string? banner = null) => new()
+    private static HistoryRow Row(int second, RewardFocus focus = RewardFocus.None, string name = "x", string? eventId = null) => new()
     {
         Uid = "row-" + second,
         RewardId = name,
@@ -18,11 +18,11 @@ public class ShareCardTests
         Dice = 3,
         TimestampDecoded = new DateTime(2026, 5, 1).AddHours(second).ToString("yyyy-MM-dd HH:mm:ss"),
         Focus = focus,
-        BannerId = banner,
+        EventId = eventId,
     };
 
     /// <summary>Rows newest first, with a top-rank reward after each gap, oldest gap first.</summary>
-    private static BannerHistory Pool(BannerInfo banner, params (int Gap, RewardFocus Focus, string Name)[] rewards)
+    private static PoolHistory Pool(PoolInfo poolInfo, params (int Gap, RewardFocus Focus, string Name)[] rewards)
     {
         var rows = new List<HistoryRow>();
         var second = 0;
@@ -35,11 +35,11 @@ public class ShareCardTests
             rows.Add(Row(second++, focus, name, "Lottery_A"));
         }
         rows.Reverse();
-        return new BannerHistory(banner, rows, [], []);
+        return new PoolHistory(poolInfo, rows, [], []);
     }
 
     /// <summary>Two events, oldest first: "Old" has an S after 30 pulls, then "New" 10 plain pulls and an S after 20 more.</summary>
-    private static BannerHistory TwoEvents(BannerInfo banner)
+    private static PoolHistory TwoEvents(PoolInfo poolInfo)
     {
         var rows = new List<HistoryRow>();
         var second = 0;
@@ -47,21 +47,21 @@ public class ShareCardTests
         {
             for (var i = 1; i < count; i++)
             {
-                rows.Add(Row(second++, banner: id));
+                rows.Add(Row(second++, eventId: id));
             }
-            rows.Add(reward is null ? Row(second++, banner: id) : Row(second++, RewardFocus.SLimitedCharacter, reward, id));
+            rows.Add(reward is null ? Row(second++, eventId: id) : Row(second++, RewardFocus.SLimitedCharacter, reward, id));
         }
         Add(30, "Lottery_Old", "old");
         Add(10, "Lottery_New", null);
         Add(20, "Lottery_New", "new");
         rows.Reverse();
-        return new BannerHistory(banner, rows, [], []);
+        return new PoolHistory(poolInfo, rows, [], []);
     }
 
-    private static SharePool Selected(BannerHistory history, ShareTarget? target) =>
+    private static SharePool Selected(PoolHistory history, ShareTarget? target) =>
         ShareCardBuilder.Build([history], null, null, Today, null, id => id == "Lottery_New" ? "明音凜" : null, target).Selected;
 
-    private static ShareCard Card(params BannerHistory[] histories) => ShareCardBuilder.Build(histories, null, null, Today);
+    private static ShareCard Card(params PoolHistory[] histories) => ShareCardBuilder.Build(histories, null, null, Today);
 
     [Fact]
     public void AllThreePoolsAppearInOrderEvenWhenEmpty()
@@ -77,7 +77,7 @@ public class ShareCardTests
     [Fact]
     public void RewardsAreNewestFirstAndMarkTheOldestAsALowerBound()
     {
-        var card = Card(Pool(BannerInfo.LimitedCharacter,
+        var card = Card(Pool(PoolInfo.LimitedCharacter,
             (40, RewardFocus.SCharacter, "first"), (60, RewardFocus.SLimitedCharacter, "second")));
 
         var rewards = card.Pools[0].Rewards;
@@ -85,7 +85,7 @@ public class ShareCardTests
         Assert.Equal([("second", 60, false, true), ("first", 40, true, false)], rewards.Select(item => (item.Name, item.Pulls, item.AtLeast, item.Limited)));
     }
 
-    private static BannerHistory ArcHistory() => Pool(BannerInfo.ArcMiracleBox,
+    private static PoolHistory ArcHistory() => Pool(PoolInfo.ArcMiracleBox,
         (10, RewardFocus.SLimitedArc, "舊限定"), (30, RewardFocus.SArc, "一般"), (20, RewardFocus.SArc, "一般"), (2, RewardFocus.SLimitedArc, "月的對蹠點"));
 
     [Fact]
@@ -109,7 +109,7 @@ public class ShareCardTests
     [Fact]
     public void BoardsStillCountEveryS()
     {
-        var pool = Card(Pool(BannerInfo.LimitedCharacter, (40, RewardFocus.SCharacter, "a"), (60, RewardFocus.SLimitedCharacter, "b"))).Pools[0];
+        var pool = Card(Pool(PoolInfo.LimitedCharacter, (40, RewardFocus.SCharacter, "a"), (60, RewardFocus.SLimitedCharacter, "b"))).Pools[0];
 
         Assert.Equal("S", pool.TargetLabel);
         Assert.Equal(["b", "a"], pool.Rewards.Select(item => item.Name));
@@ -120,8 +120,8 @@ public class ShareCardTests
     public void TotalsCoverEveryPool()
     {
         var card = Card(
-            Pool(BannerInfo.LimitedCharacter, (40, RewardFocus.SLimitedCharacter, "a")),
-            Pool(BannerInfo.Permanent, (30, RewardFocus.SCharacter, "b")));
+            Pool(PoolInfo.LimitedCharacter, (40, RewardFocus.SLimitedCharacter, "a")),
+            Pool(PoolInfo.Permanent, (30, RewardFocus.SCharacter, "b")));
 
         Assert.Equal((70, 2, 1), (card.TotalPulls, card.TotalTop, card.TotalLimited));
         Assert.Equal("2026-05-01 00:00:00", card.FirstDate);
@@ -130,7 +130,7 @@ public class ShareCardTests
     [Fact]
     public void OnlyLimitedPoolsCountLimited()
     {
-        var card = Card(Pool(BannerInfo.Permanent, (30, RewardFocus.SCharacter, "b")));
+        var card = Card(Pool(PoolInfo.Permanent, (30, RewardFocus.SCharacter, "b")));
 
         Assert.Null(card.Pools[1].LimitedCount);
         Assert.Equal(0, card.Pools[0].LimitedCount);
@@ -139,7 +139,7 @@ public class ShareCardTests
     [Fact]
     public void AShortPoolStillHasLuck()
     {
-        var pool = Card(Pool(BannerInfo.Permanent, (30, RewardFocus.SCharacter, "b"))).Pools[1];
+        var pool = Card(Pool(PoolInfo.Permanent, (30, RewardFocus.SCharacter, "b"))).Pools[1];
 
         Assert.NotNull(pool.Luck);
         Assert.Null(pool.LuckNote);
@@ -148,7 +148,7 @@ public class ShareCardTests
     [Fact]
     public void AnUnsetEventHasANoteInsteadOfLuck()
     {
-        var history = Pool(BannerInfo.Permanent, (95, RewardFocus.SCharacter, "b"));
+        var history = Pool(PoolInfo.Permanent, (95, RewardFocus.SCharacter, "b"));
 
         var pool = ShareCardBuilder.Build([history], null, ["Lottery_A"], Today).Pools[1];
 
@@ -158,7 +158,7 @@ public class ShareCardTests
     [Fact]
     public void AScoredPoolCarriesItsTier()
     {
-        var pool = Card(Pool(BannerInfo.Permanent, (50, RewardFocus.SCharacter, "b"), (50, RewardFocus.SCharacter, "c"))).Pools[1];
+        var pool = Card(Pool(PoolInfo.Permanent, (50, RewardFocus.SCharacter, "b"), (50, RewardFocus.SCharacter, "c"))).Pools[1];
 
         var luck = Assert.IsType<ShareLuck>(pool.Luck);
         Assert.Null(pool.LuckNote);
@@ -169,7 +169,7 @@ public class ShareCardTests
     [Fact]
     public void AnEventCountsOnlyItsOwnPullsAndKeepsItsPool()
     {
-        var selected = Selected(TwoEvents(BannerInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
+        var selected = Selected(TwoEvents(PoolInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
 
         Assert.Equal(("明音凜", "限定棋盤"), (selected.Label, selected.Context));
         Assert.Equal((30, 1, 1), (selected.TotalPulls, selected.TopCount, selected.LimitedCount));
@@ -178,7 +178,7 @@ public class ShareCardTests
     [Fact]
     public void AnEventsRewardCountsPullsAcrossEvents()
     {
-        var selected = Selected(TwoEvents(BannerInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
+        var selected = Selected(TwoEvents(PoolInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
 
         var reward = Assert.Single(selected.Rewards);
         Assert.Equal(("new", 30, false), (reward.Name, reward.Pulls, reward.AtLeast));
@@ -187,7 +187,7 @@ public class ShareCardTests
     [Fact]
     public void AnEventHasNoPityMeterOfItsOwn()
     {
-        var selected = Selected(TwoEvents(BannerInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
+        var selected = Selected(TwoEvents(PoolInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
 
         Assert.Equal((null, null), (selected.Pity, selected.LimitedPity));
     }
@@ -195,7 +195,7 @@ public class ShareCardTests
     [Fact]
     public void AShortEventStillHasLuck()
     {
-        var selected = Selected(TwoEvents(BannerInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
+        var selected = Selected(TwoEvents(PoolInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
 
         Assert.NotNull(selected.Luck);
         Assert.Null(selected.LuckNote);
@@ -206,9 +206,9 @@ public class ShareCardTests
     {
         var rows = Enumerable.Range(0, 200).Select(second => second % 90 == 89
             ? Row(second, RewardFocus.SLimitedCharacter, "new", "Lottery_New")
-            : Row(second, banner: "Lottery_New")).Reverse().ToList();
+            : Row(second, eventId: "Lottery_New")).Reverse().ToList();
 
-        var selected = Selected(new BannerHistory(BannerInfo.LimitedCharacter, rows, [], []), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
+        var selected = Selected(new PoolHistory(PoolInfo.LimitedCharacter, rows, [], []), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
 
         var luck = Assert.IsType<ShareLuck>(selected.Luck);
         Assert.Equal((2, 200), (luck.Hits, luck.Pulls));
@@ -220,8 +220,8 @@ public class ShareCardTests
     [Fact]
     public void AnEventKeepsItsPoolsScale()
     {
-        var limited = Selected(TwoEvents(BannerInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
-        var arc = Selected(TwoEvents(BannerInfo.ArcMiracleBox), new ShareTarget(HistoryKind.ArcMiracleBox, "Lottery_New"));
+        var limited = Selected(TwoEvents(PoolInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
+        var arc = Selected(TwoEvents(PoolInfo.ArcMiracleBox), new ShareTarget(HistoryKind.ArcMiracleBox, "Lottery_New"));
 
         Assert.Equal((90, 70), (limited.Scale, limited.RisesFrom));
         Assert.Equal((80, null), (arc.Scale, arc.RisesFrom));
@@ -230,7 +230,7 @@ public class ShareCardTests
     [Fact]
     public void AWholePoolCanBeSelected()
     {
-        var selected = Selected(TwoEvents(BannerInfo.Permanent), new ShareTarget(HistoryKind.Permanent));
+        var selected = Selected(TwoEvents(PoolInfo.Permanent), new ShareTarget(HistoryKind.Permanent));
 
         Assert.Equal(("常駐棋盤", null, 60), (selected.Label, selected.Context, selected.TotalPulls));
     }
@@ -238,7 +238,7 @@ public class ShareCardTests
     [Fact]
     public void AnUnknownEventFallsBackToItsPool()
     {
-        var selected = Selected(TwoEvents(BannerInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_Gone"));
+        var selected = Selected(TwoEvents(PoolInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_Gone"));
 
         Assert.Equal(("限定棋盤", 60), (selected.Label, selected.TotalPulls));
     }
@@ -246,7 +246,7 @@ public class ShareCardTests
     [Fact]
     public void WithoutATargetTheFirstPoolIsSelected()
     {
-        Assert.Equal("限定棋盤", Selected(TwoEvents(BannerInfo.LimitedCharacter), null).Label);
+        Assert.Equal("限定棋盤", Selected(TwoEvents(PoolInfo.LimitedCharacter), null).Label);
     }
 
     [Theory]
@@ -267,7 +267,7 @@ public class ShareCardTests
     [Fact]
     public void TheAccountIsLeftOutUnlessAsked()
     {
-        var history = Pool(BannerInfo.Permanent, (50, RewardFocus.SCharacter, "b"));
+        var history = Pool(PoolInfo.Permanent, (50, RewardFocus.SCharacter, "b"));
 
         var card = ShareCardBuilder.Build([history], null, null, Today);
 
@@ -309,8 +309,8 @@ public class ShareCardTests
     [Fact]
     public void TheTopTextStaysInsideItsRange()
     {
-        var unlucky = Card(Pool(BannerInfo.Permanent, Enumerable.Range(0, 40).Select(_ => (90, RewardFocus.SCharacter, "b")).ToArray())).Pools[1].Luck!;
-        var lucky = Card(Pool(BannerInfo.Permanent, Enumerable.Range(0, 100).Select(_ => (2, RewardFocus.SCharacter, "b")).ToArray())).Pools[1].Luck!;
+        var unlucky = Card(Pool(PoolInfo.Permanent, Enumerable.Range(0, 40).Select(_ => (90, RewardFocus.SCharacter, "b")).ToArray())).Pools[1].Luck!;
+        var lucky = Card(Pool(PoolInfo.Permanent, Enumerable.Range(0, 100).Select(_ => (2, RewardFocus.SCharacter, "b")).ToArray())).Pools[1].Luck!;
 
         Assert.Equal("前 99.9% 歐", unlucky.TopText);
         Assert.Equal("前 0.1% 歐", lucky.TopText);

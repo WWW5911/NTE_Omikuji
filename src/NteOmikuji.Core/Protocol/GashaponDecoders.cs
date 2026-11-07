@@ -48,7 +48,7 @@ public static class ArcDecoder
             row.TimestampDecoded = record.TimestampDecoded;
             row.RecordHex = record.RecordHex;
             row.DecoderMode = "block_fallback";
-            row.BannerId = RecordBlockParser.IsEventBanner(record.PoolId) ? record.PoolId : null;
+            row.EventId = RecordBlockParser.IsEventId(record.PoolId) ? record.PoolId : null;
             return row;
         }).ToList();
 
@@ -82,8 +82,8 @@ public static class ArcDecoder
             var timestamp = response.AsSpan(position, 8);
             position += 8;
             var row = NewRow(DecodeKey(name.Span), catalog);
-            var banner = DecodeKey(pool.Span);
-            row.BannerId = RecordBlockParser.IsEventBanner(banner) ? banner : null;
+            var eventId = DecodeKey(pool.Span);
+            row.EventId = RecordBlockParser.IsEventId(eventId) ? eventId : null;
             try
             {
                 (row.TimestampTicks, row.TimestampDecoded) = MonopolyDecoder.DecodeTimestamp(timestamp, TicksScale);
@@ -283,7 +283,7 @@ public static class MysteryBoxDecoder
                 TimestampRawHex = Convert.ToHexStringLower(timestamp),
                 RecordHex = Convert.ToHexStringLower(data.AsSpan(start, position - start)),
                 DecoderMode = "block",
-                BannerId = pool,
+                EventId = pool,
             };
             MonopolyDecoder.ApplyReward(row, rewardId, catalog);
             try

@@ -1,24 +1,24 @@
 @implements IDisposable
 @inject AppState State
 
-<div class="panel results editor" id="banner-editor">
+<div class="panel results editor" id="event-editor">
     <div class="toolbar">
         <div>
             <h2 class="editor-title">活動卡池</h2>
-            <p class="hint" id="banner-summary">@State.Banners.Entries.Count 期活動，@State.UnsetBanners.Count 期紀錄中出現但未設定。限定大獎決定保底與限定統計，修改後立刻存檔。</p>
+            <p class="hint" id="event-summary">@State.Events.Entries.Count 期活動，@State.UnsetEvents.Count 期紀錄中出現但未設定。限定大獎決定保底與限定統計，修改後立刻存檔。</p>
         </div>
         <div class="actions">
-            <button id="banner-undo" disabled="@(!State.CanUndoMapping)" @onclick="State.UndoMapping">復原</button>
-            <button id="banner-fill" title="加入內建資料有、這裡沒有的活動，並填入空白欄位。已填寫的內容不會被改動。" @onclick="State.FillMappingsFromBundled">從內建補齊</button>
+            <button id="event-undo" disabled="@(!State.CanUndoMapping)" @onclick="State.UndoMapping">復原</button>
+            <button id="event-fill" title="加入內建資料有、這裡沒有的活動，並填入空白欄位。已填寫的內容不會被改動。" @onclick="State.FillMappingsFromBundled">從內建補齊</button>
         </div>
     </div>
 
     <div class="toolbar new-row">
-        <input id="new-banner" placeholder="新增活動 ID，例如 ForkLottery_MingYin" aria-label="新增活動 ID" @bind="_newId" />
-        <button id="add-banner" class="primary" @onclick="AddBanner">新增活動</button>
+        <input id="new-event" placeholder="新增活動 ID，例如 ForkLottery_MingYin" aria-label="新增活動 ID" @bind="_newId" />
+        <button id="add-event" class="primary" @onclick="AddEvent">新增活動</button>
         @if (_message is { } message)
         {
-            <span class="hint" id="banner-message" role="alert">@message</span>
+            <span class="hint" id="event-message" role="alert">@message</span>
         }
     </div>
 
@@ -39,24 +39,24 @@
                 {
                     var id = row.Id;
                     var isDraft = IsDraft(id);
-                    <tr @key="@($"{id}:{State.MappingWriteFailures}")" data-banner-id="@id" class="@(isDraft ? "draft" : "")">
+                    <tr @key="@($"{id}:{State.MappingWriteFailures}")" data-event-id="@id" class="@(isDraft ? "draft" : "")">
                         <td class="col-type">@PoolLabel(id)</td>
                         <td class="id-cell">
-                            <span class="id-text banner-id" title="@id">@id</span>
+                            <span class="id-text event-id" title="@id">@id</span>
                             @if (isDraft)
                             {
                                 <span class="badge">未設定</span>
                             }
                         </td>
                         <td>
-                            <input class="cell" data-col="featured" list="@ListFor(id)" aria-label="@id 限定大獎" value="@BannerEntry.JoinFeatured(row.Featured)" @onchange="change => State.SaveBanner(id, change.Value as string)" />
+                            <input class="cell" data-col="featured" list="@ListFor(id)" aria-label="@id 限定大獎" value="@EventEntry.JoinFeatured(row.Featured)" @onchange="change => State.SaveEvent(id, change.Value as string)" />
                         </td>
-                        <td class="banner-names">
+                        <td class="event-names">
                             @foreach (var reward in row.Featured)
                             {
                                 if (State.RewardName(reward) is { } name)
                                 {
-                                    <span class="banner-reward" title="@reward">@name</span>
+                                    <span class="event-reward" title="@reward">@name</span>
                                 }
                                 else
                                 {
@@ -64,11 +64,11 @@
                                 }
                             }
                         </td>
-                        <td class="col-count num">@(State.SeenBanners.GetValueOrDefault(id)?.Rows ?? 0)</td>
+                        <td class="col-count num">@(State.SeenEvents.GetValueOrDefault(id)?.Rows ?? 0)</td>
                         <td class="col-action">
                             @if (!isDraft)
                             {
-                                <button class="link-button" data-action="delete-banner" aria-label="刪除 @id" @onclick="() => State.DeleteBanner(id)">刪除</button>
+                                <button class="link-button" data-action="delete-event" aria-label="刪除 @id" @onclick="() => State.DeleteEvent(id)">刪除</button>
                             }
                         </td>
                     </tr>
@@ -91,20 +91,20 @@
 </div>
 
 @code {
-    private const string ArcBannerPrefix = "ForkLottery_";
+    private const string ArcEventPrefix = "ForkLottery_";
 
     private string _newId = "";
     private string? _message;
 
     /// <summary>Unset events come first since they need attention, then the most recently used.</summary>
-    private List<BannerEntry> Rows =>
-        State.UnsetBanners.Select(id => new BannerEntry(id, []))
-            .Concat(State.Banners.Entries.OrderByDescending(entry => State.SeenBanners.GetValueOrDefault(entry.Id)?.LastDate, StringComparer.Ordinal).ThenBy(entry => entry.Id, StringComparer.Ordinal))
+    private List<EventEntry> Rows =>
+        State.UnsetEvents.Select(id => new EventEntry(id, []))
+            .Concat(State.Events.Entries.OrderByDescending(entry => State.SeenEvents.GetValueOrDefault(entry.Id)?.LastDate, StringComparer.Ordinal).ThenBy(entry => entry.Id, StringComparer.Ordinal))
             .ToList();
 
-    private bool IsDraft(string id) => !State.Banners.Entries.Any(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+    private bool IsDraft(string id) => !State.Events.Entries.Any(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
 
-    private static bool IsArc(string id) => id.StartsWith(ArcBannerPrefix, StringComparison.OrdinalIgnoreCase);
+    private static bool IsArc(string id) => id.StartsWith(ArcEventPrefix, StringComparison.OrdinalIgnoreCase);
 
     private static string PoolLabel(string id) => IsArc(id) ? "弧盤" : "棋盤";
 
@@ -113,7 +113,7 @@
     private IEnumerable<RewardEntry> TopRanks(string type) =>
         State.Rewards.Entries.Where(entry => entry.Type.Equals(type, StringComparison.OrdinalIgnoreCase) && entry.Rank.Equals("S", StringComparison.OrdinalIgnoreCase));
 
-    private void AddBanner()
+    private void AddEvent()
     {
         var id = _newId.Trim();
         if (id.Length == 0)
@@ -126,7 +126,7 @@
             _message = $"{id} 已經存在。";
             return;
         }
-        State.SaveBanner(id, "");
+        State.SaveEvent(id, "");
         _message = null;
         _newId = "";
     }

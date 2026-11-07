@@ -9,7 +9,7 @@ public static class HistoryAssembly
 {
     private const int PullSetSize = 10;
 
-    public static BannerHistory Build(HistoryKind kind, IReadOnlyList<CapturedPage> pages, RewardCatalog catalog)
+    public static PoolHistory Build(HistoryKind kind, IReadOnlyList<CapturedPage> pages, RewardCatalog catalog)
     {
         // Each Mystery Box pool numbers its own pages from 1.
         var run = new List<CapturedPage>();
@@ -20,7 +20,7 @@ public static class HistoryAssembly
             run.AddRange(poolRun);
             warnings.AddRange(poolWarnings);
         }
-        var banner = BannerInfo.For(kind);
+        var poolInfo = PoolInfo.For(kind);
         var rows = kind switch
         {
             HistoryKind.ArcMiracleBox => BuildRows(run, catalog, ArcDecoder.DecodeResponse, RecordBlockType.Fork, ArcDecoder.RowsFromStructured),
@@ -29,8 +29,8 @@ public static class HistoryAssembly
         };
         rows.ForEach(row =>
         {
-            row.PoolGroupId = banner.Id;
-            row.Focus = catalog.FocusOf(row.RewardId, row.BannerId);
+            row.PoolGroupId = poolInfo.Id;
+            row.Focus = catalog.FocusOf(row.RewardId, row.EventId);
         });
         switch (kind)
         {
@@ -46,7 +46,7 @@ public static class HistoryAssembly
                 AssignOrdinals(rows, "monopoly", adjacentOnly: true);
                 break;
         }
-        return new BannerHistory(banner, rows, warnings, run.Select(page => page.Page).ToList());
+        return new PoolHistory(poolInfo, rows, warnings, run.Select(page => page.Page).ToList());
     }
 
     public static string MakeUid(string system, string poolId, string timestampRawHex, int ordinal)

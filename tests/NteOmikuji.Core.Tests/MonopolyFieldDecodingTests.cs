@@ -6,7 +6,7 @@ namespace NteOmikuji.Core.Tests;
 
 /// <summary>
 /// Pages built to the layout seen in real replies, where every row ends with its
-/// event banner: roll, result text, 0, item count, items, pool, ticks, banner.
+/// event eventId: roll, result text, 0, item count, items, pool, ticks, eventId.
 /// </summary>
 public class MonopolyFieldDecodingTests
 {
@@ -21,10 +21,10 @@ public class MonopolyFieldDecodingTests
         return [.. U32((uint)bytes.Length), .. bytes];
     }
 
-    private static byte[] Row(uint roll, string spec, string[] items, ulong ticks = Ticks, string? banner = "Lottery_MingYin")
+    private static byte[] Row(uint roll, string spec, string[] items, ulong ticks = Ticks, string? eventId = "Lottery_MingYin")
     {
         byte[] row = [.. U32(roll), .. FString(spec), .. U32(0), .. U32((uint)items.Length), .. items.SelectMany(FString), .. FString("CardPool_Character"), .. BitConverter.GetBytes(ticks)];
-        return banner is null ? row : [.. row, .. FString(banner)];
+        return eventId is null ? row : [.. row, .. FString(eventId)];
     }
 
     private static byte[] Single(uint roll, string spec, string item) => Row(roll, spec, [item]);
@@ -61,7 +61,7 @@ public class MonopolyFieldDecodingTests
     private static List<HistoryRow> Decode(params byte[][] rows) => MonopolyDecoder.DecodeResponse(Page(rows), RewardCatalog.Bundled.Value);
 
     [Fact]
-    public void BlocksWithATrailingBannerParse()
+    public void BlocksWithATrailingEventParse()
     {
         var records = RecordBlockParser.ParseRecords(Page(Single(4, "fork_dustbin", "fork_dustbin"), Single(2, "Dice_ticket_02,30", "Dice_ticket_02")), RecordBlockType.Monopoly);
 
@@ -71,17 +71,17 @@ public class MonopolyFieldDecodingTests
     }
 
     [Fact]
-    public void RowsKeepTheirEventBanner()
+    public void RowsKeepTheirEventEvent()
     {
-        var rows = Decode(Single(4, "fork_vine", "fork_vine"), Row(1, "fork_nonos", ["fork_nonos"], banner: "Lottery_ZhenHong"));
+        var rows = Decode(Single(4, "fork_vine", "fork_vine"), Row(1, "fork_nonos", ["fork_nonos"], eventId: "Lottery_ZhenHong"));
 
-        Assert.Equal(["Lottery_MingYin", "Lottery_ZhenHong"], rows.Select(row => row.BannerId));
+        Assert.Equal(["Lottery_MingYin", "Lottery_ZhenHong"], rows.Select(row => row.EventId));
     }
 
     [Fact]
-    public void BannerIsOptionalSoTheOlderLayoutStillParses()
+    public void EventIsOptionalSoTheOlderLayoutStillParses()
     {
-        var records = RecordBlockParser.ParseRecords(Page(Row(3, "fork_vine", ["fork_vine"], banner: null), Row(5, "fork_vine", ["fork_vine"], banner: null)), RecordBlockType.Monopoly);
+        var records = RecordBlockParser.ParseRecords(Page(Row(3, "fork_vine", ["fork_vine"], eventId: null), Row(5, "fork_vine", ["fork_vine"], eventId: null)), RecordBlockType.Monopoly);
 
         Assert.Equal([3u, 5u], records.Select(record => record.RollPointsRaw!.Value));
     }

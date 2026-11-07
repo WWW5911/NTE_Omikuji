@@ -12,8 +12,8 @@ public static class HistoryCsv
     private static readonly string[] Headers = ["卡池", "活動", "活動ID", "時間", "結果", "骰點", "獎勵", "獎勵ID", "稀有度", "類型", "數量", "關注類別"];
 
     /// <param name="nameOf">How to show a reward.</param>
-    /// <param name="bannerName">How to show an event, when it has a name.</param>
-    public static string ToText(IEnumerable<BannerHistory> histories, Func<HistoryRow, string> nameOf, Func<string, string?> bannerName)
+    /// <param name="eventName">How to show an event, when it has a name.</param>
+    public static string ToText(IEnumerable<PoolHistory> histories, Func<HistoryRow, string> nameOf, Func<string, string?> eventName)
     {
         var table = new CsvTable(Headers);
         foreach (var history in histories)
@@ -23,9 +23,9 @@ public static class HistoryCsv
                 var dice = row.Dice is >= 1 ? row.Dice.Value.ToString(CultureInfo.InvariantCulture) : "";
                 var fields = new[]
                 {
-                    PoolName(history.Banner.Kind),
-                    row.BannerId is { } id ? bannerName(id) ?? "" : "",
-                    row.BannerId ?? "",
+                    PoolName(history.Pool.Kind),
+                    row.EventId is { } id ? eventName(id) ?? "" : "",
+                    row.EventId ?? "",
                     row.TimestampDecoded,
                     row.ResultType.Length == 0 ? "" : HistoryAnalyzer.ResultLabel(row),
                     dice,

@@ -9,7 +9,7 @@
     <!-- Seeds for the editable files the app creates in its mappings folder. -->
     <EmbeddedResource Include="Mappings\rewards.csv" LogicalName="mappings.rewards.csv" />
     <EmbeddedResource Include="Mappings\achievements.csv" LogicalName="mappings.achievements.csv" />
-    <EmbeddedResource Include="Mappings\banners.csv" LogicalName="mappings.banners.csv" />
+    <EmbeddedResource Include="Mappings\events.csv" LogicalName="mappings.events.csv" />
     <EmbeddedResource Include="Mappings\schedule.csv" LogicalName="mappings.schedule.csv" />
   </ItemGroup>
 

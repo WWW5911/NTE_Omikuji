@@ -44,7 +44,7 @@ public sealed record SharePool(
     string TargetLabel = "S");
 
 /// <summary>A pool to share, or one event within it.</summary>
-public sealed record ShareTarget(HistoryKind Kind, string? BannerId = null);
+public sealed record ShareTarget(HistoryKind Kind, string? EventId = null);
 
 /// <summary>What a share image shows. It carries only what is drawn, and the account only when asked and masked.</summary>
 /// <param name="Selected">The pool or event the single pool template shows.</param>
@@ -67,19 +67,19 @@ public static class ShareCardBuilder
     private const int VisibleUidEnd = 2;
 
     /// <param name="uid">Shown masked when given.</param>
-    /// <param name="bannerName">The name of an event's featured reward.</param>
+    /// <param name="eventName">The name of an event's featured reward.</param>
     /// <param name="target">What the single pool template shows. Defaults to the first pool.</param>
     public static ShareCard Build(
-        IReadOnlyList<BannerHistory> histories,
+        IReadOnlyList<PoolHistory> histories,
         Func<HistoryRow, string>? nameOf,
-        IReadOnlyCollection<string>? unsetBanners,
+        IReadOnlyCollection<string>? unsetEvents,
         DateOnly today,
         string? uid = null,
-        Func<string, string?>? bannerName = null,
+        Func<string, string?>? eventName = null,
         ShareTarget? target = null)
     {
-        var pools = new[] { BannerInfo.LimitedCharacter, BannerInfo.Permanent, BannerInfo.ArcMiracleBox }
-            .Select(banner => Pool(banner, histories.FirstOrDefault(history => history.Banner.Kind == banner.Kind), nameOf, unsetBanners))
+        var pools = new[] { PoolInfo.LimitedCharacter, PoolInfo.Permanent, PoolInfo.ArcMiracleBox }
+            .Select(poolInfo => Pool(poolInfo, histories.FirstOrDefault(history => history.Pool.Kind == poolInfo.Kind), nameOf, unsetEvents))
             .ToList();
         var data = pools.Where(pool => pool.Data is not null).Select(pool => pool.Data!).ToList();
         return new ShareCard(
@@ -90,7 +90,7 @@ public static class ShareCardBuilder
             data.Sum(item => item.LimitedCount),
             ToShare(LuckModel.Combine(data.Select(item => item.Luck))),
             pools.Select(pool => pool.Share).ToList(),
-            Selected(pools.Select(pool => pool.Share).ToList(), histories, nameOf, bannerName, unsetBanners, target),
+            Selected(pools.Select(pool => pool.Share).ToList(), histories, nameOf, eventName, unsetEvents, target),
             Enum.GetValues<LuckTier>().Select(LuckModel.LabelOf).ToList(),
             MaskUid(uid),
             $"NTE Omikuji {HistoryJsonWriter.AppVersion}・{today:yyyy-MM-dd}");
@@ -98,7 +98,7 @@ public static class ShareCardBuilder
 
     /// <summary>A file name part for a target. Event IDs come from the game, so only plain characters are kept.</summary>
     public static string FileLabel(ShareTarget target) => string.Concat(
-        (target.BannerId ?? target.Kind.ToString()).Select(letter => char.IsAsciiLetterOrDigit(letter) || letter is '_' or '-' ? letter : '_'));
+        (target.EventId ?? target.Kind.ToString()).Select(letter => char.IsAsciiLetterOrDigit(letter) || letter is '_' or '-' ? letter : '_'));
 
     /// <summary>Hides the middle of an account ID. Too short an ID to mask is not shown at all.</summary>
     public static string? MaskUid(string? uid) =>
@@ -108,22 +108,22 @@ public static class ShareCardBuilder
 
     private static SharePool Selected(
         IReadOnlyList<SharePool> pools,
-        IReadOnlyList<BannerHistory> histories,
+        IReadOnlyList<PoolHistory> histories,
         Func<HistoryRow, string>? nameOf,
-        Func<string, string?>? bannerName,
-        IReadOnlyCollection<string>? unsetBanners,
+        Func<string, string?>? eventName,
+        IReadOnlyCollection<string>? unsetEvents,
         ShareTarget? target)
     {
         var whole = pools.FirstOrDefault(pool => pool.Kind == target?.Kind.ToString()) ?? pools[0];
-        if (target?.BannerId is not { } id || histories.FirstOrDefault(history => history.Banner.Kind == target.Kind) is not { } history
-            || HistoryAnalyzer.Banners(history, nameOf, bannerName).FirstOrDefault(group => group.Id == id) is not { } group)
+        if (target?.EventId is not { } id || histories.FirstOrDefault(history => history.Pool.Kind == target.Kind) is not { } history
+            || HistoryAnalyzer.Events(history, nameOf, eventName).FirstOrDefault(group => group.Id == id) is not { } group)
         {
             return whole;
         }
 
         // Pity carries across events, so an event has no meter of its own to show.
-        var data = HistoryAnalyzer.Analyze(history, nameOf, id, unsetBanners);
-        var rewards = Rewards(history.Banner, data);
+        var data = HistoryAnalyzer.Analyze(history, nameOf, id, unsetEvents);
+        var rewards = Rewards(history.Pool, data);
         var costs = Costs(rewards);
         return whole with
         {
@@ -148,8 +148,8 @@ public static class ShareCardBuilder
     }
 
     /// <summary>Arcs are judged on the limited one, so each one's cost runs back to the last limited one, past ordinary S.</summary>
-    private static List<ShareReward> Rewards(BannerInfo banner, BannerAnalysis data) =>
-        banner.Pity?.LimitedAt is null
+    private static List<ShareReward> Rewards(PoolInfo poolInfo, PoolAnalysis data) =>
+        poolInfo.Pity?.LimitedAt is null
             ? data.TopRankPulls.Select(pull => new ShareReward(pull.Name, pull.PullsSpent, pull.IsLowerBound, pull.IsLimited)).ToList()
             : data.TopRankPulls.Where(pull => pull.IsLimited)
                 .Select(pull => new ShareReward(pull.Name, pull.LimitedSpent ?? pull.PullsSpent, pull.IsLimitedLowerBound, true)).ToList();
@@ -157,31 +157,31 @@ public static class ShareCardBuilder
     private static List<int> Costs(List<ShareReward> rewards) =>
         rewards.Where(reward => !reward.AtLeast).Select(reward => reward.Pulls).ToList();
 
-    private static (SharePool Share, BannerAnalysis? Data) Pool(BannerInfo banner, BannerHistory? history, Func<HistoryRow, string>? nameOf, IReadOnlyCollection<string>? unsetBanners)
+    private static (SharePool Share, PoolAnalysis? Data) Pool(PoolInfo poolInfo, PoolHistory? history, Func<HistoryRow, string>? nameOf, IReadOnlyCollection<string>? unsetEvents)
     {
-        var label = HistoryCsv.PoolName(banner.Kind);
-        var topLabel = banner.Kind == HistoryKind.ArcMiracleBox ? "S 弧盤" : "S";
-        var hasLimited = banner.Kind != HistoryKind.Permanent;
+        var label = HistoryCsv.PoolName(poolInfo.Kind);
+        var topLabel = poolInfo.Kind == HistoryKind.ArcMiracleBox ? "S 弧盤" : "S";
+        var hasLimited = poolInfo.Kind != HistoryKind.Permanent;
         if (history is null)
         {
-            return (new SharePool(banner.Kind.ToString(), label, topLabel, 0, 0, hasLimited ? 0 : null, null, null, null, null, null, null, "尚無紀錄", null, null, [], Scale(banner), banner.Pity!.RisesFrom, TargetLabel: TargetOf(banner)), null);
+            return (new SharePool(poolInfo.Kind.ToString(), label, topLabel, 0, 0, hasLimited ? 0 : null, null, null, null, null, null, null, "尚無紀錄", null, null, [], Scale(poolInfo), poolInfo.Pity!.RisesFrom, TargetLabel: TargetOf(poolInfo)), null);
         }
 
-        var data = HistoryAnalyzer.Analyze(history, nameOf, unsetBanners: unsetBanners);
-        var rewards = Rewards(banner, data);
+        var data = HistoryAnalyzer.Analyze(history, nameOf, unsetEvents: unsetEvents);
+        var rewards = Rewards(poolInfo, data);
         var costs = Costs(rewards);
         var share = new SharePool(
-            banner.Kind.ToString(), label, topLabel, data.TotalPulls, data.TopRankCount, hasLimited ? data.LimitedCount : null,
+            poolInfo.Kind.ToString(), label, topLabel, data.TotalPulls, data.TopRankCount, hasLimited ? data.LimitedCount : null,
             costs.Count == 0 ? null : costs.Average(), costs.Count == 0 ? null : costs.Min(), costs.Count == 0 ? null : costs.Max(), data.FirstDate, data.LastDate,
-            ToShare(data.Luck), LuckNote(data), data.TopRankPity, data.LimitedPity, rewards, Scale(banner), banner.Pity!.RisesFrom, TargetLabel: TargetOf(banner));
+            ToShare(data.Luck), LuckNote(data), data.TopRankPity, data.LimitedPity, rewards, Scale(poolInfo), poolInfo.Pity!.RisesFrom, TargetLabel: TargetOf(poolInfo));
         return (share, data);
     }
 
-    private static int Scale(BannerInfo banner) => banner.Pity!.LimitedAt ?? banner.Pity.TopRankAt;
+    private static int Scale(PoolInfo poolInfo) => poolInfo.Pity!.LimitedAt ?? poolInfo.Pity.TopRankAt;
 
-    private static string TargetOf(BannerInfo banner) => banner.Pity!.LimitedAt is null ? "S" : "限定";
+    private static string TargetOf(PoolInfo poolInfo) => poolInfo.Pity!.LimitedAt is null ? "S" : "限定";
 
-    private static string? LuckNote(BannerAnalysis data) =>
+    private static string? LuckNote(PoolAnalysis data) =>
         data.Luck is not null ? null : data.TotalPulls == 0 ? "尚無紀錄" : "無法判定";
 
     private static ShareLuck? ToShare(LuckScore? score) => score is null ? null : new ShareLuck(

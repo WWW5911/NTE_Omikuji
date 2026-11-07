@@ -9,7 +9,7 @@ namespace NteOmikuji.Core.Tests;
 
 public class PoolOverviewTests
 {
-    private static HistoryRow Row(int second, string reward = "x", RewardFocus focus = RewardFocus.None, string result = "dice", string? banner = null, string? rank = null) => new()
+    private static HistoryRow Row(int second, string reward = "x", RewardFocus focus = RewardFocus.None, string result = "dice", string? eventId = null, string? rank = null) => new()
     {
         RewardRank = rank,
         Uid = $"u{second}",
@@ -19,13 +19,13 @@ public class PoolOverviewTests
         IsMappedReward = true,
         ResultType = result,
         Focus = focus,
-        BannerId = banner,
+        EventId = eventId,
     };
 
-    private static BannerHistory Pool(BannerInfo banner, params HistoryRow[] oldestFirst) => new(banner, oldestFirst.Reverse().ToList(), [], []);
+    private static PoolHistory Pool(PoolInfo eventId, params HistoryRow[] oldestFirst) => new(eventId, oldestFirst.Reverse().ToList(), [], []);
 
-    private static HistoryRow[] Pulls(int count, int startSecond = 0, string? banner = null) =>
-        Enumerable.Range(startSecond, count).Select(second => Row(second, banner: banner)).ToArray();
+    private static HistoryRow[] Pulls(int count, int startSecond = 0, string? eventId = null) =>
+        Enumerable.Range(startSecond, count).Select(second => Row(second, eventId: eventId)).ToArray();
 
     [Theory]
     [InlineData(HistoryKind.LimitedCharacter, 90, null, null, 70, 0.0099, 0.1959)]
@@ -33,13 +33,13 @@ public class PoolOverviewTests
     [InlineData(HistoryKind.ArcMiracleBox, 60, 80, 0.25, null, 0.03, null)]
     public void EachPoolHasItsGuarantee(HistoryKind kind, int topRank, int? limited, double? chance, int? rises, double rate, double? raised)
     {
-        Assert.Equal(new PityRule(topRank, limited, chance, rises, 10, rate, raised, PullsPerDraw: kind == HistoryKind.ArcMiracleBox ? 10 : 1), BannerInfo.For(kind).Pity);
+        Assert.Equal(new PityRule(topRank, limited, chance, rises, 10, rate, raised, PullsPerDraw: kind == HistoryKind.ArcMiracleBox ? 10 : 1), PoolInfo.For(kind).Pity);
     }
 
     [Fact]
     public void ABoardIsJudgedOnItsS()
     {
-        var luck = HistoryAnalyzer.Analyze(Pool(BannerInfo.Permanent, [.. Pulls(99), Row(99, "s", RewardFocus.SCharacter)])).Luck!;
+        var luck = HistoryAnalyzer.Analyze(Pool(PoolInfo.Permanent, [.. Pulls(99), Row(99, "s", RewardFocus.SCharacter)])).Luck!;
 
         Assert.Equal((1, 100), (luck.Hits, luck.Pulls));
     }
@@ -47,12 +47,12 @@ public class PoolOverviewTests
     [Fact]
     public void AnArcPoolIsJudgedOnLimitedRewards()
     {
-        var luck = HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox,
+        var luck = HistoryAnalyzer.Analyze(Pool(PoolInfo.ArcMiracleBox,
         [
             .. Pulls(40, 0, "ForkLottery_A"),
-            Row(40, "off", RewardFocus.SArc, banner: "ForkLottery_A"),
+            Row(40, "off", RewardFocus.SArc, eventId: "ForkLottery_A"),
             .. Pulls(40, 41, "ForkLottery_A"),
-            Row(81, "limited", RewardFocus.SLimitedArc, banner: "ForkLottery_A"),
+            Row(81, "limited", RewardFocus.SLimitedArc, eventId: "ForkLottery_A"),
         ])).Luck!;
 
         Assert.Equal((1, 82), (luck.Hits, luck.Pulls));
@@ -61,17 +61,17 @@ public class PoolOverviewTests
     [Fact]
     public void AnArcFileWithoutEventsIsNotJudged()
     {
-        Assert.Null(HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox, Pulls(100))).Luck);
+        Assert.Null(HistoryAnalyzer.Analyze(Pool(PoolInfo.ArcMiracleBox, Pulls(100))).Luck);
     }
 
     [Fact]
     public void AnEventWithoutAFeaturedListStopsTheJudgement()
     {
-        var pool = Pool(BannerInfo.ArcMiracleBox, Pulls(100, 0, "ForkLottery_New"));
+        var pool = Pool(PoolInfo.ArcMiracleBox, Pulls(100, 0, "ForkLottery_New"));
 
         Assert.NotNull(HistoryAnalyzer.Analyze(pool).Luck);
-        Assert.Null(HistoryAnalyzer.Analyze(pool, unsetBanners: ["forklottery_new"]).Luck);
-        Assert.NotNull(HistoryAnalyzer.Analyze(pool, unsetBanners: ["ForkLottery_Other"]).Luck);
+        Assert.Null(HistoryAnalyzer.Analyze(pool, unsetEvents: ["forklottery_new"]).Luck);
+        Assert.NotNull(HistoryAnalyzer.Analyze(pool, unsetEvents: ["ForkLottery_Other"]).Luck);
     }
 
     [Fact]
@@ -79,22 +79,22 @@ public class PoolOverviewTests
     {
         HistoryRow[] rows = [.. Pulls(100), .. Enumerable.Range(100, 40).Select(second => Row(second, "gift", result: "points_gift"))];
 
-        Assert.Null(HistoryAnalyzer.Analyze(Pool(BannerInfo.LimitedCharacter, rows)).Luck);
+        Assert.Null(HistoryAnalyzer.Analyze(Pool(PoolInfo.LimitedCharacter, rows)).Luck);
     }
 
     [Fact]
     public void AnEventPageHasALuckScore()
     {
-        var pool = Pool(BannerInfo.LimitedCharacter, Pulls(100, 0, "Lottery_A"));
+        var pool = Pool(PoolInfo.LimitedCharacter, Pulls(100, 0, "Lottery_A"));
 
         Assert.NotNull(HistoryAnalyzer.Analyze(pool).Luck);
-        Assert.NotNull(HistoryAnalyzer.Analyze(pool, bannerId: "Lottery_A").Luck);
+        Assert.NotNull(HistoryAnalyzer.Analyze(pool, eventId: "Lottery_A").Luck);
     }
 
     [Fact]
     public void PityCountsPullsSinceTheLastTopRank()
     {
-        var result = HistoryAnalyzer.Analyze(Pool(BannerInfo.LimitedCharacter, [.. Pulls(5), Row(5, "s", RewardFocus.SCharacter), .. Pulls(52, 6)]));
+        var result = HistoryAnalyzer.Analyze(Pool(PoolInfo.LimitedCharacter, [.. Pulls(5), Row(5, "s", RewardFocus.SCharacter), .. Pulls(52, 6)]));
 
         Assert.Equal(new PityStatus(52, 90, false, 70), result.TopRankPity);
         Assert.Equal(38, result.TopRankPity!.Remaining);
@@ -106,7 +106,7 @@ public class PoolOverviewTests
     [Fact]
     public void NoTopRankYetIsOnlyALowerBound()
     {
-        var pity = HistoryAnalyzer.Analyze(Pool(BannerInfo.Permanent, Pulls(30))).TopRankPity!;
+        var pity = HistoryAnalyzer.Analyze(Pool(PoolInfo.Permanent, Pulls(30))).TopRankPity!;
 
         Assert.True(pity.IsLowerBound);
         Assert.Equal(30, pity.Current);
@@ -115,7 +115,7 @@ public class PoolOverviewTests
     [Fact]
     public void PityPastTheGuaranteeIsFlaggedAndCappedForDisplay()
     {
-        var pity = HistoryAnalyzer.Analyze(Pool(BannerInfo.Permanent, Pulls(95))).TopRankPity!;
+        var pity = HistoryAnalyzer.Analyze(Pool(PoolInfo.Permanent, Pulls(95))).TopRankPity!;
 
         Assert.True(pity.Exceeded);
         Assert.Equal(0, pity.Remaining);
@@ -125,7 +125,7 @@ public class PoolOverviewTests
     [Fact]
     public void ArcsTrackTheLimitedGuaranteeSeparately()
     {
-        var result = HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox,
+        var result = HistoryAnalyzer.Analyze(Pool(PoolInfo.ArcMiracleBox,
         [
             .. Pulls(10),
             Row(10, "limited", RewardFocus.SLimitedArc),
@@ -138,20 +138,20 @@ public class PoolOverviewTests
         Assert.Equal(new PityStatus(26, 80, false), result.LimitedPity);
     }
 
-    /// <summary>Limited arcs after 2, 80, and 3 pulls, with an off-banner S between the second pair.</summary>
-    private static BannerHistory ArcRun()
+    /// <summary>Limited arcs after 2, 80, and 3 pulls, with an off-eventId S between the second pair.</summary>
+    private static PoolHistory ArcRun()
     {
         var rows = new List<HistoryRow>();
         void Add(int plain, string reward, RewardFocus focus)
         {
             rows.AddRange(Pulls(plain, rows.Count));
-            rows.Add(Row(rows.Count, reward, focus, banner: "ForkLottery_A", rank: "S"));
+            rows.Add(Row(rows.Count, reward, focus, eventId: "ForkLottery_A", rank: "S"));
         }
         Add(1, "first", RewardFocus.SLimitedArc);
         Add(39, "off", RewardFocus.SArc);
         Add(39, "forced", RewardFocus.SLimitedArc);
         Add(2, "lucky", RewardFocus.SLimitedArc);
-        return Pool(BannerInfo.ArcMiracleBox, [.. rows]);
+        return Pool(PoolInfo.ArcMiracleBox, [.. rows]);
     }
 
     [Fact]
@@ -183,7 +183,7 @@ public class PoolOverviewTests
     [Fact]
     public void BoardsHaveNoLimitedRateOrGuarantee()
     {
-        var result = HistoryAnalyzer.Analyze(Pool(BannerInfo.LimitedCharacter, [.. Pulls(79), Row(79, "s", RewardFocus.SLimitedCharacter)]));
+        var result = HistoryAnalyzer.Analyze(Pool(PoolInfo.LimitedCharacter, [.. Pulls(79), Row(79, "s", RewardFocus.SLimitedCharacter)]));
 
         Assert.Null(result.ObservedLimitedRate);
         Assert.Equal(0, result.GuaranteedLimitedCount);
@@ -193,11 +193,11 @@ public class PoolOverviewTests
     public void AnEventsLimitedStatsCountItsOwnRewards()
     {
         var rows = new List<HistoryRow>(Pulls(5, 0, "ForkLottery_A"));
-        rows.Add(Row(5, "a", RewardFocus.SLimitedArc, banner: "ForkLottery_A"));
+        rows.Add(Row(5, "a", RewardFocus.SLimitedArc, eventId: "ForkLottery_A"));
         rows.AddRange(Pulls(79, 6, "ForkLottery_B"));
-        rows.Add(Row(85, "b", RewardFocus.SLimitedArc, banner: "ForkLottery_B"));
+        rows.Add(Row(85, "b", RewardFocus.SLimitedArc, eventId: "ForkLottery_B"));
 
-        var result = HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox, [.. rows]), bannerId: "ForkLottery_B");
+        var result = HistoryAnalyzer.Analyze(Pool(PoolInfo.ArcMiracleBox, [.. rows]), eventId: "ForkLottery_B");
 
         Assert.Equal(80, Assert.Single(result.TopRankPulls).LimitedSpent);
         Assert.Equal(1, result.GuaranteedLimitedCount);
@@ -206,12 +206,12 @@ public class PoolOverviewTests
     [Fact]
     public void AnEventIsNamedAfterItsFeaturedRewardBeforeItsCommonestS()
     {
-        var pool = Pool(BannerInfo.ArcMiracleBox,
-            Row(0, "off", RewardFocus.SArc, banner: "ForkLottery_A"),
-            Row(1, "off", RewardFocus.SArc, banner: "ForkLottery_A"),
-            Row(2, "plain", banner: "ForkLottery_B"));
+        var pool = Pool(PoolInfo.ArcMiracleBox,
+            Row(0, "off", RewardFocus.SArc, eventId: "ForkLottery_A"),
+            Row(1, "off", RewardFocus.SArc, eventId: "ForkLottery_A"),
+            Row(2, "plain", eventId: "ForkLottery_B"));
 
-        var groups = HistoryAnalyzer.Banners(pool, bannerName: id => id == "ForkLottery_A" ? "限定大獎" : null);
+        var groups = HistoryAnalyzer.Events(pool, eventName: id => id == "ForkLottery_A" ? "限定大獎" : null);
 
         Assert.Equal(["B", "限定大獎"], groups.Select(group => group.Name));
     }
@@ -219,7 +219,7 @@ public class PoolOverviewTests
     [Fact]
     public void LimitedArcCountIsALowerBoundUntilOneIsMarked()
     {
-        var limited = HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox, [.. Pulls(3), Row(3, "standard", RewardFocus.SArc)])).LimitedPity!;
+        var limited = HistoryAnalyzer.Analyze(Pool(PoolInfo.ArcMiracleBox, [.. Pulls(3), Row(3, "standard", RewardFocus.SArc)])).LimitedPity!;
 
         Assert.True(limited.IsLowerBound);
         Assert.Equal(4, limited.Current);
@@ -231,7 +231,7 @@ public class PoolOverviewTests
     [InlineData(84, true, null)]
     public void OddsRiseFromPullSeventy(int pulls, bool risen, int? until)
     {
-        var pity = HistoryAnalyzer.Analyze(Pool(BannerInfo.Permanent, [Row(0, "s", RewardFocus.SCharacter), .. Pulls(pulls, 1)])).TopRankPity!;
+        var pity = HistoryAnalyzer.Analyze(Pool(PoolInfo.Permanent, [Row(0, "s", RewardFocus.SCharacter), .. Pulls(pulls, 1)])).TopRankPity!;
 
         Assert.Equal((risen, until), (pity.HasRisen, pity.PullsUntilRise));
     }
@@ -239,7 +239,7 @@ public class PoolOverviewTests
     [Fact]
     public void ArcsHaveNoStatedRisePoint()
     {
-        var pity = HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox, Pulls(50))).TopRankPity!;
+        var pity = HistoryAnalyzer.Analyze(Pool(PoolInfo.ArcMiracleBox, Pulls(50))).TopRankPity!;
 
         Assert.False(pity.HasRisen);
         Assert.Null(pity.PullsUntilRise);
@@ -248,7 +248,7 @@ public class PoolOverviewTests
     [Fact]
     public void TopRanksBeforeTheRiseAreCounted()
     {
-        var result = HistoryAnalyzer.Analyze(Pool(BannerInfo.Permanent,
+        var result = HistoryAnalyzer.Analyze(Pool(PoolInfo.Permanent,
         [
             Row(0, "s", RewardFocus.SCharacter),
             .. Pulls(5, 1), Row(6, "s", RewardFocus.SCharacter),
@@ -256,14 +256,14 @@ public class PoolOverviewTests
         ]));
 
         Assert.Equal(1, result.TopRanksBeforeRise);
-        Assert.Null(HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox, Pulls(5))).TopRanksBeforeRise);
+        Assert.Null(HistoryAnalyzer.Analyze(Pool(PoolInfo.ArcMiracleBox, Pulls(5))).TopRanksBeforeRise);
     }
 
     [Fact]
     public void ABoardsAGuaranteeIsTheRewardEveryTenPulls()
     {
         // An A from the dice does not restart it: the reward arrives every 10 pulls regardless.
-        var result = HistoryAnalyzer.Analyze(Pool(BannerInfo.LimitedCharacter,
+        var result = HistoryAnalyzer.Analyze(Pool(PoolInfo.LimitedCharacter,
         [
             .. Pulls(10),
             Row(10, "gift", result: "points_gift", rank: "A"),
@@ -279,7 +279,7 @@ public class PoolOverviewTests
     [Fact]
     public void AnArcAGuaranteeRestartsOnAnyAOrS()
     {
-        var pity = HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox,
+        var pity = HistoryAnalyzer.Analyze(Pool(PoolInfo.ArcMiracleBox,
         [
             .. Pulls(3),
             Row(3, "a", rank: "A"),
@@ -294,7 +294,7 @@ public class PoolOverviewTests
     [Fact]
     public void AGuaranteeIsALowerBoundUntilOneIsSeen()
     {
-        var pity = HistoryAnalyzer.Analyze(Pool(BannerInfo.LimitedCharacter, Pulls(5))).SecondRankPity!;
+        var pity = HistoryAnalyzer.Analyze(Pool(PoolInfo.LimitedCharacter, Pulls(5))).SecondRankPity!;
 
         Assert.True(pity.IsLowerBound);
         Assert.Equal(5, pity.Current);
@@ -305,13 +305,13 @@ public class PoolOverviewTests
     {
         HistoryRow[] rows = [.. Pulls(5), .. Enumerable.Range(5, 20).Select(second => Row(second, "gift", result: "points_gift"))];
 
-        Assert.Null(HistoryAnalyzer.Analyze(Pool(BannerInfo.LimitedCharacter, rows)).SecondRankPity);
+        Assert.Null(HistoryAnalyzer.Analyze(Pool(PoolInfo.LimitedCharacter, rows)).SecondRankPity);
     }
 
     [Fact]
     public void RarityMixKeepsSRewardsApartFromSItems()
     {
-        var mix = HistoryAnalyzer.Analyze(Pool(BannerInfo.LimitedCharacter,
+        var mix = HistoryAnalyzer.Analyze(Pool(PoolInfo.LimitedCharacter,
             Row(0, "character", RewardFocus.SCharacter, rank: "S"),
             Row(1, "dice", rank: "S"),
             Row(2, "dice", rank: "S"),
@@ -338,15 +338,15 @@ public class PoolOverviewTests
             return [.. rows];
         }
 
-        Assert.Equal(5, HistoryAnalyzer.Analyze(Pool(BannerInfo.Permanent, Sequence(2, 5, 9))).MedianInterval);
-        Assert.Equal(3.5, HistoryAnalyzer.Analyze(Pool(BannerInfo.Permanent, Sequence(2, 5))).MedianInterval);
-        Assert.Null(HistoryAnalyzer.Analyze(Pool(BannerInfo.Permanent, Pulls(3))).MedianInterval);
+        Assert.Equal(5, HistoryAnalyzer.Analyze(Pool(PoolInfo.Permanent, Sequence(2, 5, 9))).MedianInterval);
+        Assert.Equal(3.5, HistoryAnalyzer.Analyze(Pool(PoolInfo.Permanent, Sequence(2, 5))).MedianInterval);
+        Assert.Null(HistoryAnalyzer.Analyze(Pool(PoolInfo.Permanent, Pulls(3))).MedianInterval);
     }
 
     [Fact]
     public void HistogramRunsToTheGuaranteeEvenWhenEmpty()
     {
-        var buckets = HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox, [Row(0, "a", RewardFocus.SArc), .. Pulls(14, 1), Row(15, "b", RewardFocus.SArc)])).IntervalHistogram!;
+        var buckets = HistoryAnalyzer.Analyze(Pool(PoolInfo.ArcMiracleBox, [Row(0, "a", RewardFocus.SArc), .. Pulls(14, 1), Row(15, "b", RewardFocus.SArc)])).IntervalHistogram!;
 
         Assert.Equal(["1–10", "11–20", "21–30", "31–40", "41–50", "51–60"], buckets.Select(bucket => bucket.Label));
         Assert.Equal([0, 1, 0, 0, 0, 0], buckets.Select(bucket => bucket.Count));
@@ -355,15 +355,15 @@ public class PoolOverviewTests
     [Fact]
     public void AnEventViewCountsItsOwnPullsButIntervalsCarryAcrossEvents()
     {
-        var pool = Pool(BannerInfo.LimitedCharacter,
+        var pool = Pool(PoolInfo.LimitedCharacter,
         [
-            Row(0, "a", RewardFocus.SCharacter, banner: "Lottery_A"),
+            Row(0, "a", RewardFocus.SCharacter, eventId: "Lottery_A"),
             .. Pulls(10, 1, "Lottery_A"),
             .. Pulls(20, 11, "Lottery_B"),
-            Row(31, "b", RewardFocus.SCharacter, banner: "Lottery_B"),
+            Row(31, "b", RewardFocus.SCharacter, eventId: "Lottery_B"),
         ]);
 
-        var second = HistoryAnalyzer.Analyze(pool, bannerId: "Lottery_B");
+        var second = HistoryAnalyzer.Analyze(pool, eventId: "Lottery_B");
 
         Assert.Equal(21, second.TotalPulls);
         Assert.Equal(31, Assert.Single(second.TopRankPulls).PullsSpent);
@@ -374,26 +374,26 @@ public class PoolOverviewTests
     [Fact]
     public void AnEventViewListsOnlyItsOwnCosmetics()
     {
-        var pool = Pool(BannerInfo.LimitedCharacter,
-            Row(0, "older", RewardFocus.Glider, banner: "Lottery_A"),
-            Row(1, "newer", RewardFocus.Glider, banner: "Lottery_B"),
-            Row(2, "newest", RewardFocus.Outfit, banner: "Lottery_B"));
+        var pool = Pool(PoolInfo.LimitedCharacter,
+            Row(0, "older", RewardFocus.Glider, eventId: "Lottery_A"),
+            Row(1, "newer", RewardFocus.Glider, eventId: "Lottery_B"),
+            Row(2, "newest", RewardFocus.Outfit, eventId: "Lottery_B"));
 
-        Assert.Equal(["newest", "newer"], HistoryAnalyzer.Analyze(pool, bannerId: "Lottery_B").CosmeticItems.Select(item => item.RewardId));
+        Assert.Equal(["newest", "newer"], HistoryAnalyzer.Analyze(pool, eventId: "Lottery_B").CosmeticItems.Select(item => item.RewardId));
         Assert.Equal(["newest", "newer", "older"], HistoryAnalyzer.Analyze(pool).CosmeticItems.Select(item => item.RewardId));
     }
 
     [Fact]
     public void EventsAreNamedAfterTheirMostFrequentTopRankNewestFirst()
     {
-        var groups = HistoryAnalyzer.Banners(Pool(BannerInfo.LimitedCharacter,
+        var groups = HistoryAnalyzer.Events(Pool(PoolInfo.LimitedCharacter,
         [
-            Row(0, "角色甲", RewardFocus.SCharacter, banner: "Lottery_A"),
-            Row(1, "x", banner: "Lottery_NoTop"),
-            Row(2, "角色乙", RewardFocus.SCharacter, banner: "Lottery_B"),
-            Row(3, "角色乙", RewardFocus.SCharacter, banner: "Lottery_B"),
-            Row(4, "角色甲", RewardFocus.SCharacter, banner: "Lottery_B"),
-            Row(5, "x", banner: null),
+            Row(0, "角色甲", RewardFocus.SCharacter, eventId: "Lottery_A"),
+            Row(1, "x", eventId: "Lottery_NoTop"),
+            Row(2, "角色乙", RewardFocus.SCharacter, eventId: "Lottery_B"),
+            Row(3, "角色乙", RewardFocus.SCharacter, eventId: "Lottery_B"),
+            Row(4, "角色甲", RewardFocus.SCharacter, eventId: "Lottery_B"),
+            Row(5, "x", eventId: null),
         ]));
 
         Assert.Equal(["Lottery_B", "Lottery_NoTop", "Lottery_A"], groups.Select(group => group.Id));
@@ -404,14 +404,14 @@ public class PoolOverviewTests
     [Fact]
     public void EventIdSurvivesExportAndImport()
     {
-        var row = Row(0, banner: "Lottery_MingYin");
-        row.PoolGroupId = BannerInfo.LimitedCharacter.Id;
+        var row = Row(0, eventId: "Lottery_MingYin");
+        row.PoolGroupId = PoolInfo.LimitedCharacter.Id;
         var plain = Row(1);
-        plain.PoolGroupId = BannerInfo.LimitedCharacter.Id;
-        var json = HistoryJsonWriter.ToJson(HistoryJsonWriter.BuildHistory(new BannerHistory(BannerInfo.LimitedCharacter, [row, plain], [], []), new ExportContext("test")));
+        plain.PoolGroupId = PoolInfo.LimitedCharacter.Id;
+        var json = HistoryJsonWriter.ToJson(HistoryJsonWriter.BuildHistory(new PoolHistory(PoolInfo.LimitedCharacter, [row, plain], [], []), new ExportContext("test")));
 
         var rows = ImportedFiles.ReadHistory(Encoding.UTF8.GetBytes(json)).Rows;
 
-        Assert.Equal(["Lottery_MingYin", null], rows.Select(item => item.BannerId));
+        Assert.Equal(["Lottery_MingYin", null], rows.Select(item => item.EventId));
     }
 }

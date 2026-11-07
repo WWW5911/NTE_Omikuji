@@ -21,21 +21,21 @@
     <aside class="sidenav">
         <nav aria-label="卡池">
             <button id="nav-overview" class="@SideClass(_page == Page.Overview)" aria-current="@Current(_page == Page.Overview)" @onclick="() => Show(Page.Overview)">總覽</button>
-            <PoolNavItem Kind="HistoryKind.LimitedCharacter" Label="限定棋盤" Count="PullsOf(HistoryKind.LimitedCharacter)" Banners="BannersOf(HistoryKind.LimitedCharacter)"
-                         Active="IsActive(HistoryKind.LimitedCharacter)" ActiveBanner="@_banner" Expanded="_expanded.Contains(HistoryKind.LimitedCharacter)"
-                         OnOpen="banner => OpenPool(HistoryKind.LimitedCharacter, banner)" OnToggle="() => Toggle(HistoryKind.LimitedCharacter)" />
-            <PoolNavItem Kind="HistoryKind.Permanent" Label="常駐棋盤" Count="PullsOf(HistoryKind.Permanent)" Banners="[]"
-                         Active="IsActive(HistoryKind.Permanent)" OnOpen="banner => OpenPool(HistoryKind.Permanent, banner)" />
-            <PoolNavItem Kind="HistoryKind.ArcMiracleBox" Label="弧盤研募" Count="PullsOf(HistoryKind.ArcMiracleBox)" Banners="BannersOf(HistoryKind.ArcMiracleBox)"
-                         Active="IsActive(HistoryKind.ArcMiracleBox)" ActiveBanner="@_banner" Expanded="_expanded.Contains(HistoryKind.ArcMiracleBox)"
-                         OnOpen="banner => OpenPool(HistoryKind.ArcMiracleBox, banner)" OnToggle="() => Toggle(HistoryKind.ArcMiracleBox)" />
+            <PoolNavItem Kind="HistoryKind.LimitedCharacter" Label="限定棋盤" Count="PullsOf(HistoryKind.LimitedCharacter)" Events="EventsOf(HistoryKind.LimitedCharacter)"
+                         Active="IsActive(HistoryKind.LimitedCharacter)" ActiveEvent="@_event" Expanded="_expanded.Contains(HistoryKind.LimitedCharacter)"
+                         OnOpen="eventId => OpenPool(HistoryKind.LimitedCharacter, eventId)" OnToggle="() => Toggle(HistoryKind.LimitedCharacter)" />
+            <PoolNavItem Kind="HistoryKind.Permanent" Label="常駐棋盤" Count="PullsOf(HistoryKind.Permanent)" Events="[]"
+                         Active="IsActive(HistoryKind.Permanent)" OnOpen="eventId => OpenPool(HistoryKind.Permanent, eventId)" />
+            <PoolNavItem Kind="HistoryKind.ArcMiracleBox" Label="弧盤研募" Count="PullsOf(HistoryKind.ArcMiracleBox)" Events="EventsOf(HistoryKind.ArcMiracleBox)"
+                         Active="IsActive(HistoryKind.ArcMiracleBox)" ActiveEvent="@_event" Expanded="_expanded.Contains(HistoryKind.ArcMiracleBox)"
+                         OnOpen="eventId => OpenPool(HistoryKind.ArcMiracleBox, eventId)" OnToggle="() => Toggle(HistoryKind.ArcMiracleBox)" />
             <hr class="side-divider" />
             <button id="nav-share" class="@SideClass(_page == Page.Share)" aria-current="@Current(_page == Page.Share)" @onclick="() => OpenShare(null)">分享圖</button>
             <button id="nav-settings" class="@SideClass(_page == Page.Settings)" aria-current="@Current(_page == Page.Settings)" @onclick="() => OpenSettings(false)">
                 <span>獎勵與卡池設定</span>
-                @if (State.UnsetBanners.Count > 0)
+                @if (State.UnsetEvents.Count > 0)
                 {
-                    <small class="side-badge" id="unset-count" title="有活動還沒設定限定大獎">@State.UnsetBanners.Count</small>
+                    <small class="side-badge" id="unset-count" title="有活動還沒設定限定大獎">@State.UnsetEvents.Count</small>
                 }
             </button>
         </nav>
@@ -55,10 +55,10 @@
             <div class="alert">Npcap 無法使用，已改用原始通訊端：@fallback</div>
         }
 
-        @if (State.UnsetBanners.Count > 0 && _page != Page.Settings)
+        @if (State.UnsetEvents.Count > 0 && _page != Page.Settings)
         {
-            <div class="alert" id="unset-banners" role="status">
-                @State.UnsetBanners.Count 期活動還沒設定限定大獎，這些活動的限定統計與保底可能不準。
+            <div class="alert" id="unset-events" role="status">
+                @State.UnsetEvents.Count 期活動還沒設定限定大獎，這些活動的限定統計與保底可能不準。
                 <button class="link-inline" @onclick="() => OpenSettings(true)">前往設定</button>
             </div>
         }
@@ -69,15 +69,15 @@
                 <ShareView @key="_shareVisit" Target="_shareTarget" StartTemplate="@_shareTemplate" OnBack="BackFromShare" />
                 break;
             case Page.Settings:
-                <SettingsView @key="_settingsVisit" StartOnBanners="_settingsOnBanners" />
+                <SettingsView @key="_settingsVisit" StartOnEvents="_settingsOnEvents" />
                 break;
             case Page.Overview:
-                <OverviewView Histories="State.Histories" NameOf="State.DisplayName" Schedule="State.Schedule" Language="@State.DisplayLanguage" UnsetBanners="State.UnsetBanners" OnOpenPool="kind => OpenPool(kind, null)" OnStartCapture="() => Show(Page.Capture)" />
+                <OverviewView Histories="State.Histories" NameOf="State.DisplayName" Schedule="State.Schedule" Language="@State.DisplayLanguage" UnsetEvents="State.UnsetEvents" OnOpenPool="kind => OpenPool(kind, null)" OnStartCapture="() => Show(Page.Capture)" />
                 break;
             case Page.Pool:
-                @if (State.Histories.FirstOrDefault(history => history.Banner.Kind == _pool) is { } poolHistory)
+                @if (State.Histories.FirstOrDefault(history => history.Pool.Kind == _pool) is { } poolHistory)
                 {
-                    <AnalysisView History="poolHistory" NameOf="State.DisplayName" BannerId="@_banner" Title="@PoolTitle(poolHistory)" OnShare="() => OpenShare(new ShareTarget(_pool, _banner))" OnShareLuck="OpenLuckShare" OnOpenBanner="banner => OpenPool(_pool, banner)" BannerName="State.BannerName" UnsetBanners="State.UnsetBanners" />
+                    <AnalysisView History="poolHistory" NameOf="State.DisplayName" EventId="@_event" Title="@PoolTitle(poolHistory)" OnShare="() => OpenShare(new ShareTarget(_pool, _event))" OnShareLuck="OpenLuckShare" OnOpenEvent="eventId => OpenPool(_pool, eventId)" EventName="State.EventName" UnsetEvents="State.UnsetEvents" />
                 }
                 else
                 {
@@ -121,8 +121,8 @@
     private readonly HashSet<HistoryKind> _expanded = [];
     private Page _page = Page.Overview;
     private HistoryKind _pool = HistoryKind.LimitedCharacter;
-    private string? _banner;
-    private bool _settingsOnBanners;
+    private string? _event;
+    private bool _settingsOnEvents;
     private int _settingsVisit;
     private ShareTarget? _shareTarget;
     private string _shareTemplate = "pool";
@@ -147,32 +147,32 @@
     private bool IsActive(HistoryKind kind) => _page == Page.Pool && _pool == kind;
 
     private int? PullsOf(HistoryKind kind) =>
-        State.Histories.FirstOrDefault(history => history.Banner.Kind == kind) is { } history ? HistoryAnalyzer.Analyze(history, State.DisplayName).TotalPulls : null;
+        State.Histories.FirstOrDefault(history => history.Pool.Kind == kind) is { } history ? HistoryAnalyzer.Analyze(history, State.DisplayName).TotalPulls : null;
 
-    private IReadOnlyList<BannerGroup> BannersOf(HistoryKind kind) =>
-        State.Histories.FirstOrDefault(history => history.Banner.Kind == kind) is { } history ? HistoryAnalyzer.Banners(history, State.DisplayName, State.BannerName) : [];
+    private IReadOnlyList<EventGroup> EventsOf(HistoryKind kind) =>
+        State.Histories.FirstOrDefault(history => history.Pool.Kind == kind) is { } history ? HistoryAnalyzer.Events(history, State.DisplayName, State.EventName) : [];
 
-    private string PoolTitle(BannerHistory history)
+    private string PoolTitle(PoolHistory history)
     {
-        var pool = history.Banner.Kind switch
+        var pool = history.Pool.Kind switch
         {
             HistoryKind.LimitedCharacter => "限定棋盤",
             HistoryKind.Permanent => "常駐棋盤",
             HistoryKind.ArcMiracleBox => "弧盤研募",
-            _ => history.Banner.Name,
+            _ => history.Pool.Name,
         };
-        return _banner is null ? pool : $"{pool}・{HistoryAnalyzer.Banners(history, State.DisplayName, State.BannerName).FirstOrDefault(group => group.Id == _banner)?.Name ?? _banner}";
+        return _event is null ? pool : $"{pool}・{HistoryAnalyzer.Events(history, State.DisplayName, State.EventName).FirstOrDefault(group => group.Id == _event)?.Name ?? _event}";
     }
 
     private void Show(Page page)
     {
         _page = page;
-        _banner = null;
+        _event = null;
     }
 
-    private void OpenSettings(bool onBanners)
+    private void OpenSettings(bool onEvents)
     {
-        _settingsOnBanners = onBanners;
+        _settingsOnEvents = onEvents;
         _settingsVisit++;
         Show(Page.Settings);
     }
@@ -185,18 +185,18 @@
         Show(Page.Share);
     }
 
-    private void OpenLuckShare() => OpenShare(new ShareTarget(_pool, _banner), "luck");
+    private void OpenLuckShare() => OpenShare(new ShareTarget(_pool, _event), "luck");
 
     /// <summary>Only a share reached from a pool's page has a page to return to.</summary>
     private EventCallback BackFromShare => _shareTarget is { } target
-        ? EventCallback.Factory.Create(this, () => OpenPool(target.Kind, target.BannerId))
+        ? EventCallback.Factory.Create(this, () => OpenPool(target.Kind, target.EventId))
         : default;
 
-    private void OpenPool(HistoryKind kind, string? banner)
+    private void OpenPool(HistoryKind kind, string? eventId)
     {
         _page = Page.Pool;
         _pool = kind;
-        _banner = banner;
+        _event = eventId;
         _expanded.Add(kind);
     }
 

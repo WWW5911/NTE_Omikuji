@@ -5,8 +5,8 @@ namespace NteOmikuji.Core.Tests;
 
 public class LuckPercentileTests
 {
-    private static readonly PityRule Board = BannerInfo.LimitedCharacter.Pity!;
-    private static readonly PityRule Arc = BannerInfo.ArcMiracleBox.Pity!;
+    private static readonly PityRule Board = PoolInfo.LimitedCharacter.Pity!;
+    private static readonly PityRule Arc = PoolInfo.ArcMiracleBox.Pity!;
 
     /// <summary>Expected values come from a separate enumeration of every outcome.</summary>
     [Theory]
@@ -130,12 +130,12 @@ public class LuckPercentileTests
                 RewardId = "x",
                 TimestampDecoded = new DateTime(2026, 6, 1).AddHours(i).ToString("yyyy-MM-dd HH:mm:ss"),
                 Focus = i == 20 ? RewardFocus.SLimitedArc : RewardFocus.None,
-                BannerId = "ForkLottery_A",
+                EventId = "ForkLottery_A",
             });
         }
         rows.Reverse();
 
-        var data = HistoryAnalyzer.Analyze(new BannerHistory(BannerInfo.ArcMiracleBox, rows, [], []));
+        var data = HistoryAnalyzer.Analyze(new PoolHistory(PoolInfo.ArcMiracleBox, rows, [], []));
 
         Assert.Equal((5, 5), (data.TopRankPity!.Current, data.LimitedPity!.Current));
     }
@@ -203,12 +203,12 @@ public class LuckPercentileTests
                 Dice = 3,
                 TimestampDecoded = new DateTime(2026, 5, 1).AddHours(i).ToString("yyyy-MM-dd HH:mm:ss"),
                 Focus = i is 76 or 148 ? RewardFocus.SLimitedCharacter : RewardFocus.None,
-                BannerId = "Lottery_A",
+                EventId = "Lottery_A",
             });
         }
         rows.Reverse();
 
-        var data = HistoryAnalyzer.Analyze(new BannerHistory(BannerInfo.LimitedCharacter, rows, [], []), bannerId: "Lottery_A");
+        var data = HistoryAnalyzer.Analyze(new PoolHistory(PoolInfo.LimitedCharacter, rows, [], []), eventId: "Lottery_A");
 
         Assert.Equal("前 91% 歐", data.Luck!.TopText);
     }

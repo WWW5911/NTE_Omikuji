@@ -50,10 +50,10 @@ public sealed class RewardCatalog
     /// limited there: its featured reward is limited however it is mapped, and a reward
     /// marked limited elsewhere is an ordinary S. Other events follow the mapping.
     /// </summary>
-    public RewardFocus FocusOf(string rewardId, string? bannerId)
+    public RewardFocus FocusOf(string rewardId, string? eventId)
     {
         var focus = FocusOf(rewardId);
-        if (bannerId is null || !_featured.TryGetValue(bannerId, out var featured) || featured.Count == 0)
+        if (eventId is null || !_featured.TryGetValue(eventId, out var featured) || featured.Count == 0)
         {
             return focus;
         }
@@ -94,7 +94,7 @@ public sealed class RewardCatalog
         ?? throw new InvalidOperationException($"missing bundled mapping {fileName}");
 
     /// <summary>Builds a catalog, reporting bad rows in <paramref name="issues"/> instead of failing on them.</summary>
-    public static RewardCatalog FromTables(CsvTable rewards, CsvTable achievements, List<string> issues, CsvTable? banners = null)
+    public static RewardCatalog FromTables(CsvTable rewards, CsvTable achievements, List<string> issues, CsvTable? events = null)
     {
         RewardSchema.Normalize(rewards);
         var locales = RewardSchema.Locales(rewards);
@@ -109,11 +109,11 @@ public sealed class RewardCatalog
         Require(achievements, MappingStore.AchievementsFile, "id", "name");
 
         var catalog = new RewardCatalog();
-        foreach (var row in banners?.Rows ?? [])
+        foreach (var row in events?.Rows ?? [])
         {
             if (row.Get("id").Length > 0)
             {
-                catalog._featured[row.Get("id")] = new HashSet<string>(BannerEntry.ParseFeatured(row.Get(BannerEntry.FeaturedColumn)), StringComparer.OrdinalIgnoreCase);
+                catalog._featured[row.Get("id")] = new HashSet<string>(EventEntry.ParseFeatured(row.Get(EventEntry.FeaturedColumn)), StringComparer.OrdinalIgnoreCase);
             }
         }
         foreach (var row in rewards.Rows)
@@ -205,7 +205,7 @@ public sealed class RewardCatalog
     private static RewardCatalog LoadBundled()
     {
         var issues = new List<string>();
-        var catalog = FromTables(ReadSeed(MappingStore.RewardsFile), ReadSeed(MappingStore.AchievementsFile), issues, ReadSeed(MappingStore.BannersFile));
+        var catalog = FromTables(ReadSeed(MappingStore.RewardsFile), ReadSeed(MappingStore.AchievementsFile), issues, ReadSeed(MappingStore.EventsFile));
         return issues.Count == 0 ? catalog : throw new InvalidOperationException(string.Join("; ", issues));
     }
 

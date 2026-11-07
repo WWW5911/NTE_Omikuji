@@ -136,7 +136,7 @@ public class ArbitraryResultStringTests
     {
         var withResult = new HistoryRow { RewardId = "限定", ResultText = "結果 ✓", PoolGroupId = "Lottery_Permanent", ResultType = "dice" };
         var plain = new HistoryRow { RewardId = "限定", PoolGroupId = "Lottery_Permanent", ResultType = "dice" };
-        var history = new BannerHistory(BannerInfo.Permanent, [withResult, plain], [], [1]);
+        var history = new PoolHistory(PoolInfo.Permanent, [withResult, plain], [], [1]);
 
         var export = HistoryJsonWriter.BuildHistory(history, new ExportContext("live_capture"));
         var json = HistoryJsonWriter.ToJson(export);

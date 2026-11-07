@@ -11,7 +11,7 @@ public enum SchedulePhase
 
 /// <summary>One announced event in schedule.csv. A new event's ID stays blank until a capture reveals it, because a guessed ID would never match.</summary>
 /// <param name="Ends">The day the event closes. Events end in the early morning, so that day counts as over.</param>
-public sealed record ScheduledBanner(
+public sealed record ScheduledEvent(
     string Id,
     string Version,
     int Phase,
@@ -19,7 +19,7 @@ public sealed record ScheduledBanner(
     bool IsRerun,
     IReadOnlyDictionary<string, string> Names,
     IReadOnlyDictionary<string, string> Featured,
-    string? BannerId,
+    string? EventId,
     DateOnly Starts,
     DateOnly Ends,
     bool IsEstimate)
@@ -43,15 +43,15 @@ public sealed record ScheduledBanner(
         ?? "";
 }
 
-public static class BannerSchedule
+public static class EventSchedule
 {
     private const string FeaturedPrefix = "featured.";
     private const string DateFormat = "yyyy-MM-dd";
 
     /// <summary>Reads the table, reporting rows it cannot use instead of failing on them.</summary>
-    public static IReadOnlyList<ScheduledBanner> Parse(CsvTable table, string file, List<string> issues)
+    public static IReadOnlyList<ScheduledEvent> Parse(CsvTable table, string file, List<string> issues)
     {
-        var entries = new List<ScheduledBanner>();
+        var entries = new List<ScheduledEvent>();
         foreach (var row in table.Rows.Where(row => row.Get("id").Length > 0))
         {
             if (!TryDate(row.Get("starts"), out var starts) || !TryDate(row.Get("ends"), out var ends))
@@ -60,8 +60,9 @@ public static class BannerSchedule
                 continue;
             }
             int.TryParse(row.Get("phase"), NumberStyles.Integer, CultureInfo.InvariantCulture, out var phase);
-            var bannerId = row.Get("banner_id");
-            entries.Add(new ScheduledBanner(
+            // Files from earlier versions call this column banner_id.
+            var eventId = row.Get("event_id") is { Length: > 0 } current ? current : row.Get("banner_id");
+            entries.Add(new ScheduledEvent(
                 row.Get("id"),
                 row.Get("version"),
                 phase,
@@ -69,7 +70,7 @@ public static class BannerSchedule
                 row.Get("rerun").Length > 0,
                 Localized(table, row, RewardSchema.NamePrefix),
                 Localized(table, row, FeaturedPrefix),
-                bannerId.Length > 0 ? bannerId : null,
+                eventId.Length > 0 ? eventId : null,
                 starts,
                 ends,
                 row.Get("estimate").Length > 0));
@@ -78,7 +79,7 @@ public static class BannerSchedule
     }
 
     /// <summary>Events not yet over, soonest first, with each phase's boards before its Arcs and new events before reruns.</summary>
-    public static IReadOnlyList<ScheduledBanner> Visible(IEnumerable<ScheduledBanner> entries, DateOnly today) =>
+    public static IReadOnlyList<ScheduledEvent> Visible(IEnumerable<ScheduledEvent> entries, DateOnly today) =>
         entries.Where(entry => entry.PhaseOn(today) != SchedulePhase.Ended)
             .OrderBy(entry => entry.Starts)
             .ThenBy(entry => entry.IsArc)

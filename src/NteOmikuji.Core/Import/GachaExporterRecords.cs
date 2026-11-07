@@ -60,16 +60,16 @@ public static class GachaExporterRecords
         {
             // The file runs oldest first, and history here runs newest first.
             var ordered = rows.OrderByDescending(item => item.Order).Select(item => item.Row).ToList();
-            var banner = BannerInfo.For(kind);
+            var poolInfo = PoolInfo.For(kind);
             var system = kind == HistoryKind.ArcMiracleBox ? "gashapon" : "monopoly";
             foreach (var group in ordered.GroupBy(row => row.TimestampDecoded))
             {
                 var ordinal = 0;
                 foreach (var row in group)
                 {
-                    row.PoolGroupId = banner.Id;
+                    row.PoolGroupId = poolInfo.Id;
                     row.GroupOrdinal = ordinal;
-                    row.Uid = HistoryAssembly.MakeUid(system, banner.Id, $"time:{group.Key}", ordinal);
+                    row.Uid = HistoryAssembly.MakeUid(system, poolInfo.Id, $"time:{group.Key}", ordinal);
                     ordinal++;
                 }
             }
@@ -98,11 +98,11 @@ public static class GachaExporterRecords
             case "fork":
                 row.ResultType = "";
                 row.SourceType = "miracle_box";
-                row.BannerId = RecordBlockParser.IsEventBanner(pool) ? pool : null;
+                row.EventId = RecordBlockParser.IsEventId(pool) ? pool : null;
                 return (HistoryKind.ArcMiracleBox, row);
             case "monopoly" when BoardOf(pool) is { } board && ApplyResult(record, row):
                 row.Quantity = record.TryGetProperty("count", out var count) && count.TryGetInt64(out var quantity) ? quantity : null;
-                row.BannerId = board == HistoryKind.Permanent ? PermanentEvent : null;
+                row.EventId = board == HistoryKind.Permanent ? PermanentEvent : null;
                 return (board, row);
             default:
                 return null;

@@ -156,7 +156,7 @@ public class MysteryBoxPoolTests
         var rows = MysteryBoxDecoder.DecodeResponse(Reply(PoolA, 5), RewardCatalog.Empty);
 
         Assert.Equal(5, rows.Count);
-        Assert.All(rows, row => Assert.Equal((PoolA, "vehicle039", 2u), (row.BannerId, row.RewardId, row.Quantity)));
+        Assert.All(rows, row => Assert.Equal((PoolA, "vehicle039", 2u), (row.EventId, row.RewardId, row.Quantity)));
         Assert.Equal("2026-07-08 19:09:33", rows[0].TimestampDecoded);
     }
 
@@ -166,7 +166,7 @@ public class MysteryBoxPoolTests
         var rows = MysteryBoxDecoder.DecodeResponse(Reply(null, 3), RewardCatalog.Empty);
 
         Assert.Equal(3, rows.Count);
-        Assert.All(rows, row => Assert.Null(row.BannerId));
+        Assert.All(rows, row => Assert.Null(row.EventId));
     }
 
     [Fact]
@@ -180,8 +180,8 @@ public class MysteryBoxPoolTests
         var history = Assert.Single(session.BuildHistories());
 
         Assert.Empty(history.Warnings);
-        Assert.Equal(7, history.Rows.Count(row => row.BannerId == PoolA));
-        Assert.Equal(3, history.Rows.Count(row => row.BannerId == PoolB));
+        Assert.Equal(7, history.Rows.Count(row => row.EventId == PoolA));
+        Assert.Equal(3, history.Rows.Count(row => row.EventId == PoolB));
         Assert.Equal(10, history.Rows.Select(row => row.Uid).Distinct().Count());
     }
 

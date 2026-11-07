@@ -4,7 +4,7 @@ namespace NteOmikuji.Core.Protocol;
 
 public static class MonopolyDecoder
 {
-    private const int RequestBanner = 4220;
+    private const int RequestEvent = 4220;
     private const int RequestLength = 45;
     private const int FirstRecordOffset = 0x50;
     private const int TicksScale = 4;
@@ -22,7 +22,7 @@ public static class MonopolyDecoder
 
     public static HistoryKind? RequestKind(ReadOnlySpan<byte> content)
     {
-        if (content.Length < RequestLength || BinaryPrimitives.ReadUInt32LittleEndian(content[35..]) != RequestBanner)
+        if (content.Length < RequestLength || BinaryPrimitives.ReadUInt32LittleEndian(content[35..]) != RequestEvent)
         {
             return null;
         }
@@ -86,7 +86,7 @@ public static class MonopolyDecoder
             };
             ApplyReward(row, record.ItemId, catalog);
             (row.Dice, row.ResultType) = ClassifyStructured(record.RollPointsRaw);
-            row.BannerId = record.EventBanner;
+            row.EventId = record.EventId;
             rows.Add(row);
         }
         return rows;
@@ -386,7 +386,7 @@ public static class MonopolyDecoder
             }
             row.Quantity = record.Count;
             row.ResultText = record.ResultText;
-            row.BannerId = record.EventBanner;
+            row.EventId = record.EventId;
             // The parsed field is the real roll. The scan above can land on any zero byte near a record.
             if (record.RollPointsRaw is not null || row.ResultType == "unknown" || row.Dice is null)
             {

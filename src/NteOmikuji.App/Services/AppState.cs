@@ -9,7 +9,7 @@ using NteOmikuji.Core.Session;
 
 namespace NteOmikuji.App.Services;
 
-public sealed record BannerUsage(int Rows, string? LastDate);
+public sealed record EventUsage(int Rows, string? LastDate);
 
 public enum AppStatus
 {
@@ -36,7 +36,7 @@ public sealed class AppState : IDisposable
     private readonly MappingStore _mappings;
     private readonly HistoryLibrary _library;
     private readonly AppSettings _settings;
-    private readonly Dictionary<HistoryKind, BannerHistory> _partial = [];
+    private readonly Dictionary<HistoryKind, PoolHistory> _partial = [];
     private readonly Dictionary<HistoryKind, IReadOnlyList<CaptureWarning>> _warnings = [];
     private readonly FileSystemWatcher? _mappingWatcher;
     private readonly Timer _mappingTimer;
@@ -98,19 +98,19 @@ public sealed class AppState : IDisposable
     public string? Notice { get; private set; }
     public string? CaptureName { get; private set; }
     public string? FallbackReason { get; private set; }
-    public IReadOnlyList<BannerHistory> Histories { get; private set; } = [];
+    public IReadOnlyList<PoolHistory> Histories { get; private set; } = [];
     public IReadOnlyList<AchievementRecord> Achievements { get; private set; } = [];
     public IReadOnlyList<string> MappingIssues { get; private set; } = [];
     public int MappedRewardCount => _catalog.RewardCount;
     public RewardTable Rewards { get; private set; } = RewardTable.Empty;
     public IReadOnlyDictionary<string, int> SeenRewards { get; private set; } = new Dictionary<string, int>();
-    public BannerTable Banners { get; private set; } = BannerTable.Empty;
-    public IReadOnlyList<ScheduledBanner> Schedule { get; private set; } = [];
-    public IReadOnlyDictionary<string, BannerUsage> SeenBanners { get; private set; } = new Dictionary<string, BannerUsage>();
+    public EventTable Events { get; private set; } = EventTable.Empty;
+    public IReadOnlyList<ScheduledEvent> Schedule { get; private set; } = [];
+    public IReadOnlyDictionary<string, EventUsage> SeenEvents { get; private set; } = new Dictionary<string, EventUsage>();
 
-    /// <summary>Events in the history with no row in banners.csv, so nothing marks what is limited on them.</summary>
-    public IReadOnlyList<string> UnsetBanners =>
-        SeenBanners.Keys.Where(id => !Banners.Entries.Any(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase))).Order(StringComparer.Ordinal).ToList();
+    /// <summary>Events in the history with no row in events.csv, so nothing marks what is limited on them.</summary>
+    public IReadOnlyList<string> UnsetEvents =>
+        SeenEvents.Keys.Where(id => !Events.Entries.Any(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase))).Order(StringComparer.Ordinal).ToList();
     public bool CanUndoMapping => _mappings.CanUndo;
     public int MappingWriteFailures { get; private set; }
     public string DisplayLanguage => _settings.DisplayLanguage;
@@ -256,7 +256,7 @@ public sealed class AppState : IDisposable
         NotifyChanged();
     }
 
-    public string ExportJson(BannerHistory history)
+    public string ExportJson(PoolHistory history)
     {
         lock (_dataGate)
         {
@@ -272,13 +272,13 @@ public sealed class AppState : IDisposable
     }
 
     /// <summary>Writes history for spreadsheets. Returns the file, or null when it could not be written.</summary>
-    public string? ExportCsv(IReadOnlyList<BannerHistory> histories, string label)
+    public string? ExportCsv(IReadOnlyList<PoolHistory> histories, string label)
     {
         try
         {
             Directory.CreateDirectory(ExportsFolder);
             var path = Path.Combine(ExportsFolder, $"NTE_{label}_{DateTime.Now:yyyyMMdd-HHmmss}.csv");
-            AtomicFile.WriteAllText(path, HistoryCsv.ToText(histories, DisplayName, BannerName), withBom: true);
+            AtomicFile.WriteAllText(path, HistoryCsv.ToText(histories, DisplayName, EventName), withBom: true);
             Log($"已匯出 CSV：{path}");
             NotifyChanged();
             return path;
@@ -325,15 +325,15 @@ public sealed class AppState : IDisposable
     }
 
     /// <summary>An event is named after the first reward it features.</summary>
-    public string? BannerName(string id)
+    public string? EventName(string id)
     {
-        var featured = Banners.Entries.FirstOrDefault(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase))?.Featured.FirstOrDefault();
+        var featured = Events.Entries.FirstOrDefault(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase))?.Featured.FirstOrDefault();
         return featured is null ? null : RewardName(featured) ?? featured;
     }
 
-    public void SaveBanner(string id, string? featured) => ChangeMappings(() => _mappings.SaveBanner(id, BannerEntry.ParseFeatured(featured)));
+    public void SaveEvent(string id, string? featured) => ChangeMappings(() => _mappings.SaveEvent(id, EventEntry.ParseFeatured(featured)));
 
-    public void DeleteBanner(string id) => ChangeMappings(() => _mappings.DeleteBanner(id));
+    public void DeleteEvent(string id) => ChangeMappings(() => _mappings.DeleteEvent(id));
 
     public bool IsLocaleVisible(string locale) => _settings.VisibleLocales.Contains(locale);
 
@@ -455,12 +455,12 @@ public sealed class AppState : IDisposable
                 lock (_dataGate)
                 {
                     var uid = history.UserUid ?? _account;
-                    _library.Merge(uid, history.Banner.Kind, history.Rows, history.ServerId, history.Source, history.CaptureSource, _catalog);
+                    _library.Merge(uid, history.Pool.Kind, history.Rows, history.ServerId, history.Source, history.CaptureSource, _catalog);
                     ShowImportedAccount(uid);
                     CaptureName = history.CaptureSource ?? "json";
                     RefreshView();
                 }
-                return $"{history.Banner.Name} {history.Rows.Count} 筆";
+                return $"{history.Pool.Name} {history.Rows.Count} 筆";
             case ImportKind.GachaExporterRecords:
                 var records = ImportedFiles.ReadGachaExporter(bytes);
                 lock (_dataGate)
@@ -522,7 +522,7 @@ public sealed class AppState : IDisposable
     private void OnMappingFileChanged(object sender, FileSystemEventArgs change)
     {
         // Editors raise several events per save, so wait for them to settle.
-        if (change.Name is MappingStore.RewardsFile or MappingStore.AchievementsFile or MappingStore.BannersFile or MappingStore.ScheduleFile)
+        if (change.Name is MappingStore.RewardsFile or MappingStore.AchievementsFile or MappingStore.EventsFile or MappingStore.ScheduleFile)
         {
             _mappingTimer.Change(MappingReloadDelay, Timeout.InfiniteTimeSpan);
         }
@@ -536,7 +536,7 @@ public sealed class AppState : IDisposable
         {
             _catalog = catalog;
             Rewards = result.Rewards;
-            Banners = result.Banners ?? BannerTable.Empty;
+            Events = result.Events ?? EventTable.Empty;
             Schedule = result.Schedule ?? [];
             if (_session is { } session)
             {
@@ -556,7 +556,7 @@ public sealed class AppState : IDisposable
                 {
                     foreach (var page in session.Process(packet))
                     {
-                        Log($"{BannerInfo.For(page.Kind).Name}：已擷取第 {page.Page} 頁");
+                        Log($"{PoolInfo.For(page.Kind).Name}：已擷取第 {page.Page} 頁");
                         _dirty = true;
                     }
                 }
@@ -624,16 +624,16 @@ public sealed class AppState : IDisposable
                 var captureName = CaptureName;
                 foreach (var history in session.BuildHistories())
                 {
-                    _warnings[history.Banner.Kind] = history.Warnings;
+                    _warnings[history.Pool.Kind] = history.Warnings;
                     if (history.Warnings.Any(warning => warning.Code == MissedFirstPage))
                     {
-                        _partial[history.Banner.Kind] = history;
+                        _partial[history.Pool.Kind] = history;
                         TrySave(() => _library.SavePartial(_account, history, _library.ContextFor(_account) with { Source = source, CaptureSource = captureName }, _sessionStamp));
                     }
                     else
                     {
-                        _partial.Remove(history.Banner.Kind);
-                        _library.Merge(_account, history.Banner.Kind, history.Rows, session.ServerId, source, captureName, _catalog);
+                        _partial.Remove(history.Pool.Kind);
+                        _library.Merge(_account, history.Pool.Kind, history.Rows, session.ServerId, source, captureName, _catalog);
                     }
                 }
                 if (session.Achievements.Count > 0)
@@ -675,27 +675,27 @@ public sealed class AppState : IDisposable
     private void RefreshView()
     {
         var saved = _library.Histories(_account);
-        var kinds = saved.Select(history => history.Banner.Kind).Concat(_partial.Keys).Distinct().Order();
+        var kinds = saved.Select(history => history.Pool.Kind).Concat(_partial.Keys).Distinct().Order();
         Histories = kinds.Select(kind =>
         {
-            var rows = saved.FirstOrDefault(history => history.Banner.Kind == kind)?.Rows ?? [];
+            var rows = saved.FirstOrDefault(history => history.Pool.Kind == kind)?.Rows ?? [];
             if (_partial.TryGetValue(kind, out var partial))
             {
                 var known = rows.Select(row => row.Uid).ToHashSet();
                 rows = partial.Rows.Where(row => !known.Contains(row.Uid)).Concat(rows)
                     .OrderByDescending(row => row.TimestampDecoded, StringComparer.Ordinal).ToList();
             }
-            return new BannerHistory(BannerInfo.For(kind), rows, _warnings.GetValueOrDefault(kind) ?? [], []);
+            return new PoolHistory(PoolInfo.For(kind), rows, _warnings.GetValueOrDefault(kind) ?? [], []);
         }).ToList();
         Achievements = _library.AchievementsOf(_account);
         SeenRewards = Histories.SelectMany(history => history.Rows).Where(row => row.RewardId.Length > 0)
             .GroupBy(row => row.RewardId, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
         // A Mystery Box pool is not an event with a featured reward to set.
-        SeenBanners = Histories.Where(history => history.Banner.Kind != HistoryKind.MysteryBox)
-            .SelectMany(history => history.Rows).Where(row => !string.IsNullOrEmpty(row.BannerId))
-            .GroupBy(row => row.BannerId!, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(group => group.Key, group => new BannerUsage(group.Count(), group.Max(row => row.TimestampDecoded)), StringComparer.OrdinalIgnoreCase);
+        SeenEvents = Histories.Where(history => history.Pool.Kind != HistoryKind.MysteryBox)
+            .SelectMany(history => history.Rows).Where(row => !string.IsNullOrEmpty(row.EventId))
+            .GroupBy(row => row.EventId!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => new EventUsage(group.Count(), group.Max(row => row.TimestampDecoded)), StringComparer.OrdinalIgnoreCase);
     }
 
     private void BeginSession()

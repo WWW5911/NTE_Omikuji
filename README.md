@@ -149,11 +149,13 @@ UID 預設不顯示。勾選後也只顯示遮蔽中段的版本，例如 `214**
 
 ### 活動卡池
 
-封包裡沒有「是否限定」的資訊，所以每一期的限定大獎要記在 `mappings\banners.csv`。同一個獎勵在主打它的那期算限定，在其他期算一般 S。
+封包裡沒有「是否限定」的資訊，所以每一期的限定大獎要記在 `mappings\events.csv`。同一個獎勵在主打它的那期算限定，在其他期算一般 S。
 
 紀錄裡出現新活動時，會標示「未設定」。填好之前，這期的獎勵依關注類別判斷，受影響的卡池會顯示「無法判定」。
 
-`mappings\schedule.csv` 記錄公告的活動和期間，只用於 **總覽** 的卡池預告。日期是預估的列，`estimate` 欄不留空。新活動的 `banner_id` 要等實際擷取到才知道，先留空。
+舊版的檔名 `banners.csv` 會自動改成 `events.csv`，`schedule.csv` 舊的 `banner_id` 欄也仍可讀取。
+
+`mappings\schedule.csv` 記錄公告的活動和期間，只用於 **總覽** 的卡池預告。日期是預估的列，`estimate` 欄不留空。新活動的 `event_id` 要等實際擷取到才知道，先留空。
 
 ## 匯入和匯出
 
@@ -190,7 +192,7 @@ UID 預設不顯示。勾選後也只顯示遮蔽中段的版本，例如 `214**
 | `user_data\<uid>_<卡池>.json` | 每個帳號累積的紀錄，啟動時讀取 |
 | `user_data\<uid>_<卡池>_partial_<時間>.json` | 沒抓到第 1 頁的擷取，和累積紀錄分開存，不計入統計 |
 | `user_data\backups` | 更新前的舊檔。每次啟動後第一次更新某份紀錄前備份，每份留最近 10 個 |
-| `mappings` | `rewards.csv`、`achievements.csv`、`banners.csv`、`schedule.csv` |
+| `mappings` | `rewards.csv`、`achievements.csv`、`events.csv`、`schedule.csv` |
 | `exports` | 匯出的 CSV 和分享圖 |
 | `debug_packets` | 除錯封包紀錄 |
 

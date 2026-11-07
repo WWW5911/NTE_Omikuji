@@ -23,7 +23,7 @@ public sealed record BlockRecord(
     string RecordHex,
     string ProtocolView,
     int? SourceIndex = null,
-    string? EventBanner = null);
+    string? EventId = null);
 
 public sealed record ProtocolEnvelope(string StreamKey, int SegmentIndex);
 
@@ -39,14 +39,14 @@ public static class RecordBlockParser
     private const uint MonopolyBlockKind = 527;
     private const uint ForkBlockKind = 5906;
     private const uint MonopolyEnvelopeFooter = 1_774_080;
-    private const string BoardBannerPrefix = "Lottery_";
-    private const string ArcBannerPrefix = "ForkLottery_";
+    private const string BoardEventPrefix = "Lottery_";
+    private const string ArcEventPrefix = "ForkLottery_";
 
     public static readonly byte[] MonopolyMarker = "FMonopolyLotteryRecordData"u8.ToArray();
     public static readonly byte[] ForkMarker = "FForkLotteryRecordData"u8.ToArray();
 
-    public static bool IsEventBanner(string? text) =>
-        text is not null && (text.StartsWith(BoardBannerPrefix, StringComparison.Ordinal) || text.StartsWith(ArcBannerPrefix, StringComparison.Ordinal));
+    public static bool IsEventId(string? text) =>
+        text is not null && (text.StartsWith(BoardEventPrefix, StringComparison.Ordinal) || text.StartsWith(ArcEventPrefix, StringComparison.Ordinal));
 
     public static IReadOnlyList<BlockRecord> ParseRecords(byte[] payload, RecordBlockType type)
     {
@@ -156,20 +156,20 @@ public static class RecordBlockParser
         }
         var resultText = ReferenceEquals(poolId, resultOrPool) || resultOrPool.Length == 0 ? null : resultOrPool;
         var ticks = reader.U64();
-        // Rows end with their event banner. Missing it puts the next row out of position.
-        var bannerPosition = reader.Position;
-        var banner = reader.TryString();
-        if (!IsEventBanner(banner))
+        // Rows end with their event ID. Missing it puts the next row out of position.
+        var eventPosition = reader.Position;
+        var eventId = reader.TryString();
+        if (!IsEventId(eventId))
         {
-            banner = null;
-            reader.Position = bannerPosition;
+            eventId = null;
+            reader.Position = eventPosition;
         }
         var end = reader.Position;
-        reader.Position = bannerPosition;
+        reader.Position = eventPosition;
         var record = MakeRecord(reader, RecordBlockType.Monopoly, itemSpec, ticks, poolId, rollPoints,
             secondaryItem.Length == 0 ? null : secondaryItem, secondaryCount, resultText, start, viewName, sourceIndex);
         reader.Position = end;
-        return record with { EventBanner = banner };
+        return record with { EventId = eventId };
     }
 
     private static BlockRecord ParseForkRow(FieldReader reader, string viewName, int? sourceIndex)

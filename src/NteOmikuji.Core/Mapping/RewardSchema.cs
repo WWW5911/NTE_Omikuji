@@ -14,8 +14,8 @@ public sealed record RewardTable(IReadOnlyList<string> Locales, IReadOnlyList<Re
     public static RewardTable Empty { get; } = new([], []);
 }
 
-/// <summary>One row of banners.csv. Limited status belongs to the event, since a reward featured on one can be off-banner on another.</summary>
-public sealed record BannerEntry(string Id, IReadOnlyList<string> Featured)
+/// <summary>One row of events.csv. Limited status belongs to the event, since a reward featured on one can be off-event on another.</summary>
+public sealed record EventEntry(string Id, IReadOnlyList<string> Featured)
 {
     public const string FeaturedColumn = "featured";
     private const char Separator = ';';
@@ -26,9 +26,9 @@ public sealed record BannerEntry(string Id, IReadOnlyList<string> Featured)
     public static string JoinFeatured(IEnumerable<string> featured) => string.Join(Separator, featured);
 }
 
-public sealed record BannerTable(IReadOnlyList<BannerEntry> Entries)
+public sealed record EventTable(IReadOnlyList<EventEntry> Entries)
 {
-    public static BannerTable Empty { get; } = new([]);
+    public static EventTable Empty { get; } = new([]);
 }
 
 /// <summary>

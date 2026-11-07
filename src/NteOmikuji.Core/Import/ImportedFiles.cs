@@ -14,7 +14,7 @@ public enum ImportKind
     GachaExporterRecords,
 }
 
-public sealed record HistoryDocument(BannerInfo Banner, List<HistoryRow> Rows, string? UserUid, string? ServerId, string? Source, string? CaptureSource);
+public sealed record HistoryDocument(PoolInfo Pool, List<HistoryRow> Rows, string? UserUid, string? ServerId, string? Source, string? CaptureSource);
 
 public sealed record AchievementDocument(List<AchievementRecord> Records, string? UserUid, string? ServerId, string? Source, string? CaptureSource);
 
@@ -98,9 +98,9 @@ public static class ImportedFiles
         using var document = Parse(bytes);
         var root = document.RootElement;
         RequireVersion(root);
-        var bannerId = root.GetProperty("banner").GetProperty("id").GetString();
-        var banner = Enum.GetValues<HistoryKind>().Select(BannerInfo.For).FirstOrDefault(info => info.Id == bannerId)
-            ?? throw new InvalidDataException($"不支援的卡池：{bannerId}");
+        var poolId = root.GetProperty("banner").GetProperty("id").GetString();
+        var poolInfo = Enum.GetValues<HistoryKind>().Select(PoolInfo.For).FirstOrDefault(info => info.Id == poolId)
+            ?? throw new InvalidDataException($"不支援的卡池：{poolId}");
 
         var rows = new List<HistoryRow>();
         foreach (var record in root.GetProperty("records").EnumerateArray())
@@ -108,8 +108,8 @@ public static class ImportedFiles
             rows.Add(new HistoryRow
             {
                 Uid = Text(record, "uid") ?? throw new InvalidDataException("紀錄缺少 uid。"),
-                PoolGroupId = banner.Id,
-                BannerId = Text(record, "pool_id"),
+                PoolGroupId = poolInfo.Id,
+                EventId = Text(record, "pool_id"),
                 TimestampDecoded = Text(record, "timestamp") ?? "",
                 GroupOrdinal = (int)(Number(record, "timestamp_group_ordinal") ?? 0),
                 Dice = (int?)Number(record, "roll_result"),
@@ -124,7 +124,7 @@ public static class ImportedFiles
                 DecoderMode = "imported",
             });
         }
-        return new HistoryDocument(banner, rows, Text(root, "user_uid"), Text(root, "server_id"), Text(root, "source"), Text(root, "capture_source"));
+        return new HistoryDocument(poolInfo, rows, Text(root, "user_uid"), Text(root, "server_id"), Text(root, "source"), Text(root, "capture_source"));
     }
 
     public static AchievementDocument ReadAchievements(byte[] bytes)

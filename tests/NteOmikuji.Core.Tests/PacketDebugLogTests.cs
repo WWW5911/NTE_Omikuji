@@ -110,8 +110,8 @@ public class PacketDebugLogTests
         }
 
         Assert.Equal(
-            session.BuildHistories().Select(history => (history.Banner.Kind, history.Rows.Select(row => row.Uid).ToList())),
-            replayed.BuildHistories().Select(history => (history.Banner.Kind, history.Rows.Select(row => row.Uid).ToList())),
+            session.BuildHistories().Select(history => (history.Pool.Kind, history.Rows.Select(row => row.Uid).ToList())),
+            replayed.BuildHistories().Select(history => (history.Pool.Kind, history.Rows.Select(row => row.Uid).ToList())),
             new ComparerForKindAndUids());
     }
 

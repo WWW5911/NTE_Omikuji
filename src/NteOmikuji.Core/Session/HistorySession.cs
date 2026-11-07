@@ -105,7 +105,7 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
         }
     }
 
-    public IReadOnlyList<BannerHistory> BuildHistories()
+    public IReadOnlyList<PoolHistory> BuildHistories()
     {
         lock (_gate)
         {
@@ -206,7 +206,7 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
         List<PendingRequest> candidates;
         if (records.Count > 0)
         {
-            var named = mystery.Where(request => string.Equals(request.Pool, records[0].BannerId, StringComparison.OrdinalIgnoreCase)).ToList();
+            var named = mystery.Where(request => string.Equals(request.Pool, records[0].EventId, StringComparison.OrdinalIgnoreCase)).ToList();
             candidates = named.Count > 0 ? named : mystery;
         }
         else if ((records = MonopolyDecoder.DecodeResponse(packet.Payload, Catalog)).Count > 0)
@@ -240,7 +240,7 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
             {
                 break;
             }
-            captured.Add(new CapturedPage(selected[slice].Page, selected[slice].Kind, packet.Payload, start, count, records[start].BannerId ?? selected[slice].Pool));
+            captured.Add(new CapturedPage(selected[slice].Page, selected[slice].Kind, packet.Payload, start, count, records[start].EventId ?? selected[slice].Pool));
         }
         _pages.AddRange(captured);
         return captured;

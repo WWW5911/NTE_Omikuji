@@ -194,7 +194,7 @@ public class LibraryTests
     private static HistoryRow Row(string uid, string time, string reward, string result = "dice", int? dice = 3) => new()
     {
         Uid = uid,
-        PoolGroupId = BannerInfo.LimitedCharacter.Id,
+        PoolGroupId = PoolInfo.LimitedCharacter.Id,
         TimestampDecoded = time,
         RewardId = reward,
         ResultType = result,
@@ -306,12 +306,12 @@ public class LibraryTests
         row.GroupOrdinal = 4;
         row.Quantity = 30;
         row.RewardType = "item";
-        var history = new BannerHistory(BannerInfo.LimitedCharacter, [row], [], []);
+        var history = new PoolHistory(PoolInfo.LimitedCharacter, [row], [], []);
         var json = HistoryJsonWriter.ToJson(HistoryJsonWriter.BuildHistory(history, new ExportContext("live_capture", "npcap", Uid, "23003")));
 
         var document = ImportedFiles.ReadHistory(Encoding.UTF8.GetBytes(json));
 
-        Assert.Equal(BannerInfo.LimitedCharacter, document.Banner);
+        Assert.Equal(PoolInfo.LimitedCharacter, document.Pool);
         Assert.Equal((Uid, "23003", "live_capture", "npcap"), (document.UserUid, document.ServerId, document.Source, document.CaptureSource));
         var back = Assert.Single(document.Rows);
         Assert.Equal(("uid-1", "2026-01-01 00:00:00", 4, 3, "dice"), (back.Uid, back.TimestampDecoded, back.GroupOrdinal, back.Dice!.Value, back.ResultType));
@@ -356,7 +356,7 @@ public class LibraryTests
         using var folder = new TempFolder();
         var catalog = CatalogWith();
         var library = new HistoryLibrary(folder.Path);
-        var history = new BannerHistory(BannerInfo.LimitedCharacter, [Row("a", "2026-01-01 00:00:00", "x")], [], []);
+        var history = new PoolHistory(PoolInfo.LimitedCharacter, [Row("a", "2026-01-01 00:00:00", "x")], [], []);
 
         var path = library.SavePartial(Uid, history, new ExportContext("live_capture"), new DateTime(2026, 1, 2, 3, 4, 5));
 
@@ -382,7 +382,7 @@ public class AnalysisTests
         IsMappedReward = true,
     };
 
-    private static BannerHistory Monopoly(params HistoryRow[] newestFirst) => new(BannerInfo.LimitedCharacter, newestFirst, [], []);
+    private static PoolHistory Monopoly(params HistoryRow[] newestFirst) => new(PoolInfo.LimitedCharacter, newestFirst, [], []);
 
     [Fact]
     public void CountsIntervalsMarksOldestAsLowerBoundAndExcludesItFromTheAverage()
@@ -513,7 +513,7 @@ public class AnalysisTests
     [Fact]
     public void GashaponRowsAreNeverFlaggedForPointsRewards()
     {
-        var arc = new BannerHistory(BannerInfo.ArcMiracleBox, [Row("2026-01-01 00:00:00", "a", "B", result: "points_gift")], [], []);
+        var arc = new PoolHistory(PoolInfo.ArcMiracleBox, [Row("2026-01-01 00:00:00", "a", "B", result: "points_gift")], [], []);
 
         Assert.False(HistoryAnalyzer.Analyze(arc).HasExcessPointsRewards);
     }
@@ -548,7 +548,7 @@ public class AnalysisTests
         Assert.Equal(1, monopoly.DiceRolls.Single(bucket => bucket.Label == "6").Count);
         Assert.Equal(6, monopoly.DiceRolls.Count);
 
-        var arc = HistoryAnalyzer.Analyze(new BannerHistory(BannerInfo.ArcMiracleBox, [Row("2026-01-01 00:00:00", "a", "B", result: "")], [], []));
+        var arc = HistoryAnalyzer.Analyze(new PoolHistory(PoolInfo.ArcMiracleBox, [Row("2026-01-01 00:00:00", "a", "B", result: "")], [], []));
         Assert.Equal(1, arc.TotalPulls);
         Assert.Empty(arc.DiceRolls);
         Assert.Empty(arc.ResultKinds);

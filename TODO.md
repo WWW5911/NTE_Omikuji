@@ -10,7 +10,7 @@ Rules confirmed by the player:
 - Each period has different rates and a different grand prize.
 
 Not known yet: where a period's rates and grand prize come from. They are not in the
-captured rows, so they will likely need a table like `banners.csv`, keyed by pool ID
+captured rows, so they will likely need a table like `events.csv`, keyed by pool ID
 such as `MangHe_bsj`.
 
 Likely scope: a page per pool showing progress such as 13/15 and the order of rewards.

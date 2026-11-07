@@ -5,10 +5,10 @@ namespace NteOmikuji.Core.Tests;
 
 public class EventLuckTests
 {
-    private static readonly PityRule Board = BannerInfo.LimitedCharacter.Pity!;
-    private static readonly PityRule Arc = BannerInfo.ArcMiracleBox.Pity!;
+    private static readonly PityRule Board = PoolInfo.LimitedCharacter.Pity!;
+    private static readonly PityRule Arc = PoolInfo.ArcMiracleBox.Pity!;
 
-    private static HistoryRow Row(int second, string banner, RewardFocus focus = RewardFocus.None) => new()
+    private static HistoryRow Row(int second, string eventId, RewardFocus focus = RewardFocus.None) => new()
     {
         Uid = "row-" + second,
         RewardId = "x",
@@ -17,11 +17,11 @@ public class EventLuckTests
         Dice = 3,
         TimestampDecoded = new DateTime(2026, 5, 1).AddHours(second).ToString("yyyy-MM-dd HH:mm:ss"),
         Focus = focus,
-        BannerId = banner,
+        EventId = eventId,
     };
 
     /// <summary>Rows newest first: pulls on one event without an S, then pulls on another with rewards at the given positions, counted from 1.</summary>
-    private static BannerHistory History(BannerInfo banner, int first, int second, RewardFocus focus = RewardFocus.SLimitedCharacter, params int[] hitsAt)
+    private static PoolHistory History(PoolInfo poolInfo, int first, int second, RewardFocus focus = RewardFocus.SLimitedCharacter, params int[] hitsAt)
     {
         var rows = new List<HistoryRow>();
         for (var i = 0; i < first; i++)
@@ -33,7 +33,7 @@ public class EventLuckTests
             rows.Add(Row(first + i, "Lottery_New", hitsAt.Contains(i) ? focus : RewardFocus.None));
         }
         rows.Reverse();
-        return new BannerHistory(banner, rows, [], []);
+        return new PoolHistory(poolInfo, rows, [], []);
     }
 
     private static double BoardRate(int pull) =>
@@ -207,7 +207,7 @@ public class EventLuckTests
     [Fact]
     public void AnEventInheritsPullsFromTheOneBefore()
     {
-        var data = HistoryAnalyzer.Analyze(History(BannerInfo.LimitedCharacter, 60, 40, hitsAt: 10), bannerId: "Lottery_New");
+        var data = HistoryAnalyzer.Analyze(History(PoolInfo.LimitedCharacter, 60, 40, hitsAt: 10), eventId: "Lottery_New");
 
         Assert.Equal(60, data.CarriedPulls);
         Assert.Equal(LuckModel.Score(Board, 1, 40, 60)!.Expected, data.Luck!.Expected, 6);
@@ -217,7 +217,7 @@ public class EventLuckTests
     [Fact]
     public void TheFirstEventInheritsNothing()
     {
-        var data = HistoryAnalyzer.Analyze(History(BannerInfo.LimitedCharacter, 100, 40, hitsAt: 10), bannerId: "Lottery_Old");
+        var data = HistoryAnalyzer.Analyze(History(PoolInfo.LimitedCharacter, 100, 40, hitsAt: 10), eventId: "Lottery_Old");
 
         Assert.Equal(0, data.CarriedPulls);
         Assert.Equal((0, 100), (data.Luck!.Hits, data.Luck.Pulls));
@@ -226,7 +226,7 @@ public class EventLuckTests
     [Fact]
     public void AnEventIsJudgedOnItsOwnHits()
     {
-        var data = HistoryAnalyzer.Analyze(History(BannerInfo.LimitedCharacter, 100, 100, hitsAt: [50, 95]), bannerId: "Lottery_New");
+        var data = HistoryAnalyzer.Analyze(History(PoolInfo.LimitedCharacter, 100, 100, hitsAt: [50, 95]), eventId: "Lottery_New");
 
         Assert.Equal(2, data.Luck!.Hits);
     }
@@ -234,7 +234,7 @@ public class EventLuckTests
     [Fact]
     public void AnArcEventCountsLimitedRewardsAndPullsSinceTheLast()
     {
-        var data = HistoryAnalyzer.Analyze(History(BannerInfo.ArcMiracleBox, 30, 80, RewardFocus.SLimitedArc, 40), bannerId: "Lottery_New");
+        var data = HistoryAnalyzer.Analyze(History(PoolInfo.ArcMiracleBox, 30, 80, RewardFocus.SLimitedArc, 40), eventId: "Lottery_New");
 
         Assert.Equal(30, data.CarriedPulls);
         Assert.Equal(1, data.Luck!.Hits);
@@ -243,7 +243,7 @@ public class EventLuckTests
     [Fact]
     public void AnArcEventIgnoresOrdinaryS()
     {
-        var data = HistoryAnalyzer.Analyze(History(BannerInfo.ArcMiracleBox, 30, 80, RewardFocus.SArc, 40), bannerId: "Lottery_New");
+        var data = HistoryAnalyzer.Analyze(History(PoolInfo.ArcMiracleBox, 30, 80, RewardFocus.SArc, 40), eventId: "Lottery_New");
 
         Assert.Equal(0, data.Luck!.Hits);
     }
@@ -251,7 +251,7 @@ public class EventLuckTests
     [Fact]
     public void AnUnsetEventIsNotJudged()
     {
-        var data = HistoryAnalyzer.Analyze(History(BannerInfo.LimitedCharacter, 0, 100, hitsAt: 50), null, "Lottery_New", ["Lottery_New"]);
+        var data = HistoryAnalyzer.Analyze(History(PoolInfo.LimitedCharacter, 0, 100, hitsAt: 50), null, "Lottery_New", ["Lottery_New"]);
 
         Assert.Null(data.Luck);
     }
@@ -259,7 +259,7 @@ public class EventLuckTests
     [Fact]
     public void AnEventEndsWithThePullsSinceItsLastHit()
     {
-        var data = HistoryAnalyzer.Analyze(History(BannerInfo.LimitedCharacter, 60, 40, hitsAt: 10), bannerId: "Lottery_New");
+        var data = HistoryAnalyzer.Analyze(History(PoolInfo.LimitedCharacter, 60, 40, hitsAt: 10), eventId: "Lottery_New");
 
         Assert.Equal(30, data.EndedPulls);
     }
@@ -267,15 +267,15 @@ public class EventLuckTests
     [Fact]
     public void AnEventWithoutAHitEndsWithEverythingItInherited()
     {
-        var history = History(BannerInfo.LimitedCharacter, 60, 20);
+        var history = History(PoolInfo.LimitedCharacter, 60, 20);
 
-        Assert.Equal(80, HistoryAnalyzer.Analyze(history, bannerId: "Lottery_New").EndedPulls);
+        Assert.Equal(80, HistoryAnalyzer.Analyze(history, eventId: "Lottery_New").EndedPulls);
     }
 
     [Fact]
     public void AnOlderEventEndsBeforeLaterPullsCount()
     {
-        var data = HistoryAnalyzer.Analyze(History(BannerInfo.LimitedCharacter, 60, 40, hitsAt: 10), bannerId: "Lottery_Old");
+        var data = HistoryAnalyzer.Analyze(History(PoolInfo.LimitedCharacter, 60, 40, hitsAt: 10), eventId: "Lottery_Old");
 
         Assert.Equal(60, data.EndedPulls);
     }
@@ -283,8 +283,8 @@ public class EventLuckTests
     [Fact]
     public void AnArcEventEndsCountingTowardTheLimitedReward()
     {
-        var limited = HistoryAnalyzer.Analyze(History(BannerInfo.ArcMiracleBox, 30, 80, RewardFocus.SLimitedArc, 40), bannerId: "Lottery_New");
-        var ordinary = HistoryAnalyzer.Analyze(History(BannerInfo.ArcMiracleBox, 30, 80, RewardFocus.SArc, 40), bannerId: "Lottery_New");
+        var limited = HistoryAnalyzer.Analyze(History(PoolInfo.ArcMiracleBox, 30, 80, RewardFocus.SLimitedArc, 40), eventId: "Lottery_New");
+        var ordinary = HistoryAnalyzer.Analyze(History(PoolInfo.ArcMiracleBox, 30, 80, RewardFocus.SArc, 40), eventId: "Lottery_New");
 
         Assert.Equal((40, 110), (limited.EndedPulls, ordinary.EndedPulls));
     }
@@ -292,13 +292,13 @@ public class EventLuckTests
     [Fact]
     public void AWholePoolEndsAtItsCurrentCount()
     {
-        Assert.Equal(30, HistoryAnalyzer.Analyze(History(BannerInfo.LimitedCharacter, 60, 40, hitsAt: 10)).EndedPulls);
+        Assert.Equal(30, HistoryAnalyzer.Analyze(History(PoolInfo.LimitedCharacter, 60, 40, hitsAt: 10)).EndedPulls);
     }
 
     [Fact]
     public void AWholePoolStillStartsFromNothing()
     {
-        var data = HistoryAnalyzer.Analyze(History(BannerInfo.LimitedCharacter, 60, 40, hitsAt: 10));
+        var data = HistoryAnalyzer.Analyze(History(PoolInfo.LimitedCharacter, 60, 40, hitsAt: 10));
 
         Assert.Equal(0, data.CarriedPulls);
         Assert.Equal((1, 100), (data.Luck!.Hits, data.Luck.Pulls));

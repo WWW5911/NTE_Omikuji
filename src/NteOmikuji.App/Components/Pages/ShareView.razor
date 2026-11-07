@@ -113,7 +113,7 @@
         }
     }
 
-    private static string Key(ShareTarget target) => $"{target.Kind}|{target.BannerId}";
+    private static string Key(ShareTarget target) => $"{target.Kind}|{target.EventId}";
 
     /// <summary>Only the luck template has a whole account to show, so the other falls back to the first pool.</summary>
     private void SetTemplate(string template)
@@ -139,16 +139,16 @@
     }
 
     /// <summary>The standard board has one lasting event, so only the other pools list theirs.</summary>
-    private IReadOnlyList<BannerGroup> EventsOf(HistoryKind kind) =>
-        kind != HistoryKind.Permanent && State.Histories.FirstOrDefault(history => history.Banner.Kind == kind) is { } history
-            ? HistoryAnalyzer.Banners(history, State.DisplayName, State.BannerName)
+    private IReadOnlyList<EventGroup> EventsOf(HistoryKind kind) =>
+        kind != HistoryKind.Permanent && State.Histories.FirstOrDefault(history => history.Pool.Kind == kind) is { } history
+            ? HistoryAnalyzer.Events(history, State.DisplayName, State.EventName)
             : [];
 
     private void OnStateChanged() => _ = InvokeAsync(StateHasChanged);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        var card = ShareCardBuilder.Build(State.Histories, State.DisplayName, State.UnsetBanners, DateOnly.FromDateTime(DateTime.Now), _showUid ? State.Account : null, State.BannerName, SelectedTarget);
+        var card = ShareCardBuilder.Build(State.Histories, State.DisplayName, State.UnsetEvents, DateOnly.FromDateTime(DateTime.Now), _showUid ? State.Account : null, State.EventName, SelectedTarget);
         await JS.InvokeVoidAsync("nteShare.draw", _canvas, card, _template, _theme, _selected == WholeAccount);
     }
 

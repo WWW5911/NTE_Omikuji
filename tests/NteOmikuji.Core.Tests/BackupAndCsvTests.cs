@@ -13,7 +13,7 @@ public class BackupTests
     private static HistoryRow Row(string uid, string reward = "r1") => new()
     {
         Uid = uid,
-        PoolGroupId = BannerInfo.LimitedCharacter.Id,
+        PoolGroupId = PoolInfo.LimitedCharacter.Id,
         TimestampDecoded = "2026-01-01 00:00:00",
         RewardId = reward,
         ResultType = "dice",
@@ -154,9 +154,9 @@ public class BackupTests
 
 public class HistoryCsvTests
 {
-    private static BannerHistory Limited(params HistoryRow[] rows) => new(BannerInfo.LimitedCharacter, rows, [], []);
+    private static PoolHistory Limited(params HistoryRow[] rows) => new(PoolInfo.LimitedCharacter, rows, [], []);
 
-    private static HistoryRow Row(string reward = "fork_vine", string result = "dice", int? dice = 3, string? banner = "Lottery_A") => new()
+    private static HistoryRow Row(string reward = "fork_vine", string result = "dice", int? dice = 3, string? eventId = "Lottery_A") => new()
     {
         Uid = "secret-row-uid",
         TimestampDecoded = "2026-01-02 03:04:05",
@@ -167,12 +167,12 @@ public class HistoryCsvTests
         Quantity = 1,
         ResultType = result,
         Dice = dice,
-        BannerId = banner,
+        EventId = eventId,
         Focus = RewardFocus.None,
     };
 
-    private static CsvRow Parse(BannerHistory history, Func<string, string?>? bannerName = null) =>
-        CsvTable.Parse(HistoryCsv.ToText([history], row => "笑口常開", bannerName ?? (_ => "明音凜"))).Rows.Single();
+    private static CsvRow Parse(PoolHistory history, Func<string, string?>? eventName = null) =>
+        CsvTable.Parse(HistoryCsv.ToText([history], row => "笑口常開", eventName ?? (_ => "明音凜"))).Rows.Single();
 
     [Fact]
     public void ARowCarriesReadableFields()
@@ -200,7 +200,7 @@ public class HistoryCsvTests
     [Fact]
     public void AnArcRowHasNoResultColumnValue()
     {
-        var row = Parse(new BannerHistory(BannerInfo.ArcMiracleBox, [Row(result: "", dice: null)], [], []));
+        var row = Parse(new PoolHistory(PoolInfo.ArcMiracleBox, [Row(result: "", dice: null)], [], []));
 
         Assert.Equal(("弧盤研募", "", ""), (row.Get("卡池"), row.Get("結果"), row.Get("骰點")));
     }
@@ -253,7 +253,7 @@ public class HistoryCsvTests
     [Fact]
     public void EveryPoolIsWritten()
     {
-        var text = HistoryCsv.ToText([Limited(Row()), new BannerHistory(BannerInfo.Permanent, [Row(), Row()], [], [])], _ => "x", _ => null);
+        var text = HistoryCsv.ToText([Limited(Row()), new PoolHistory(PoolInfo.Permanent, [Row(), Row()], [], [])], _ => "x", _ => null);
 
         Assert.Equal(3, CsvTable.Parse(text).Rows.Count);
     }

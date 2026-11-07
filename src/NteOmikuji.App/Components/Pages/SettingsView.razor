@@ -9,8 +9,8 @@
         </div>
         <div class="actions">
             <div class="view-switch" role="tablist">
-                <button id="open-editor" role="tab" aria-selected="@(!_showBanners)" class="@(_showBanners ? "" : "active")" @onclick="() => _showBanners = false">獎勵</button>
-                <button id="settings-tab-banners" role="tab" aria-selected="@_showBanners" class="@(_showBanners ? "active" : "")" @onclick="() => _showBanners = true">活動卡池@(State.UnsetBanners.Count > 0 ? $"（{State.UnsetBanners.Count}）" : "")</button>
+                <button id="open-editor" role="tab" aria-selected="@(!_showEvents)" class="@(_showEvents ? "" : "active")" @onclick="() => _showEvents = false">獎勵</button>
+                <button id="settings-tab-events" role="tab" aria-selected="@_showEvents" class="@(_showEvents ? "active" : "")" @onclick="() => _showEvents = true">活動卡池@(State.UnsetEvents.Count > 0 ? $"（{State.UnsetEvents.Count}）" : "")</button>
             </div>
             <button id="reload-mappings" @onclick="State.ReloadMappings">重新載入</button>
         </div>
@@ -26,9 +26,9 @@
         </ul>
     }
 
-    @if (_showBanners)
+    @if (_showEvents)
     {
-        <BannerEditor />
+        <EventEditor />
     }
     else
     {
@@ -37,16 +37,16 @@
 </div>
 
 @code {
-    private bool _showBanners;
+    private bool _showEvents;
 
     [Parameter]
-    public bool StartOnBanners { get; set; }
+    public bool StartOnEvents { get; set; }
 
     private int UnmappedTotal => State.SeenRewards.Keys.Count(id => !State.Rewards.Entries.Any(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase)));
 
     protected override void OnInitialized()
     {
-        _showBanners = StartOnBanners;
+        _showEvents = StartOnEvents;
         State.Changed += OnStateChanged;
     }
 

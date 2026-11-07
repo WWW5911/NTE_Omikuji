@@ -4,7 +4,7 @@ using Xunit;
 
 namespace NteOmikuji.Core.Tests;
 
-public class BannerTableTests
+public class EventTableTests
 {
     private static RewardCatalog Bundled => RewardCatalog.Bundled.Value;
 
@@ -15,24 +15,49 @@ public class BannerTableTests
         return store;
     }
 
-    private static string BannersPath(TempFolder folder) => Path.Combine(folder.Path, MappingStore.BannersFile);
+    [Fact]
+    public void AnEarlierFileNameIsCarriedOver()
+    {
+        using var folder = new TempFolder();
+        File.WriteAllText(Path.Combine(folder.Path, "banners.csv"), "id,featured\r\nLottery_Mine,fork_mine\r\n");
+
+        new MappingStore(folder.Path).EnsureSeeded();
+
+        Assert.False(File.Exists(Path.Combine(folder.Path, "banners.csv")));
+        Assert.Contains("Lottery_Mine", File.ReadAllText(EventsPath(folder)));
+    }
+
+    [Fact]
+    public void ACurrentFileIsNotOverwrittenByAnEarlierOne()
+    {
+        using var folder = new TempFolder();
+        File.WriteAllText(EventsPath(folder), "id,featured\r\nLottery_New,fork_new\r\n");
+        File.WriteAllText(Path.Combine(folder.Path, "banners.csv"), "id,featured\r\nLottery_Old,fork_old\r\n");
+
+        new MappingStore(folder.Path).EnsureSeeded();
+
+        Assert.Contains("Lottery_New", File.ReadAllText(EventsPath(folder)));
+        Assert.True(File.Exists(Path.Combine(folder.Path, "banners.csv")));
+    }
+
+    private static string EventsPath(TempFolder folder) => Path.Combine(folder.Path, MappingStore.EventsFile);
 
     [Theory]
     [InlineData("fork_prism", "ForkLottery_MingYin", RewardFocus.SLimitedArc)]
     [InlineData("fork_twinbirds", "ForkLottery_HeiYu", RewardFocus.SLimitedArc)]
     [InlineData("1057", "Lottery_MingYin", RewardFocus.SLimitedCharacter)]
-    public void AFeaturedRewardIsLimitedOnItsEvent(string reward, string banner, RewardFocus expected)
+    public void AFeaturedRewardIsLimitedOnItsEvent(string reward, string eventId, RewardFocus expected)
     {
-        Assert.Equal(expected, Bundled.FocusOf(reward, banner));
+        Assert.Equal(expected, Bundled.FocusOf(reward, eventId));
     }
 
     [Theory]
     [InlineData("fork_Butterfly", "ForkLottery_MingYin")]
     [InlineData("fork_BlackBook", "ForkLottery_HeiYu")]
     [InlineData("fork_prism", "ForkLottery_HeiYu")]
-    public void AnArcFeaturedElsewhereIsAnOrdinarySHere(string reward, string banner)
+    public void AnArcFeaturedElsewhereIsAnOrdinarySHere(string reward, string eventId)
     {
-        Assert.Equal(RewardFocus.SArc, Bundled.FocusOf(reward, banner));
+        Assert.Equal(RewardFocus.SArc, Bundled.FocusOf(reward, eventId));
     }
 
     [Fact]
@@ -45,9 +70,9 @@ public class BannerTableTests
     [InlineData(null)]
     [InlineData("ForkLottery_NotInTheTable")]
     [InlineData("Lottery_Permanent")]
-    public void WithoutAFeaturedListTheMappingDecides(string? banner)
+    public void WithoutAFeaturedListTheMappingDecides(string? eventId)
     {
-        Assert.Equal(RewardFocus.SArc, Bundled.FocusOf("fork_prism", banner));
+        Assert.Equal(RewardFocus.SArc, Bundled.FocusOf("fork_prism", eventId));
     }
 
     [Fact]
@@ -55,8 +80,8 @@ public class BannerTableTests
     {
         using var folder = new TempFolder();
         var store = Store(folder);
-        store.SaveBanner("ForkLottery_New", ["fork_brand_new"]);
-        store.SaveBanner("Lottery_New", ["1999"]);
+        store.SaveEvent("ForkLottery_New", ["fork_brand_new"]);
+        store.SaveEvent("Lottery_New", ["1999"]);
 
         var catalog = store.Load().Catalog!;
 
@@ -74,11 +99,11 @@ public class BannerTableTests
     [Fact]
     public void EveryBundledFeaturedRewardIsS()
     {
-        var banners = CsvTable.Parse(CsvTable.DecodeText(ReadSeed()));
+        var events = CsvTable.Parse(CsvTable.DecodeText(ReadSeed()));
 
-        foreach (var row in banners.Rows)
+        foreach (var row in events.Rows)
         {
-            foreach (var reward in BannerEntry.ParseFeatured(row.Get(BannerEntry.FeaturedColumn)))
+            foreach (var reward in EventEntry.ParseFeatured(row.Get(EventEntry.FeaturedColumn)))
             {
                 Assert.True(Bundled.Find(reward)?.Rank == "S", $"{row.Get("id")} features {reward}");
             }
@@ -87,7 +112,7 @@ public class BannerTableTests
 
     private static byte[] ReadSeed()
     {
-        using var seed = RewardCatalog.OpenSeed(MappingStore.BannersFile);
+        using var seed = RewardCatalog.OpenSeed(MappingStore.EventsFile);
         using var buffer = new MemoryStream();
         seed.CopyTo(buffer);
         return buffer.ToArray();
@@ -98,11 +123,11 @@ public class BannerTableTests
     {
         using var folder = new TempFolder();
         var store = Store(folder);
-        File.Delete(BannersPath(folder));
+        File.Delete(EventsPath(folder));
 
         store.EnsureSeeded();
 
-        Assert.Contains(store.Load().Banners!.Entries, entry => entry.Id == "ForkLottery_MingYin" && entry.Featured.Single() == "fork_prism");
+        Assert.Contains(store.Load().Events!.Entries, entry => entry.Id == "ForkLottery_MingYin" && entry.Featured.Single() == "fork_prism");
     }
 
     [Fact]
@@ -110,12 +135,12 @@ public class BannerTableTests
     {
         using var folder = new TempFolder();
         var store = Store(folder);
-        File.Delete(BannersPath(folder));
+        File.Delete(EventsPath(folder));
 
         var result = store.Load();
 
         Assert.Empty(result.Issues);
-        Assert.Empty(result.Banners!.Entries);
+        Assert.Empty(result.Events!.Entries);
         Assert.Equal(RewardFocus.SArc, result.Catalog!.FocusOf("fork_prism", "ForkLottery_MingYin"));
     }
 
@@ -124,11 +149,11 @@ public class BannerTableTests
     {
         using var folder = new TempFolder();
         var store = Store(folder);
-        File.WriteAllText(BannersPath(folder), "id,featured,note\r\nForkLottery_A,fork_a,我的備註\r\nForkLottery_B,fork_b,別動\r\n");
+        File.WriteAllText(EventsPath(folder), "id,featured,note\r\nForkLottery_A,fork_a,我的備註\r\nForkLottery_B,fork_b,別動\r\n");
 
-        store.SaveBanner("forklottery_a", ["fork_x", "fork_y"]);
+        store.SaveEvent("forklottery_a", ["fork_x", "fork_y"]);
 
-        var table = CsvTable.Parse(File.ReadAllText(BannersPath(folder)));
+        var table = CsvTable.Parse(File.ReadAllText(EventsPath(folder)));
         Assert.Equal(("fork_x;fork_y", "我的備註"), (table.Rows[0].Get("featured"), table.Rows[0].Get("note")));
         Assert.Equal(("fork_b", "別動"), (table.Rows[1].Get("featured"), table.Rows[1].Get("note")));
         var catalog = store.Load().Catalog!;
@@ -141,14 +166,14 @@ public class BannerTableTests
         using var folder = new TempFolder();
         var store = Store(folder);
 
-        store.SaveBanner("ForkLottery_New", ["fork_new"]);
-        Assert.Contains(store.Load().Banners!.Entries, entry => entry.Id == "ForkLottery_New");
+        store.SaveEvent("ForkLottery_New", ["fork_new"]);
+        Assert.Contains(store.Load().Events!.Entries, entry => entry.Id == "ForkLottery_New");
 
-        store.DeleteBanner("forklottery_new");
-        Assert.DoesNotContain(store.Load().Banners!.Entries, entry => entry.Id == "ForkLottery_New");
+        store.DeleteEvent("forklottery_new");
+        Assert.DoesNotContain(store.Load().Events!.Entries, entry => entry.Id == "ForkLottery_New");
 
         Assert.True(store.Undo());
-        Assert.Contains(store.Load().Banners!.Entries, entry => entry.Id == "ForkLottery_New");
+        Assert.Contains(store.Load().Events!.Entries, entry => entry.Id == "ForkLottery_New");
     }
 
     [Fact]
@@ -156,7 +181,7 @@ public class BannerTableTests
     {
         using var folder = new TempFolder();
 
-        Assert.Throws<InvalidDataException>(() => Store(folder).SaveBanner("  ", ["fork_a"]));
+        Assert.Throws<InvalidDataException>(() => Store(folder).SaveEvent("  ", ["fork_a"]));
     }
 
     [Fact]
@@ -164,11 +189,11 @@ public class BannerTableTests
     {
         using var folder = new TempFolder();
         var store = Store(folder);
-        File.WriteAllText(BannersPath(folder), "id,featured\r\nForkLottery_MingYin,fork_mine\r\nForkLottery_HeiYu,\r\n");
+        File.WriteAllText(EventsPath(folder), "id,featured\r\nForkLottery_MingYin,fork_mine\r\nForkLottery_HeiYu,\r\n");
 
         Assert.True(store.FillFromBundled() > 0);
 
-        var entries = store.Load().Banners!.Entries.ToDictionary(entry => entry.Id);
+        var entries = store.Load().Events!.Entries.ToDictionary(entry => entry.Id);
         Assert.Equal("fork_mine", entries["ForkLottery_MingYin"].Featured.Single());
         Assert.Equal("fork_twinbirds", entries["ForkLottery_HeiYu"].Featured.Single());
         Assert.Equal("fork_Rose", entries["ForkLottery_AnHunQu"].Featured.Single());
@@ -182,7 +207,7 @@ public class BannerTableTests
         store.Load();
         Assert.False(store.HasExternalChanges());
 
-        File.AppendAllText(BannersPath(folder), "ForkLottery_New,fork_new\r\n");
+        File.AppendAllText(EventsPath(folder), "ForkLottery_New,fork_new\r\n");
 
         Assert.True(store.HasExternalChanges());
     }

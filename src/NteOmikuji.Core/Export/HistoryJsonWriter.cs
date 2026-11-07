@@ -34,7 +34,7 @@ public static class HistoryJsonWriter
 
     public static string ToJson(JsonNode node) => node.ToJsonString(Options);
 
-    public static JsonObject BuildHistory(BannerHistory history, ExportContext context)
+    public static JsonObject BuildHistory(PoolHistory history, ExportContext context)
     {
         var scan = new JsonObject
         {
@@ -58,14 +58,14 @@ public static class HistoryJsonWriter
         var export = Header("nte-history-export", context);
         export["banner"] = new JsonObject
         {
-            ["id"] = history.Banner.Id,
-            ["name"] = history.Banner.Name,
-            ["system"] = history.Banner.System,
-            ["shared_pity"] = history.Banner.SharedPity,
+            ["id"] = history.Pool.Id,
+            ["name"] = history.Pool.Name,
+            ["system"] = history.Pool.System,
+            ["shared_pity"] = history.Pool.SharedPity,
         };
         export["scan"] = scan;
         AddAccount(export, context);
-        export["records"] = new JsonArray(history.Rows.Select(row => RecordNode(history.Banner, row)).ToArray<JsonNode?>());
+        export["records"] = new JsonArray(history.Rows.Select(row => RecordNode(history.Pool, row)).ToArray<JsonNode?>());
         return export;
     }
 
@@ -168,7 +168,7 @@ public static class HistoryJsonWriter
         return node;
     }
 
-    private static JsonObject RecordNode(BannerInfo banner, HistoryRow row)
+    private static JsonObject RecordNode(PoolInfo poolInfo, HistoryRow row)
     {
         var node = new JsonObject
         {
@@ -177,7 +177,7 @@ public static class HistoryJsonWriter
             ["timestamp"] = row.TimestampDecoded,
             ["timestamp_group_ordinal"] = row.GroupOrdinal,
         };
-        switch (banner.Kind)
+        switch (poolInfo.Kind)
         {
             case HistoryKind.ArcMiracleBox:
                 AddReward(node, row);
@@ -202,9 +202,9 @@ public static class HistoryJsonWriter
             node["result_text"] = row.ResultText;
         }
         // Also additive: present only when the row's event could be read.
-        if (row.BannerId is not null)
+        if (row.EventId is not null)
         {
-            node["pool_id"] = row.BannerId;
+            node["pool_id"] = row.EventId;
         }
         return node;
     }

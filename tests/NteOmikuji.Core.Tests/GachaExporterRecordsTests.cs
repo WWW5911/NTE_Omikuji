@@ -38,16 +38,16 @@ public class GachaExporterRecordsTests
     private static HistoryRow Captured(string uid, string time, string reward = "captured") => new()
     {
         Uid = uid,
-        PoolGroupId = BannerInfo.LimitedCharacter.Id,
+        PoolGroupId = PoolInfo.LimitedCharacter.Id,
         TimestampDecoded = time,
         RewardId = reward,
         ResultType = "dice",
         Dice = 5,
-        BannerId = "Lottery_Xun",
+        EventId = "Lottery_Xun",
     };
 
     private static IReadOnlyList<HistoryRow> Limited(HistoryLibrary library) =>
-        library.Histories(Uid).Single(history => history.Banner.Kind == HistoryKind.LimitedCharacter).Rows;
+        library.Histories(Uid).Single(history => history.Pool.Kind == HistoryKind.LimitedCharacter).Rows;
 
     [Fact]
     public void TheFileIsRecognizedByItsContent()
@@ -66,12 +66,12 @@ public class GachaExporterRecordsTests
     [Theory]
     [InlineData("CardPool_Character", HistoryKind.LimitedCharacter, null)]
     [InlineData("CardPool_NewRole", HistoryKind.Permanent, "Lottery_Permanent")]
-    public void BoardsMapByTheirNames(string pool, HistoryKind kind, string? banner)
+    public void BoardsMapByTheirNames(string pool, HistoryKind kind, string? eventId)
     {
         var row = Assert.Single(Read(Record(0, OldTime, "x", pool: pool)).Rows[kind]);
 
-        Assert.Equal(banner, row.BannerId);
-        Assert.Equal(BannerInfo.For(kind).Id, row.PoolGroupId);
+        Assert.Equal(eventId, row.EventId);
+        Assert.Equal(PoolInfo.For(kind).Id, row.PoolGroupId);
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public class GachaExporterRecordsTests
     {
         var row = Assert.Single(Read(Record(0, OldTime, "fork_x", null, type: "fork", pool: "ForkLottery_Xun")).Rows[HistoryKind.ArcMiracleBox]);
 
-        Assert.Equal("ForkLottery_Xun", row.BannerId);
+        Assert.Equal("ForkLottery_Xun", row.EventId);
         Assert.Equal(("", "miracle_box", null), (row.ResultType, row.SourceType, row.Quantity));
     }
 
@@ -154,7 +154,7 @@ public class GachaExporterRecordsTests
         library.Fill(Uid, HistoryKind.LimitedCharacter, rows, RewardCatalog.Empty);
 
         var row = Assert.Single(Limited(library));
-        Assert.Equal(("c1", "captured", 5, "Lottery_Xun"), (row.Uid, row.RewardId, row.Dice!.Value, row.BannerId));
+        Assert.Equal(("c1", "captured", 5, "Lottery_Xun"), (row.Uid, row.RewardId, row.Dice!.Value, row.EventId));
     }
 
     [Fact]

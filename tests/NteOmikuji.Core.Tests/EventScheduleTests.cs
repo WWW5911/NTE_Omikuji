@@ -3,11 +3,11 @@ using Xunit;
 
 namespace NteOmikuji.Core.Tests;
 
-public class BannerScheduleTests
+public class EventScheduleTests
 {
-    private const string Header = "id,version,phase,pool,rerun,name.zh-hant,name.en,featured.zh-hant,featured.en,banner_id,starts,ends,estimate\r\n";
+    private const string Header = "id,version,phase,pool,rerun,name.zh-hant,name.en,featured.zh-hant,featured.en,event_id,starts,ends,estimate\r\n";
 
-    private static IReadOnlyList<ScheduledBanner> Bundled()
+    private static IReadOnlyList<ScheduledEvent> Bundled()
     {
         using var folder = new TempFolder();
         var store = new MappingStore(folder.Path);
@@ -15,8 +15,8 @@ public class BannerScheduleTests
         return store.Load().Schedule!;
     }
 
-    private static List<ScheduledBanner> Parse(string rows, List<string>? issues = null) =>
-        BannerSchedule.Parse(CsvTable.Parse(Header + rows), "schedule.csv", issues ?? []).ToList();
+    private static List<ScheduledEvent> Parse(string rows, List<string>? issues = null) =>
+        EventSchedule.Parse(CsvTable.Parse(Header + rows), "schedule.csv", issues ?? []).ToList();
 
     [Fact]
     public void BundledScheduleHasBothPhasesOfVersionOneFive()
@@ -47,7 +47,7 @@ public class BannerScheduleTests
     {
         var schedule = Bundled();
 
-        Assert.All(schedule, entry => Assert.Equal(entry.IsRerun, entry.BannerId is not null));
+        Assert.All(schedule, entry => Assert.Equal(entry.IsRerun, entry.EventId is not null));
     }
 
     [Fact]
@@ -58,9 +58,9 @@ public class BannerScheduleTests
         store.EnsureSeeded();
         var result = store.Load();
 
-        foreach (var entry in result.Schedule!.Where(entry => entry.BannerId is not null))
+        foreach (var entry in result.Schedule!.Where(entry => entry.EventId is not null))
         {
-            Assert.Contains(result.Banners!.Entries, banner => banner.Id == entry.BannerId && banner.Featured.Count == 1);
+            Assert.Contains(result.Events!.Entries, item => item.Id == entry.EventId && item.Featured.Count == 1);
         }
     }
 
@@ -80,10 +80,10 @@ public class BannerScheduleTests
     [Fact]
     public void VisibleDropsEndedEventsAndOrdersTheRest()
     {
-        var visible = BannerSchedule.Visible(Bundled(), new DateOnly(2026, 12, 5));
+        var visible = EventSchedule.Visible(Bundled(), new DateOnly(2026, 12, 5));
 
         Assert.Equal(["1.5-2-board-exe", "1.5-2-board-chaos", "1.5-2-arc-exe", "1.5-2-arc-chaos"], visible.Select(entry => entry.Id));
-        Assert.Empty(BannerSchedule.Visible(Bundled(), new DateOnly(2027, 1, 1)));
+        Assert.Empty(EventSchedule.Visible(Bundled(), new DateOnly(2027, 1, 1)));
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public class BannerScheduleTests
         var schedule = store.Load().Schedule!;
         var edited = schedule.Single(entry => entry.Id == "1.5-2-board-exe");
         Assert.Equal(8, schedule.Count);
-        Assert.Equal(("我改的名字", "Lottery_Exe", new DateOnly(2026, 12, 24)), (edited.Name("zh-hant"), edited.BannerId, edited.Ends));
+        Assert.Equal(("我改的名字", "Lottery_Exe", new DateOnly(2026, 12, 24)), (edited.Name("zh-hant"), edited.EventId, edited.Ends));
     }
 
     [Fact]

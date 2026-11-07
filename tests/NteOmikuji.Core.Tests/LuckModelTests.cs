@@ -5,8 +5,8 @@ namespace NteOmikuji.Core.Tests;
 
 public class LuckModelTests
 {
-    private static readonly PityRule Board = BannerInfo.LimitedCharacter.Pity!;
-    private static readonly PityRule Arc = BannerInfo.ArcMiracleBox.Pity!;
+    private static readonly PityRule Board = PoolInfo.LimitedCharacter.Pity!;
+    private static readonly PityRule Arc = PoolInfo.ArcMiracleBox.Pity!;
 
     private static (double Mean, double Deviation) Stats(double[] pmf)
     {
