@@ -41,7 +41,14 @@ public sealed class MappingUpdater(HttpClient http, string baseUrl = MappingUpda
                 continue;
             }
             response.EnsureSuccessStatusCode();
-            files[name] = await ReadLimitedAsync(response, name, token);
+            try
+            {
+                files[name] = await ReadLimitedAsync(response, name, token);
+            }
+            catch (IOException exception)
+            {
+                throw new HttpRequestException($"下載 {name} 時連線中斷。", exception);
+            }
         }
         return new MappingDownload(files, missing);
     }

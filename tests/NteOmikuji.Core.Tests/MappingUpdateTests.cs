@@ -144,6 +144,21 @@ public sealed class MappingUpdateTests : IDisposable
     public void OnlyAnHttpsSourceReplacesTheDefault(string? configured, string expected) =>
         Assert.Equal(expected, MappingUpdater.SourceOrDefault(configured));
 
+    private sealed class BrokenStream : MemoryStream
+    {
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default) =>
+            throw new IOException("connection lost");
+    }
+
+    [Fact]
+    public async Task AConnectionLostMidDownloadIsAFailedDownload()
+    {
+        var failure = await Assert.ThrowsAsync<HttpRequestException>(() =>
+            Updater(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(new BrokenStream()) }).DownloadAsync());
+
+        Assert.Contains(MappingStore.RewardsFile, failure.Message);
+    }
+
     [Fact]
     public async Task AServerErrorFailsTheDownload()
     {
