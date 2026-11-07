@@ -177,7 +177,7 @@ window.nteShare = (() => {
         const gap = 24, top = 236, bottom = h - 66;
         const column = (w - margin * 2 - gap * 2) / 3;
         card.pools.forEach((pool, index) => poolColumn(pool, margin + index * (column + gap), top, column, bottom - top));
-        footer(card, w, h, margin, "比較實際數量與依抽數算出的期望。棋盤看 S，弧盤看限定大獎；機率取自公開資料；前 N% 是同抽數的理論排序，不是跟玩家比較。");
+        footer(card, w, h, margin, "依同抽數所有可能結果的精確排名分級。棋盤看 S，弧盤看限定大獎；機率取自公開資料；這是理論排序，不是跟玩家比較。");
     }
 
     function poolColumn(pool, x, y, w, h) {

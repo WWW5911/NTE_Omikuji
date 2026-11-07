@@ -181,9 +181,10 @@ public class EventLuckTests
     }
 
     [Fact]
-    public void AHitOverFewPullsIsVeryLucky()
+    public void AHitOverFewPullsDependsOnWhenItLanded()
     {
-        Assert.Equal(LuckTier.VeryLucky, LuckModel.Score(Board, 1, 10)!.Tier);
+        Assert.Equal(LuckTier.VeryLucky, LuckModel.Score(Board, 1, 10, 0, 9)!.Tier);
+        Assert.Equal(LuckTier.Lucky, LuckModel.Score(Board, 1, 10, 0, 0)!.Tier);
     }
 
     [Fact]

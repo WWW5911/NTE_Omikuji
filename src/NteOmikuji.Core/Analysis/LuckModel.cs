@@ -21,8 +21,11 @@ public sealed record LuckScore(int Hits, int Pulls, double Expected, double Vari
 {
     public double StandardDeviation => Math.Sqrt(Variance);
 
-    /// <summary>Standard deviations above the expected count. Zero when the outcome could not have differed.</summary>
-    public double Sigma => Variance > 0 ? (Hits - Expected) / StandardDeviation : 0;
+    /// <summary>
+    /// The rank as a standard deviation: how far above the middle a normal curve would place it. Counts of
+    /// rewards are too skewed for the plain difference from the expected count to mean the same at every sample size.
+    /// </summary>
+    public double Sigma => LuckModel.InverseNormalCdf(Percentile);
 
     public LuckTier Tier => LuckModel.TierOf(Sigma);
 
@@ -189,7 +192,7 @@ public static class LuckModel
         return z >= 0 ? 1 - tail : tail;
     }
 
-    private static double InverseNormalCdf(double probability)
+    internal static double InverseNormalCdf(double probability)
     {
         var target = Math.Clamp(probability, 1e-6, 1 - 1e-6);
         double low = -6, high = 6;
@@ -208,7 +211,7 @@ public static class LuckModel
         return (low + high) / 2;
     }
 
-    /// <summary>Pools are independent, so their expected counts and variances add. Their ranks merge as normal scores weighted by how many rewards each should bring.</summary>
+    /// <summary>Pools are independent, so their expected counts and variances add. Their ranks merge as normal scores weighted by how many rewards each should bring, which keeps tiers as common as they are for one pool.</summary>
     public static LuckScore? Combine(IEnumerable<LuckScore?> scores)
     {
         var known = scores.OfType<LuckScore>().ToList();

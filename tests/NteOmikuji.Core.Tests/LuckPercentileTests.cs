@@ -24,6 +24,34 @@ public class LuckPercentileTests
         Assert.Equal(percent, LuckModel.Score(Board, hits, pulls, carried, sinceLast)!.Percentile * 100, 0.06);
     }
 
+    /// <summary>The tiers these real figures fall in, from the same enumeration.</summary>
+    [Theory]
+    [InlineData(2, 200, 0, 52, -1.34, LuckTier.Unlucky)]
+    [InlineData(1, 79, 5, 0, -1.91, LuckTier.Unlucky)]
+    [InlineData(1, 10, 1, 5, 1.70, LuckTier.Lucky)]
+    [InlineData(1, 10, 64, 1, 0.12, LuckTier.Normal)]
+    [InlineData(5, 200, 13, 64, 1.68, LuckTier.Lucky)]
+    [InlineData(2, 120, 5, 13, -0.06, LuckTier.Normal)]
+    [InlineData(1, 20, 0, 5, 1.10, LuckTier.Lucky)]
+    [InlineData(13, 639, 0, 52, 0.96, LuckTier.SlightlyLucky)]
+    [InlineData(6, 245, 0, 14, 1.31, LuckTier.Lucky)]
+    public void TiersFollowTheRank(int hits, int pulls, int carried, int sinceLast, double sigma, LuckTier tier)
+    {
+        var score = LuckModel.Score(Board, hits, pulls, carried, sinceLast)!;
+
+        Assert.Equal(sigma, score.Sigma, 0.01);
+        Assert.Equal(tier, score.Tier);
+    }
+
+    [Fact]
+    public void AMergedScoreTakesItsTierFromTheMergedRank()
+    {
+        var merged = LuckModel.Combine([LuckModel.Score(Board, 13, 639, 0, 52), LuckModel.Score(Board, 6, 245, 0, 14), LuckModel.Score(Arc, 7, 320, 0, 9)])!;
+
+        Assert.Equal(2.01, merged.Sigma, 0.01);
+        Assert.Equal(LuckTier.VeryLucky, merged.Tier);
+    }
+
     [Fact]
     public void ArcsMatchAFullEnumeration()
     {

@@ -117,20 +117,22 @@ most-obtained rewards. Boards also show dice rolls and result types.
   game gives. Capturing the history again corrects it.
 - The oldest S is shown as "至少 N" and left out of the average, because earlier
   pulls may predate the saved history.
-- 總覽 and each pool show a luck tag, from 非酋 through 正常 to 歐皇. It compares the
-  rewards obtained with the exact mean and standard deviation for that many pulls:
-  S on boards, the limited reward on Arcs. Tags change at ±0.5, ±1, and ±2σ. Rates
+- 總覽 and each pool show a luck tag, from 非酋 through 正常 to 歐皇. It ranks all the
+  outcomes that many pulls can bring, exactly: more rewards is better, and with the
+  same count, the last one landing earlier is better. It counts S on boards and the
+  limited reward on Arcs. The rank is shown as 前 N% and as the matching standard
+  deviation, and tags change at ±0.5, ±1, and ±2σ. So the σ is not the plain distance
+  from the expected count, which overstates small samples because counts are skewed.
+  Rates
   come from published guides, since no in-game figures were available: 0.99% on
   boards and 19.59% after 70 pulls, and 3% on Arcs. These reproduce the published
   averages of about 53.5 pulls per S and 59.5 per limited Arc. A misread history or an
   unset event shows no tag.
-- 前 N% follows the σ. It ranks all the outcomes that many pulls can bring, exactly:
-  more rewards is better, and with the same count, the last one landing earlier is
-  better. Pools merge as normal scores weighted by their expected counts. It compares
-  against the odds, not other players, and the tag itself still comes from the σ.
+- 總覽 merges pools as normal scores weighted by their expected counts. All of this
+  compares against the odds, not other players.
 - Under one full guarantee of pulls a tag is still worked out, and marked 樣本少. The
   formula holds there, but a single reward decides it: no S in 10 pulls is 正常, and
-  an S in 10 pulls is 歐皇.
+  an S in the first 10 pulls is 歐洲 or better.
 - Each event also has a luck tag, on its page and in the 各期運氣 table on its pool's
   page. Since pity carries over, its expected count starts from the pulls already
   made when the event began, shown as 開始已墊, with 結束已墊 for those it leaves to the
