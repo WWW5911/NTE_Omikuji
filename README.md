@@ -166,7 +166,7 @@ UID 預設不顯示。勾選後也只顯示遮蔽中段的版本，例如 `214**
 | 檔案 | 說明 |
 | --- | --- |
 | `.flows` | mitmproxy 的擷取檔 |
-| 匯出的 JSON | 本程式或相容工具的抽卡和成就紀錄 |
+| 匯出的 JSON | 本程式或 nte-exporter 的抽卡和成就紀錄 |
 | CSV、JSON | 獎勵和成就對應表，或語言包 |
 | `records.json` | NTE_Gacha_Exporter 的紀錄 |
 
@@ -261,3 +261,18 @@ dotnet publish src\NteOmikuji.App -p:PublishProfile=Portable
 ## English
 
 NTE Omikuji is an unofficial Windows app that reads your own Neverness to Everness pull history from game traffic, shows pity and luck for each pool and event, and exports JSON, CSV and share images. Download `NteOmikuji.exe` and run it; nothing else needs installing. Start the capture before pressing Start on the game's main menu, then open the in-game history and scroll down from page 1. Build instructions are under 開發 above.
+
+## 支援的匯出檔
+
+可以匯入以下兩個專案匯出的紀錄：
+
+- [nte-exporter](https://github.com/Golumpa/nte-exporter) 的 JSON
+- [NTE_Gacha_Exporter](https://github.com/Anong0u0/NTE_Gacha_Exporter) 的 `records.json`
+
+## 修正的 bug
+
+以下是 nte-exporter v0.3.0 有、這裡已修正的問題：
+
+- **抽數被誤判成集點贈禮**：解析棋盤紀錄時停在結尾的 `Lottery_*` 之前，區塊解析失敗後改用掃描，把真實的抽數標成 `points_gift`（[issue #17](https://github.com/Golumpa/nte-exporter/issues/17)）。這裡改為讀取每筆紀錄的欄位。從 nte-exporter 匯入的舊檔如果已有誤判，無法自動更正，要重新擷取。
+- **抓不到新版盲盒**：只認得舊的請求格式。這裡支援遊戲 1.4 起的新格式，並分開處理各盲盒的頁碼。
+- **新獎勵的 ID 變成空白**：靠已知前綴尋找獎勵，新獎勵不符合時 ID 會是空的。這裡改用長度前綴讀取，保留遊戲原字串。
