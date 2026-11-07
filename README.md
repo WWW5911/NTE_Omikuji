@@ -38,7 +38,12 @@ of these need Administrator approval.
 A `records.json` only fills gaps: its rows are added at times your history has none,
 and anything this app captured stays as it was, even if the two differ. A later
 capture of such a time replaces the added rows. Its boards name no event, so added
-limited board rows count toward the pool and its pity but belong to no event's page.
+limited board rows count toward the pool and its pity but belong to no event's page,
+except those from launch, below.
+
+The game opened on 2026-04-29 with one limited board, and the second opened no earlier
+than 2026-05-07. A limited board row from before then with no event belongs to the
+first event.
 
 ### Maintaining mappings
 
@@ -116,7 +121,7 @@ most-obtained rewards. Boards also show dice rolls and result types.
   correct from, so the analysis says so when a file has more of these than the
   game gives. Capturing the history again corrects it.
 - The oldest S is shown as "至少 N" and left out of the average, because earlier
-  pulls may predate the saved history.
+  pulls may predate the saved history. The game keeps about six months of records.
 - 總覽 and each pool show a luck tag, from 非酋 through 正常 to 歐皇. It ranks all the
   outcomes that many pulls can bring, exactly: more rewards is better, and with the
   same count, the last one landing earlier is better. It counts S on boards and the

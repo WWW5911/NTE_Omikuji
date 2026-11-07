@@ -276,6 +276,11 @@ public sealed class HistoryLibrary(string folder)
     private static void Apply(HistoryRow row, HistoryKind kind, RewardCatalog catalog)
     {
         var isArc = kind == HistoryKind.ArcMiracleBox;
+        // Only one limited board was open at launch, so a row without an event can only be from it.
+        if (kind == HistoryKind.LimitedCharacter && string.IsNullOrEmpty(row.BannerId) && GameCalendar.IsLaunchPeriod(row.TimestampDecoded))
+        {
+            row.BannerId = GameCalendar.FirstLimitedEvent;
+        }
         var meta = catalog.Find(row.RewardId);
         row.IsMappedReward = meta is not null;
         row.Focus = catalog.FocusOf(row.RewardId, row.BannerId);

@@ -85,6 +85,21 @@ public sealed class HistoryRow
     public string Uid { get; set; } = "";
 }
 
+/// <summary>What is known about the game's first days, which older records and other tools' files depend on.</summary>
+public static class GameCalendar
+{
+    private const string Launch = "2026-04-29";
+
+    /// <summary>The earliest the second limited board opened, on any server.</summary>
+    private const string SecondEventOpens = "2026-05-07";
+
+    public const string FirstLimitedEvent = "Lottery_Nanali";
+
+    /// <param name="timestamp">Text in the form yyyy-MM-dd HH:mm:ss, which sorts by time.</param>
+    public static bool IsLaunchPeriod(string timestamp) =>
+        string.CompareOrdinal(timestamp, Launch) >= 0 && string.CompareOrdinal(timestamp, SecondEventOpens) < 0;
+}
+
 public sealed record CaptureWarning(string Code, string Reason, IReadOnlyList<int>? IgnoredPages = null);
 
 public sealed record CapturedPage(int Page, HistoryKind Kind, byte[] Payload, int SliceStart, int SliceCount, string? Pool = null);
