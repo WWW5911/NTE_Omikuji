@@ -147,7 +147,7 @@ public class MappingStoreTests
     }
 
     [Fact]
-    public void ImportingPythonStyleJsonUpsertsAndKeepsOtherRowsAndNotes()
+    public void ImportingJsonUpsertsAndKeepsOtherRowsAndNotes()
     {
         using var folder = new TempFolder();
         var store = new MappingStore(folder.Path);
@@ -155,8 +155,8 @@ public class MappingStoreTests
         File.WriteAllText(Path.Combine(folder.Path, MappingStore.RewardsFile), "id,type,name,rank,note\r\nkeep,item,留著,B,我的備註\r\nA1,item,舊名,B,改名\r\n");
         var json = Encoding.UTF8.GetBytes("""{"a1": {"name": "新名", "rank": "S"}, "fork_new": {"name": "新弧光", "rank": "A"}, "1099": {"name": "新角色", "rank": "S"}}""");
 
-        Assert.Equal(ImportKind.RewardMapping, ExportDocuments.Classify("x.json", json));
-        Assert.Equal(3, store.Import(false, ExportDocuments.ReadMapping("x.json", json, false)));
+        Assert.Equal(ImportKind.RewardMapping, ImportedFiles.Classify("x.json", json));
+        Assert.Equal(3, store.Import(false, ImportedFiles.ReadMapping("x.json", json, false)));
         var catalog = store.Load().Catalog!;
 
         Assert.Equal("新名", catalog.Find("A1")!.Name);
@@ -174,7 +174,7 @@ public class MappingStoreTests
     [InlineData("h.json", """{"format": "nte-achievement-export"}""", ImportKind.AchievementExport)]
     [InlineData("c.flows", "", ImportKind.Flows)]
     public void ClassifiesFilesByContent(string name, string content, ImportKind expected) =>
-        Assert.Equal(expected, ExportDocuments.Classify(name, Encoding.UTF8.GetBytes(content)));
+        Assert.Equal(expected, ImportedFiles.Classify(name, Encoding.UTF8.GetBytes(content)));
 
     [Theory]
     [InlineData("x.txt", "id,name")]
@@ -184,7 +184,7 @@ public class MappingStoreTests
     [InlineData("x.json", """{"format": "other"}""")]
     [InlineData("permanent_board.json", """{"pool_key": "permanent", "banner": {}}""")]
     public void RejectsWhatItCannotUse(string name, string content) =>
-        Assert.Throws<InvalidDataException>(() => ExportDocuments.Classify(name, Encoding.UTF8.GetBytes(content)));
+        Assert.Throws<InvalidDataException>(() => ImportedFiles.Classify(name, Encoding.UTF8.GetBytes(content)));
 }
 
 public class LibraryTests
@@ -307,9 +307,9 @@ public class LibraryTests
         row.Quantity = 30;
         row.RewardType = "item";
         var history = new BannerHistory(BannerInfo.LimitedCharacter, [row], [], []);
-        var json = ExportWriter.ToJson(ExportWriter.BuildHistory(history, new ExportContext("live_capture", "npcap", Uid, "23003")));
+        var json = HistoryJsonWriter.ToJson(HistoryJsonWriter.BuildHistory(history, new ExportContext("live_capture", "npcap", Uid, "23003")));
 
-        var document = ExportDocuments.ReadHistory(Encoding.UTF8.GetBytes(json));
+        var document = ImportedFiles.ReadHistory(Encoding.UTF8.GetBytes(json));
 
         Assert.Equal(BannerInfo.LimitedCharacter, document.Banner);
         Assert.Equal((Uid, "23003", "live_capture", "npcap"), (document.UserUid, document.ServerId, document.Source, document.CaptureSource));
@@ -323,10 +323,10 @@ public class LibraryTests
     {
         var ticks = (ulong)new DateTime(2026, 5, 6, 7, 8, 9, DateTimeKind.Utc).Ticks;
         var catalog = RewardCatalog.Bundled.Value;
-        var json = ExportWriter.ToJson(ExportWriter.BuildAchievements(
+        var json = HistoryJsonWriter.ToJson(HistoryJsonWriter.BuildAchievements(
             [new AchievementRecord("battle_10", 300, ticks), new AchievementRecord("Battle_25", 20, 0)], catalog, new ExportContext("live_capture")));
 
-        var records = ExportDocuments.ReadAchievements(Encoding.UTF8.GetBytes(json)).Records;
+        var records = ImportedFiles.ReadAchievements(Encoding.UTF8.GetBytes(json)).Records;
 
         Assert.Equal(("2026-05-06 07:08:09", true), (records[0].CompletedAt!, records[0].Completed));
         Assert.Equal((20UL, false), (records[1].Progress, records[1].Completed));

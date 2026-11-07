@@ -34,7 +34,7 @@ public sealed class PacketDebugLog : IDisposable
         {
             ["format"] = "nte_packet_debug",
             ["format_version"] = 1,
-            ["exporter"] = new JsonObject { ["name"] = ExportWriter.ExporterName, ["version"] = ExportWriter.ExporterVersion },
+            ["exporter"] = new JsonObject { ["name"] = HistoryJsonWriter.AppName, ["version"] = HistoryJsonWriter.AppVersion },
             ["capture"] = captureName,
             ["started_at"] = Now(),
         });
@@ -133,7 +133,7 @@ public sealed class PacketDebugLog : IDisposable
         ["pool"] = row.BannerId,
         ["timestamp"] = row.TimestampDecoded,
         ["timestamp_raw_hex"] = row.TimestampRawHex,
-        ["decoder_mode"] = row.DecoderMode,
+        ["decode_mode"] = row.DecoderMode,
         ["record_hex"] = row.RecordHex,
     };
 

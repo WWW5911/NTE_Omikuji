@@ -14,14 +14,14 @@ public sealed record ExportContext(
     int? FlowIndex = null,
     int? CandidatePairs = null);
 
-/// <summary>Writes the Python exporter's version 1 JSON formats, which trackers already consume.</summary>
-public static class ExportWriter
+/// <summary>Writes the version 1 JSON formats, which trackers already consume.</summary>
+public static class HistoryJsonWriter
 {
-    public const string ExporterName = "nte-omikuji";
+    public const string AppName = "nte-omikuji";
 
     /// <summary>Comes from Directory.Build.props, the one place a release's version is set.</summary>
-    public static readonly string ExporterVersion =
-        typeof(ExportWriter).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.0.0";
+    public static readonly string AppVersion =
+        typeof(HistoryJsonWriter).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.0.0";
 
     private const string GameName = "Neverness to Everness";
 
@@ -137,7 +137,7 @@ public static class ExportWriter
         {
             export["capture_source"] = context.CaptureSource;
         }
-        export["exporter"] = new JsonObject { ["name"] = ExporterName, ["version"] = ExporterVersion };
+        export["exporter"] = new JsonObject { ["name"] = AppName, ["version"] = AppVersion };
         return export;
     }
 

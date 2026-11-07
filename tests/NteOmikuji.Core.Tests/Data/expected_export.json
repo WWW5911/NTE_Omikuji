@@ -615,7 +615,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    }
   ],
   "limited-chase-reward": [
@@ -629,7 +629,7 @@
     "quantity": 30,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    }
   ],
   "limited-batched-pages": [
@@ -643,7 +643,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "1020",
@@ -655,7 +655,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "fork_nonos",
@@ -667,7 +667,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "fork_vine",
@@ -679,7 +679,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "fork_dustbin",
@@ -691,7 +691,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "fork_yaodao",
@@ -703,7 +703,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "1052",
@@ -715,7 +715,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "Dice_ticket_02",
@@ -727,7 +727,7 @@
     "quantity": 50,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "1008",
@@ -739,7 +739,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "fork_Prokaryon",
@@ -751,7 +751,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    }
   ],
   "limited-bitpacked-source": [
@@ -765,7 +765,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "1019",
@@ -777,7 +777,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "fork_dustbin",
@@ -789,7 +789,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "fork_appliance",
@@ -801,7 +801,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "1033",
@@ -813,7 +813,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "fork_wuhuakuang",
@@ -825,7 +825,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "Dicelimite",
@@ -837,7 +837,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "fork_dustbin",
@@ -849,7 +849,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "Dice_ticket_02",
@@ -861,7 +861,7 @@
     "quantity": 30,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "Dice_ticket_02",
@@ -873,7 +873,7 @@
     "quantity": 30,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    }
   ],
   "limited-bitpacked-response": [
@@ -887,7 +887,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "1019",
@@ -899,7 +899,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "fork_dustbin",
@@ -911,7 +911,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "fork_appliance",
@@ -923,7 +923,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "1033",
@@ -935,7 +935,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "fork_wuhuakuang",
@@ -947,7 +947,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "Dicelimite",
@@ -959,7 +959,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "fork_dustbin",
@@ -971,7 +971,7 @@
     "quantity": 1,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "Dice_ticket_02",
@@ -983,7 +983,7 @@
     "quantity": 30,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    },
    {
     "reward_id": "Dice_ticket_02",
@@ -995,11 +995,11 @@
     "quantity": 30,
     "timestamp_decoded": "2030-01-01 00:00:00",
     "timestamp_raw_hex": "0000f3095f138b23",
-    "decoder_mode": null
+    "decode_mode": null
    }
   ]
  },
- "structured": {
+ "block": {
   "monopoly": {
    "hex": "464d6f6e6f706f6c794c6f74746572795265636f72644461746100000000004c00000001000000020000000b000000466f6f5f4974656d2c33000000000000000000010000000009000000466f6f5f4974656d001300000043617264506f6f6c5f4368617261637465720080e8d03adaa6de08",
    "rows": [
@@ -1013,7 +1013,7 @@
      "quantity": 3,
      "timestamp_decoded": "2026-04-30 17:02:15",
      "timestamp_raw_hex": "00a243eb689b7a23",
-     "decoder_mode": "heuristic_enriched"
+     "decode_mode": "scan_checked"
     }
    ]
   },
@@ -1030,7 +1030,7 @@
      "quantity": 3,
      "timestamp_decoded": "2026-04-30 17:02:15",
      "timestamp_raw_hex": "00a243eb689b7a23",
-     "decoder_mode": "heuristic_enriched"
+     "decode_mode": "scan_checked"
     }
    ]
   },
@@ -1047,7 +1047,7 @@
      "quantity": 30,
      "timestamp_decoded": "2026-04-30 17:02:15",
      "timestamp_raw_hex": "00a243eb689b7a23",
-     "decoder_mode": "heuristic_enriched"
+     "decode_mode": "scan_checked"
     }
    ]
   },
@@ -1064,7 +1064,7 @@
      "quantity": 1,
      "timestamp_decoded": "2026-04-30 17:02:15",
      "timestamp_raw_hex": "00a243eb689b7a23",
-     "decoder_mode": "heuristic_enriched"
+     "decode_mode": "scan_checked"
     }
    ]
   }
@@ -1083,7 +1083,7 @@
      "quantity": null,
      "timestamp_decoded": "2026-04-30 17:02:15",
      "timestamp_raw_hex": "80e8d03adaa6de08",
-     "decoder_mode": "structured_fallback"
+     "decode_mode": "block_fallback"
     }
    ]
   },
@@ -1100,7 +1100,7 @@
      "quantity": null,
      "timestamp_decoded": "2026-04-30 17:02:15",
      "timestamp_raw_hex": "80e8d03adaa6de08",
-     "decoder_mode": "structured_fallback"
+     "decode_mode": "block_fallback"
     }
    ]
   }

@@ -19,7 +19,7 @@ public sealed record HistoryDocument(BannerInfo Banner, List<HistoryRow> Rows, s
 public sealed record AchievementDocument(List<AchievementRecord> Records, string? UserUid, string? ServerId, string? Source, string? CaptureSource);
 
 /// <summary>Reads files by what they contain, so one import control accepts captures, exports, and mappings.</summary>
-public static class ExportDocuments
+public static class ImportedFiles
 {
     private static readonly JsonDocumentOptions JsonOptions = new() { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
 

@@ -8,7 +8,7 @@ namespace NteOmikuji.Core.Import;
 public sealed record FlowImportResult(int FlowIndex, int CandidatePairs, HistorySession Session);
 
 /// <summary>Imports mitmproxy .flows captures. The tnetstring reader only builds plain data.</summary>
-public static class MitmproxyFlows
+public static class FlowCaptureFile
 {
     private const int MaxDepth = 64;
     private const string LocalIp = "192.0.2.1";

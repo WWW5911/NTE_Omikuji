@@ -4,7 +4,7 @@ using NteOmikuji.Core.Protocol;
 
 namespace NteOmikuji.Core.Session;
 
-/// <summary>Turns captured pages into ordered rows with UIDs compatible with the Python exporter.</summary>
+/// <summary>Turns captured pages into ordered rows with stable UIDs.</summary>
 public static class HistoryAssembly
 {
     private const int PullSetSize = 10;
@@ -23,9 +23,9 @@ public static class HistoryAssembly
         var banner = BannerInfo.For(kind);
         var rows = kind switch
         {
-            HistoryKind.ArcMiracleBox => BuildRows(run, catalog, ArcDecoder.DecodeResponse, StructuredRecordType.Fork, ArcDecoder.RowsFromStructured),
+            HistoryKind.ArcMiracleBox => BuildRows(run, catalog, ArcDecoder.DecodeResponse, RecordBlockType.Fork, ArcDecoder.RowsFromStructured),
             HistoryKind.MysteryBox => BuildRows(run, catalog, MysteryBoxDecoder.DecodeResponse, null, null),
-            _ => BuildRows(run, catalog, MonopolyDecoder.DecodeResponse, StructuredRecordType.Monopoly, MonopolyDecoder.RowsFromStructured),
+            _ => BuildRows(run, catalog, MonopolyDecoder.DecodeResponse, RecordBlockType.Monopoly, MonopolyDecoder.RowsFromStructured),
         };
         rows.ForEach(row =>
         {
@@ -108,8 +108,8 @@ public static class HistoryAssembly
         List<CapturedPage> run,
         RewardCatalog catalog,
         Func<byte[], RewardCatalog, List<HistoryRow>> decode,
-        StructuredRecordType? structuredType,
-        Func<IEnumerable<StructuredRecord>, RewardCatalog, List<HistoryRow>>? fromStructured)
+        RecordBlockType? structuredType,
+        Func<IEnumerable<BlockRecord>, RewardCatalog, List<HistoryRow>>? fromStructured)
     {
         var rows = new List<HistoryRow>();
         foreach (var page in run)
@@ -120,16 +120,16 @@ public static class HistoryAssembly
                 rows.Add(row);
             }
         }
-        if (structuredType is null || fromStructured is null || rows.Any(row => row.DecoderMode != "structured_fallback"))
+        if (structuredType is null || fromStructured is null || rows.Any(row => row.DecoderMode != "block_fallback"))
         {
             return rows;
         }
 
         // Fully structured runs are assembled across packets so retransmissions cannot duplicate rows.
-        var assembler = new StructuredAssembler();
+        var assembler = new RecordBlockAssembler();
         for (var index = 0; index < run.Count; index++)
         {
-            assembler.AddBlocks(StructuredParser.ParseBlocks(run[index].Payload, structuredType.Value, index));
+            assembler.AddBlocks(RecordBlockParser.ParseBlocks(run[index].Payload, structuredType.Value, index));
         }
         var assembled = assembler.Rows();
         if (assembled.Count == 0)

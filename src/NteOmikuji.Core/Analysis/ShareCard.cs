@@ -93,7 +93,7 @@ public static class ShareCardBuilder
             Selected(pools.Select(pool => pool.Share).ToList(), histories, nameOf, bannerName, unsetBanners, target),
             Enum.GetValues<LuckTier>().Select(LuckModel.LabelOf).ToList(),
             MaskUid(uid),
-            $"NTE Omikuji {ExportWriter.ExporterVersion}・{today:yyyy-MM-dd}");
+            $"NTE Omikuji {HistoryJsonWriter.AppVersion}・{today:yyyy-MM-dd}");
     }
 
     /// <summary>A file name part for a target. Event IDs come from the game, so only plain characters are kept.</summary>

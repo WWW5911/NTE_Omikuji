@@ -8,7 +8,7 @@ public class LuckPercentileTests
     private static readonly PityRule Board = BannerInfo.LimitedCharacter.Pity!;
     private static readonly PityRule Arc = BannerInfo.ArcMiracleBox.Pity!;
 
-    /// <summary>Expected values come from a separate Python enumeration of every outcome.</summary>
+    /// <summary>Expected values come from a separate enumeration of every outcome.</summary>
     [Theory]
     [InlineData(2, 200, 0, 52, 9.0)]
     [InlineData(1, 79, 5, 0, 2.8)]

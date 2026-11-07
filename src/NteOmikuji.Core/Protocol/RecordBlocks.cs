@@ -3,14 +3,14 @@ using System.Text;
 
 namespace NteOmikuji.Core.Protocol;
 
-public enum StructuredRecordType
+public enum RecordBlockType
 {
     Monopoly,
     Fork,
 }
 
-public sealed record StructuredRecord(
-    StructuredRecordType Type,
+public sealed record BlockRecord(
+    RecordBlockType Type,
     string ItemId,
     long Count,
     ulong Ticks,
@@ -27,9 +27,9 @@ public sealed record StructuredRecord(
 
 public sealed record ProtocolEnvelope(string StreamKey, int SegmentIndex);
 
-public sealed record StructuredBlock(IReadOnlyList<StructuredRecord> Rows, ProtocolEnvelope? Envelope);
+public sealed record StructuredBlock(IReadOnlyList<BlockRecord> Rows, ProtocolEnvelope? Envelope);
 
-public static class StructuredParser
+public static class RecordBlockParser
 {
     private const int MaxRowsPerBlock = 100;
     private const int MaxShiftedBlockPaddingShortfall = 3;
@@ -48,16 +48,16 @@ public static class StructuredParser
     public static bool IsEventBanner(string? text) =>
         text is not null && (text.StartsWith(BoardBannerPrefix, StringComparison.Ordinal) || text.StartsWith(ArcBannerPrefix, StringComparison.Ordinal));
 
-    public static IReadOnlyList<StructuredRecord> ParseRecords(byte[] payload, StructuredRecordType type)
+    public static IReadOnlyList<BlockRecord> ParseRecords(byte[] payload, RecordBlockType type)
     {
-        var assembler = new StructuredAssembler();
+        var assembler = new RecordBlockAssembler();
         assembler.AddBlocks(ParseBlocks(payload, type));
         return assembler.Rows();
     }
 
-    public static IReadOnlyList<StructuredBlock> ParseBlocks(byte[] payload, StructuredRecordType type, int? sourceIndex = null)
+    public static IReadOnlyList<StructuredBlock> ParseBlocks(byte[] payload, RecordBlockType type, int? sourceIndex = null)
     {
-        var marker = type == StructuredRecordType.Monopoly ? MonopolyMarker : ForkMarker;
+        var marker = type == RecordBlockType.Monopoly ? MonopolyMarker : ForkMarker;
         foreach (var (viewName, data) in ProtocolViews(payload))
         {
             var blocks = new List<StructuredBlock>();
@@ -101,7 +101,7 @@ public static class StructuredParser
         }
     }
 
-    private static StructuredBlock ParseBlock(byte[] data, int markerPos, StructuredRecordType type, byte[] marker, string viewName, int? sourceIndex)
+    private static StructuredBlock ParseBlock(byte[] data, int markerPos, RecordBlockType type, byte[] marker, string viewName, int? sourceIndex)
     {
         var envelope = ParseEnvelope(type, data, markerPos, viewName);
         var reader = new FieldReader(data, markerPos + marker.Length);
@@ -122,17 +122,17 @@ public static class StructuredParser
             throw new InvalidDataException("declared block size exceeds payload");
         }
 
-        var rows = new List<StructuredRecord>((int)rowCount);
+        var rows = new List<BlockRecord>((int)rowCount);
         for (var i = 0; i < rowCount; i++)
         {
-            rows.Add(type == StructuredRecordType.Monopoly
+            rows.Add(type == RecordBlockType.Monopoly
                 ? ParseMonopolyRow(reader, viewName, sourceIndex)
                 : ParseForkRow(reader, viewName, sourceIndex));
         }
         return new StructuredBlock(rows, envelope);
     }
 
-    private static StructuredRecord ParseMonopolyRow(FieldReader reader, string viewName, int? sourceIndex)
+    private static BlockRecord ParseMonopolyRow(FieldReader reader, string viewName, int? sourceIndex)
     {
         var start = reader.Position;
         var rollPoints = reader.U32();
@@ -166,23 +166,23 @@ public static class StructuredParser
         }
         var end = reader.Position;
         reader.Position = bannerPosition;
-        var record = MakeRecord(reader, StructuredRecordType.Monopoly, itemSpec, ticks, poolId, rollPoints,
+        var record = MakeRecord(reader, RecordBlockType.Monopoly, itemSpec, ticks, poolId, rollPoints,
             secondaryItem.Length == 0 ? null : secondaryItem, secondaryCount, resultText, start, viewName, sourceIndex);
         reader.Position = end;
         return record with { EventBanner = banner };
     }
 
-    private static StructuredRecord ParseForkRow(FieldReader reader, string viewName, int? sourceIndex)
+    private static BlockRecord ParseForkRow(FieldReader reader, string viewName, int? sourceIndex)
     {
         var start = reader.Position;
         var itemSpec = reader.String();
         var poolId = reader.String();
         var ticks = reader.U64();
-        return MakeRecord(reader, StructuredRecordType.Fork, itemSpec, ticks, poolId.Length == 0 ? null : poolId,
+        return MakeRecord(reader, RecordBlockType.Fork, itemSpec, ticks, poolId.Length == 0 ? null : poolId,
             null, null, null, null, start, viewName, sourceIndex);
     }
 
-    private static StructuredRecord MakeRecord(FieldReader reader, StructuredRecordType type, string itemSpec, ulong ticks, string? poolId,
+    private static BlockRecord MakeRecord(FieldReader reader, RecordBlockType type, string itemSpec, ulong ticks, string? poolId,
         uint? rollPoints, string? secondaryItem, uint? secondaryCount, string? resultText, int start, string viewName, int? sourceIndex)
     {
         var (itemId, count) = ParseItemSpec(itemSpec);
@@ -200,7 +200,7 @@ public static class StructuredParser
         {
             throw new InvalidDataException("structured timestamp is out of range");
         }
-        return new StructuredRecord(type, itemId, count, ticks, timestamp.ToString("yyyy-MM-dd HH:mm:ss"), poolId, rollPoints,
+        return new BlockRecord(type, itemId, count, ticks, timestamp.ToString("yyyy-MM-dd HH:mm:ss"), poolId, rollPoints,
             secondaryItem, secondaryCount, resultText == itemId ? null : resultText,
             Convert.ToHexStringLower(reader.Data.AsSpan(start, reader.Position - start)), viewName, sourceIndex);
     }
@@ -218,7 +218,7 @@ public static class StructuredParser
         return (value, 1);
     }
 
-    private static ProtocolEnvelope? ParseEnvelope(StructuredRecordType type, byte[] data, int markerPos, string viewName)
+    private static ProtocolEnvelope? ParseEnvelope(RecordBlockType type, byte[] data, int markerPos, string viewName)
     {
         if (markerPos == 0 || !viewName.StartsWith("shift8:", StringComparison.Ordinal))
         {
@@ -236,7 +236,7 @@ public static class StructuredParser
 
         uint queryRaw, pageRaw;
         string streamKey;
-        if (type == StructuredRecordType.Monopoly)
+        if (type == RecordBlockType.Monopoly)
         {
             queryRaw = Relative(22);
             pageRaw = Relative(18);
@@ -348,7 +348,7 @@ public static class StructuredParser
 }
 
 /// <summary>Assembles retransmitted and overlapping structured snapshot segments.</summary>
-public sealed class StructuredAssembler
+public sealed class RecordBlockAssembler
 {
     private const string LegacyStream = "__legacy__";
 
@@ -359,7 +359,7 @@ public sealed class StructuredAssembler
 
     private readonly List<string> _streamOrder = [];
     private readonly Dictionary<string, List<Generation>> _streams = [];
-    private readonly List<StructuredRecord> _legacyRows = [];
+    private readonly List<BlockRecord> _legacyRows = [];
 
     public int WarningCount { get; private set; }
 
@@ -402,10 +402,10 @@ public sealed class StructuredAssembler
         generation.Segments[envelope.SegmentIndex] = block;
     }
 
-    public IReadOnlyList<StructuredRecord> Rows()
+    public IReadOnlyList<BlockRecord> Rows()
     {
         WarningCount = 0;
-        var rows = new List<StructuredRecord>();
+        var rows = new List<BlockRecord>();
         foreach (var key in _streamOrder)
         {
             rows.AddRange(key == LegacyStream ? _legacyRows : AssembleStream(_streams[key]));
@@ -413,9 +413,9 @@ public sealed class StructuredAssembler
         return rows;
     }
 
-    private List<StructuredRecord> AssembleStream(List<Generation> generations)
+    private List<BlockRecord> AssembleStream(List<Generation> generations)
     {
-        var result = new List<StructuredRecord>();
+        var result = new List<BlockRecord>();
         int? resultMaxSegment = null;
         foreach (var generation in generations.Where(g => g.Segments.Count > 0))
         {
@@ -456,7 +456,7 @@ public sealed class StructuredAssembler
         return result;
     }
 
-    private static List<StructuredRecord>? MergePartialSnapshot(List<StructuredRecord> newRows, List<StructuredRecord> oldRows)
+    private static List<BlockRecord>? MergePartialSnapshot(List<BlockRecord> newRows, List<BlockRecord> oldRows)
     {
         var newSignatures = newRows.Select(Signature).ToList();
         var oldSignatures = oldRows.Select(Signature).ToList();
@@ -475,6 +475,6 @@ public sealed class StructuredAssembler
         return null;
     }
 
-    private static (StructuredRecordType, ulong, string?, string, long, uint?, string?, uint?) Signature(StructuredRecord row) =>
+    private static (RecordBlockType, ulong, string?, string, long, uint?, string?, uint?) Signature(BlockRecord row) =>
         (row.Type, row.Ticks, row.PoolId, row.ItemId, row.Count, row.RollPointsRaw, row.SecondaryItemId, row.SecondaryCount);
 }

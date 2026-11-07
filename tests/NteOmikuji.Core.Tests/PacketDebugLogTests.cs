@@ -14,7 +14,7 @@ public class PacketDebugLogTests
 
     private static readonly RewardCatalog Catalog = RewardCatalog.Bundled.Value;
     private static readonly JsonElement Fixture =
-        JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", "synthetic_history_network.json"))).RootElement.Clone();
+        JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", "sample_traffic.json"))).RootElement.Clone();
 
     private sealed class ManualTime : TimeProvider
     {
@@ -83,8 +83,8 @@ public class PacketDebugLogTests
             Assert.Equal(plain.Process(packet).Count, logged.Process(packet).Count);
         }
 
-        var expected = plain.BuildHistories().Select(history => ExportWriter.ToJson(ExportWriter.BuildHistory(history, new ExportContext("x"))));
-        var actual = logged.BuildHistories().Select(history => ExportWriter.ToJson(ExportWriter.BuildHistory(history, new ExportContext("x"))));
+        var expected = plain.BuildHistories().Select(history => HistoryJsonWriter.ToJson(HistoryJsonWriter.BuildHistory(history, new ExportContext("x"))));
+        var actual = logged.BuildHistories().Select(history => HistoryJsonWriter.ToJson(HistoryJsonWriter.BuildHistory(history, new ExportContext("x"))));
         Assert.Equal(expected, actual);
     }
 

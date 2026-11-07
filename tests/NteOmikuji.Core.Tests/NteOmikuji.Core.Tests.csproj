@@ -16,8 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Data\synthetic_history_network.json" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="Data\python_golden.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Data\sample_traffic.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Data\expected_export.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Data\legacy_rewards_seed.csv" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

@@ -98,7 +98,7 @@ public static class GachaExporterRecords
             case "fork":
                 row.ResultType = "";
                 row.SourceType = "miracle_box";
-                row.BannerId = StructuredParser.IsEventBanner(pool) ? pool : null;
+                row.BannerId = RecordBlockParser.IsEventBanner(pool) ? pool : null;
                 return (HistoryKind.ArcMiracleBox, row);
             case "monopoly" when BoardOf(pool) is { } board && ApplyResult(record, row):
                 row.Quantity = record.TryGetProperty("count", out var count) && count.TryGetInt64(out var quantity) ? quantity : null;

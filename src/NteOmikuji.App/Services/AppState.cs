@@ -11,7 +11,7 @@ namespace NteOmikuji.App.Services;
 
 public sealed record BannerUsage(int Rows, string? LastDate);
 
-public enum ExporterStatus
+public enum AppStatus
 {
     Idle,
     Capturing,
@@ -21,7 +21,7 @@ public enum ExporterStatus
 
 /// <summary>App-wide state. Packets are read on a background thread; the page observes <see cref="Changed"/>.</summary>
 [SupportedOSPlatform("windows")]
-public sealed class ExporterState : IDisposable
+public sealed class AppState : IDisposable
 {
     private const int MaxActivityLines = 200;
     private const string MissedFirstPage = "DID_NOT_START_AT_PAGE_1";
@@ -52,7 +52,7 @@ public sealed class ExporterState : IDisposable
     private volatile bool _dirty;
     private DateTime _lastRefresh;
 
-    public ExporterState()
+    public AppState()
     {
         _baseFolder = Path.GetDirectoryName(Environment.ProcessPath) ?? AppContext.BaseDirectory;
         _mappings = new MappingStore(Path.Combine(_baseFolder, "mappings"));
@@ -93,7 +93,7 @@ public sealed class ExporterState : IDisposable
 
     public event Action? Changed;
 
-    public ExporterStatus Status { get; private set; }
+    public AppStatus Status { get; private set; }
     public string? Error { get; private set; }
     public string? Notice { get; private set; }
     public string? CaptureName { get; private set; }
@@ -133,7 +133,7 @@ public sealed class ExporterState : IDisposable
 
     public void Start(string localIp, CaptureBackendKind backend, bool recordPackets = false)
     {
-        if (Status != ExporterStatus.Idle)
+        if (Status != AppStatus.Idle)
         {
             return;
         }
@@ -165,7 +165,7 @@ public sealed class ExporterState : IDisposable
         _sessionAccount = _account;
         CaptureName = capture.Name;
         FallbackReason = capture.FallbackReason;
-        Status = ExporterStatus.Capturing;
+        Status = AppStatus.Capturing;
         Log($"開始擷取：{capture.Name}（{capture.Detail}）");
         if (recordPackets)
         {
@@ -180,11 +180,11 @@ public sealed class ExporterState : IDisposable
 
     public async Task StopAsync()
     {
-        if (Status != ExporterStatus.Capturing || _captureTask is null)
+        if (Status != AppStatus.Capturing || _captureTask is null)
         {
             return;
         }
-        Status = ExporterStatus.Stopping;
+        Status = AppStatus.Stopping;
         NotifyChanged();
         _cancellation?.Cancel();
         await _captureTask;
@@ -193,7 +193,7 @@ public sealed class ExporterState : IDisposable
             _session?.Finish();
             Ingest();
         });
-        Status = ExporterStatus.Idle;
+        Status = AppStatus.Idle;
         Log($"已停止，共處理 {PacketCount:N0} 個封包。");
         NotifyChanged();
     }
@@ -201,13 +201,13 @@ public sealed class ExporterState : IDisposable
     /// <summary>Accepts .flows captures, exported JSON, and mapping CSV or JSON, told apart by content.</summary>
     public async Task ImportAsync(IReadOnlyList<(string Name, byte[] Bytes)> files)
     {
-        if (Status != ExporterStatus.Idle)
+        if (Status != AppStatus.Idle)
         {
             return;
         }
         Error = null;
         Notice = null;
-        Status = ExporterStatus.Importing;
+        Status = AppStatus.Importing;
         NotifyChanged();
         try
         {
@@ -230,7 +230,7 @@ public sealed class ExporterState : IDisposable
         }
         finally
         {
-            Status = ExporterStatus.Idle;
+            Status = AppStatus.Idle;
             NotifyChanged();
         }
     }
@@ -260,7 +260,7 @@ public sealed class ExporterState : IDisposable
     {
         lock (_dataGate)
         {
-            return ExportWriter.ToJson(ExportWriter.BuildHistory(history, _library.ContextFor(_account)));
+            return HistoryJsonWriter.ToJson(HistoryJsonWriter.BuildHistory(history, _library.ContextFor(_account)));
         }
     }
 
@@ -439,10 +439,10 @@ public sealed class ExporterState : IDisposable
 
     private string ImportFile(string name, byte[] bytes)
     {
-        switch (ExportDocuments.Classify(name, bytes))
+        switch (ImportedFiles.Classify(name, bytes))
         {
             case ImportKind.Flows:
-                var flow = MitmproxyFlows.Import(bytes, _catalog);
+                var flow = FlowCaptureFile.Import(bytes, _catalog);
                 _session = flow.Session;
                 _sessionAccount = _account;
                 _partial.Clear();
@@ -451,7 +451,7 @@ public sealed class ExporterState : IDisposable
                 Ingest("packet_capture");
                 return $"{flow.CandidatePairs} 個頁面";
             case ImportKind.HistoryExport:
-                var history = ExportDocuments.ReadHistory(bytes);
+                var history = ImportedFiles.ReadHistory(bytes);
                 lock (_dataGate)
                 {
                     var uid = history.UserUid ?? _account;
@@ -462,7 +462,7 @@ public sealed class ExporterState : IDisposable
                 }
                 return $"{history.Banner.Name} {history.Rows.Count} 筆";
             case ImportKind.GachaExporterRecords:
-                var records = ExportDocuments.ReadGachaExporter(bytes);
+                var records = ImportedFiles.ReadGachaExporter(bytes);
                 lock (_dataGate)
                 {
                     var parts = new List<string>();
@@ -483,7 +483,7 @@ public sealed class ExporterState : IDisposable
                     return Notice;
                 }
             case ImportKind.AchievementExport:
-                var achievements = ExportDocuments.ReadAchievements(bytes);
+                var achievements = ImportedFiles.ReadAchievements(bytes);
                 lock (_dataGate)
                 {
                     var uid = achievements.UserUid ?? _account;
@@ -493,11 +493,11 @@ public sealed class ExporterState : IDisposable
                 }
                 return $"成就 {achievements.Records.Count} 筆";
             case ImportKind.AchievementMapping:
-                var achievementRows = _mappings.Import(true, ExportDocuments.ReadMapping(name, bytes, true));
+                var achievementRows = _mappings.Import(true, ImportedFiles.ReadMapping(name, bytes, true));
                 ReloadMappings();
                 return $"成就對應 {achievementRows} 筆";
             default:
-                var rewardRows = _mappings.Import(false, ExportDocuments.ReadMapping(name, bytes, false));
+                var rewardRows = _mappings.Import(false, ImportedFiles.ReadMapping(name, bytes, false));
                 ReloadMappings();
                 return $"獎勵對應 {rewardRows} 筆";
         }
@@ -579,7 +579,7 @@ public sealed class ExporterState : IDisposable
         catch (Exception exception) when (exception is IOException or System.Net.Sockets.SocketException)
         {
             Fail($"擷取中斷：{exception.Message}");
-            Status = ExporterStatus.Stopping;
+            Status = AppStatus.Stopping;
         }
         finally
         {

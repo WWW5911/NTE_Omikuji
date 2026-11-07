@@ -7,12 +7,12 @@ using Xunit;
 
 namespace NteOmikuji.Core.Tests;
 
-/// <summary>Compares against output captured from the Python exporter (see Data/python_golden.json).</summary>
-public class ParityTests
+/// <summary>Compares against a stored export (see Data/expected_export.json).</summary>
+public class ExportSnapshotTests
 {
     private static readonly RewardCatalog Catalog = RewardCatalog.Bundled.Value;
-    private static readonly JsonElement Golden = LoadJson("python_golden.json");
-    private static readonly JsonElement Fixture = LoadJson("synthetic_history_network.json");
+    private static readonly JsonElement Golden = LoadJson("expected_export.json");
+    private static readonly JsonElement Fixture = LoadJson("sample_traffic.json");
 
     private static JsonElement LoadJson(string name) =>
         JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Data", name))).RootElement.Clone();
@@ -39,12 +39,12 @@ public class ParityTests
     [Theory]
     [InlineData(HistoryKind.Permanent, "permanent")]
     [InlineData(HistoryKind.ArcMiracleBox, "arc")]
-    public void ReplayedExportRecordsMatchPython(HistoryKind kind, string goldenKey)
+    public void ReplayedExportRecordsMatchTheSnapshot(HistoryKind kind, string goldenKey)
     {
         var history = Replay().BuildHistories().Single(entry => entry.Banner.Kind == kind);
-        var export = ExportWriter.BuildHistory(history, new ExportContext("packet_capture"));
+        var export = HistoryJsonWriter.BuildHistory(history, new ExportContext("packet_capture"));
 
-        // The event ID is additive to format version 1, and the Python exporter does not write it.
+        // The event ID is additive to format version 1, and the stored export does not have it.
         foreach (var record in export["records"]!.AsArray())
         {
             record!.AsObject().Remove("pool_id");
@@ -80,7 +80,7 @@ public class ParityTests
 
     [Theory]
     [MemberData(nameof(SampleLabels))]
-    public void ProtocolSamplesDecodeLikePython(string label)
+    public void ProtocolSamplesMatchTheSnapshot(string label)
     {
         var packet = Fixture.GetProperty("packets").EnumerateArray().Single(entry => entry.GetProperty("label").GetString() == label);
         var rows = MonopolyDecoder.DecodeResponse(Convert.FromHexString(packet.GetProperty("payload_hex").GetString()!), Catalog);
@@ -92,9 +92,9 @@ public class ParityTests
     [InlineData("monopoly_shift3")]
     [InlineData("chase")]
     [InlineData("secondary")]
-    public void StructuredMonopolyBlocksDecodeLikePython(string label)
+    public void MonopolyBlocksMatchTheSnapshot(string label)
     {
-        var sample = Golden.GetProperty("structured").GetProperty(label);
+        var sample = Golden.GetProperty("block").GetProperty(label);
         var rows = MonopolyDecoder.DecodeResponse(Convert.FromHexString(sample.GetProperty("hex").GetString()!), Catalog);
         AssertRowsMatch(sample.GetProperty("rows"), rows);
     }
@@ -102,7 +102,7 @@ public class ParityTests
     [Theory]
     [InlineData("fork")]
     [InlineData("fork_shift5")]
-    public void StructuredForkBlocksDecodeLikePython(string label)
+    public void ForkBlocksMatchTheSnapshot(string label)
     {
         var sample = Golden.GetProperty("fork").GetProperty(label);
         var rows = ArcDecoder.DecodeResponse(Convert.FromHexString(sample.GetProperty("hex").GetString()!), Catalog);

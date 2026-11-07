@@ -1,5 +1,5 @@
 @implements IDisposable
-@inject ExporterState State
+@inject AppState State
 
 <div class="page capture-panel" id="capture">
     <h2 class="page-title">開始擷取</h2>
@@ -26,10 +26,10 @@
         {
             <p class="hint" id="record-packets-hint">只記錄歷史紀錄的 UDP 封包，不含登入用的 TCP，存到程式旁的 debug_packets。內容可能含帳號資料，分享前請先確認。</p>
         }
-        @if (State.Status is ExporterStatus.Capturing or ExporterStatus.Stopping)
+        @if (State.Status is AppStatus.Capturing or AppStatus.Stopping)
         {
-            <button id="stop" class="primary danger wide-button" @onclick="State.StopAsync" disabled="@(State.Status == ExporterStatus.Stopping)">
-                @(State.Status == ExporterStatus.Stopping ? "停止中…" : "停止擷取")
+            <button id="stop" class="primary danger wide-button" @onclick="State.StopAsync" disabled="@(State.Status == AppStatus.Stopping)">
+                @(State.Status == AppStatus.Stopping ? "停止中…" : "停止擷取")
             </button>
         }
         else
@@ -63,7 +63,7 @@
     [Parameter, EditorRequired]
     public CaptureOptions Options { get; set; } = null!;
 
-    private bool IsIdle => State.Status == ExporterStatus.Idle;
+    private bool IsIdle => State.Status == AppStatus.Idle;
 
     protected override void OnInitialized()
     {

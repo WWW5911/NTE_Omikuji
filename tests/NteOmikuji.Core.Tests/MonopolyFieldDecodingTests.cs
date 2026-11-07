@@ -41,7 +41,7 @@ public class MonopolyFieldDecodingTests
         Put(10, 1);
         Put(6, 1_774_080);
         var body = rows.SelectMany(row => row).ToArray();
-        byte[] plain = [.. envelope, .. StructuredParser.MonopolyMarker, 0, .. U32(0), .. U32((uint)body.Length), .. U32((uint)rows.Length), .. body];
+        byte[] plain = [.. envelope, .. RecordBlockParser.MonopolyMarker, 0, .. U32(0), .. U32((uint)body.Length), .. U32((uint)rows.Length), .. body];
         return ToWire(plain);
     }
 
@@ -63,7 +63,7 @@ public class MonopolyFieldDecodingTests
     [Fact]
     public void BlocksWithATrailingBannerParse()
     {
-        var records = StructuredParser.ParseRecords(Page(Single(4, "fork_dustbin", "fork_dustbin"), Single(2, "Dice_ticket_02,30", "Dice_ticket_02")), StructuredRecordType.Monopoly);
+        var records = RecordBlockParser.ParseRecords(Page(Single(4, "fork_dustbin", "fork_dustbin"), Single(2, "Dice_ticket_02,30", "Dice_ticket_02")), RecordBlockType.Monopoly);
 
         Assert.Equal(["fork_dustbin", "Dice_ticket_02"], records.Select(record => record.ItemId));
         Assert.Equal([4u, 2u], records.Select(record => record.RollPointsRaw!.Value));
@@ -81,7 +81,7 @@ public class MonopolyFieldDecodingTests
     [Fact]
     public void BannerIsOptionalSoTheOlderLayoutStillParses()
     {
-        var records = StructuredParser.ParseRecords(Page(Row(3, "fork_vine", ["fork_vine"], banner: null), Row(5, "fork_vine", ["fork_vine"], banner: null)), StructuredRecordType.Monopoly);
+        var records = RecordBlockParser.ParseRecords(Page(Row(3, "fork_vine", ["fork_vine"], banner: null), Row(5, "fork_vine", ["fork_vine"], banner: null)), RecordBlockType.Monopoly);
 
         Assert.Equal([3u, 5u], records.Select(record => record.RollPointsRaw!.Value));
     }
@@ -148,6 +148,6 @@ public class MonopolyFieldDecodingTests
         var row = Decode(Single(4, "fork_vine", "fork_vine"), Single(1, "fork_nonos", "fork_nonos"))[0];
 
         Assert.Equal(Convert.ToHexStringLower(BitConverter.GetBytes(Ticks * 4)), row.TimestampRawHex);
-        Assert.Equal("heuristic_enriched", row.DecoderMode);
+        Assert.Equal("scan_checked", row.DecoderMode);
     }
 }

@@ -85,8 +85,8 @@ public class GameCalendarTests
         var writing = new HistoryLibrary(folder.Path);
         writing.Merge(Uid, HistoryKind.Permanent, [Row(AtLaunch)], null, null, null, Catalog());
         var limitedFile = Path.Combine(folder.Path, $"{Uid}_Limited.json");
-        var document = ExportWriter.BuildHistory(new BannerHistory(BannerInfo.LimitedCharacter, [Row(Later, uid: "b")], [], []), writing.ContextFor(Uid));
-        var text = ExportWriter.ToJson(document).Replace(Later, AtLaunch, StringComparison.Ordinal);
+        var document = HistoryJsonWriter.BuildHistory(new BannerHistory(BannerInfo.LimitedCharacter, [Row(Later, uid: "b")], [], []), writing.ContextFor(Uid));
+        var text = HistoryJsonWriter.ToJson(document).Replace(Later, AtLaunch, StringComparison.Ordinal);
         File.WriteAllText(limitedFile, text);
 
         var reading = new HistoryLibrary(folder.Path);

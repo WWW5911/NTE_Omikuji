@@ -23,7 +23,7 @@ public static class ArcDecoder
 
     public static List<HistoryRow> DecodeResponse(byte[] response, RewardCatalog catalog)
     {
-        var structured = StructuredParser.ParseRecords(response, StructuredRecordType.Fork);
+        var structured = RecordBlockParser.ParseRecords(response, RecordBlockType.Fork);
         var rows = ParseLegacy(response, catalog);
         if (rows.Count == 0)
         {
@@ -34,12 +34,12 @@ public static class ArcDecoder
             && (pair.First.TimestampTicks == pair.Second.Ticks || pair.First.TimestampTicks == pair.Second.Ticks * TicksScale));
         if (compatible)
         {
-            rows.ForEach(row => row.DecoderMode = "heuristic_enriched");
+            rows.ForEach(row => row.DecoderMode = "scan_checked");
         }
         return rows;
     }
 
-    public static List<HistoryRow> RowsFromStructured(IEnumerable<StructuredRecord> records, RewardCatalog catalog) =>
+    public static List<HistoryRow> RowsFromStructured(IEnumerable<BlockRecord> records, RewardCatalog catalog) =>
         records.Select(record =>
         {
             var row = NewRow(record.ItemId, catalog);
@@ -47,8 +47,8 @@ public static class ArcDecoder
             row.TimestampTicks = record.Ticks;
             row.TimestampDecoded = record.TimestampDecoded;
             row.RecordHex = record.RecordHex;
-            row.DecoderMode = "structured_fallback";
-            row.BannerId = StructuredParser.IsEventBanner(record.PoolId) ? record.PoolId : null;
+            row.DecoderMode = "block_fallback";
+            row.BannerId = RecordBlockParser.IsEventBanner(record.PoolId) ? record.PoolId : null;
             return row;
         }).ToList();
 
@@ -83,7 +83,7 @@ public static class ArcDecoder
             position += 8;
             var row = NewRow(DecodeKey(name.Span), catalog);
             var banner = DecodeKey(pool.Span);
-            row.BannerId = StructuredParser.IsEventBanner(banner) ? banner : null;
+            row.BannerId = RecordBlockParser.IsEventBanner(banner) ? banner : null;
             try
             {
                 (row.TimestampTicks, row.TimestampDecoded) = MonopolyDecoder.DecodeTimestamp(timestamp, TicksScale);
@@ -184,7 +184,7 @@ public static class MysteryBoxDecoder
 
     public static List<HistoryRow> DecodeResponse(byte[] payload, RewardCatalog catalog)
     {
-        foreach (var (_, view) in StructuredParser.ProtocolViews(payload))
+        foreach (var (_, view) in RecordBlockParser.ProtocolViews(payload))
         {
             var rows = ParseView(view, catalog);
             if (rows.Count > 0)
@@ -282,7 +282,7 @@ public static class MysteryBoxDecoder
                 ResultType = "single_pull",
                 TimestampRawHex = Convert.ToHexStringLower(timestamp),
                 RecordHex = Convert.ToHexStringLower(data.AsSpan(start, position - start)),
-                DecoderMode = "structured",
+                DecoderMode = "block",
                 BannerId = pool,
             };
             MonopolyDecoder.ApplyReward(row, rewardId, catalog);

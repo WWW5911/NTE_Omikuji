@@ -51,15 +51,15 @@ public sealed class HistoryLibrary(string folder)
             {
                 var bytes = File.ReadAllBytes(path);
                 var changed = File.GetLastWriteTimeUtc(path);
-                switch (ExportDocuments.Classify(path, bytes))
+                switch (ImportedFiles.Classify(path, bytes))
                 {
                     case ImportKind.HistoryExport:
-                        var history = ExportDocuments.ReadHistory(bytes);
+                        var history = ImportedFiles.ReadHistory(bytes);
                         Merge(history.UserUid, history.Banner.Kind, history.Rows, history.ServerId, history.Source, history.CaptureSource, catalog, markDirty: false);
                         Find(history.UserUid).LastChanged = Later(Find(history.UserUid).LastChanged, changed);
                         break;
                     case ImportKind.AchievementExport:
-                        var achievements = ExportDocuments.ReadAchievements(bytes);
+                        var achievements = ImportedFiles.ReadAchievements(bytes);
                         Merge(achievements.UserUid, achievements.Records, achievements.ServerId, achievements.Source, achievements.CaptureSource, markDirty: false);
                         Find(achievements.UserUid).LastChanged = Later(Find(achievements.UserUid).LastChanged, changed);
                         break;
@@ -203,11 +203,11 @@ public sealed class HistoryLibrary(string folder)
         {
             var account = _accounts[uid];
             var document = label == AchievementsLabel
-                ? ExportWriter.BuildAchievements(account.Achievements, catalog, ContextFor(uid))
-                : ExportWriter.BuildHistory(
+                ? HistoryJsonWriter.BuildAchievements(account.Achievements, catalog, ContextFor(uid))
+                : HistoryJsonWriter.BuildHistory(
                     Histories(uid).Single(history => history.Banner.FilePrefix == label),
                     ContextFor(uid));
-            if (WriteIfChanged(Path.Combine(Folder, ExportWriter.LibraryFileName(uid, label)), ExportWriter.ToJson(document), backUp: true))
+            if (WriteIfChanged(Path.Combine(Folder, HistoryJsonWriter.LibraryFileName(uid, label)), HistoryJsonWriter.ToJson(document), backUp: true))
             {
                 written++;
             }
@@ -223,8 +223,8 @@ public sealed class HistoryLibrary(string folder)
     public string SavePartial(string? uid, BannerHistory history, ExportContext context, DateTime stamp)
     {
         Directory.CreateDirectory(Folder);
-        var path = Path.Combine(Folder, ExportWriter.FileName(uid, history.Banner.FilePrefix + PartialMarker.TrimEnd('_'), stamp));
-        WriteIfChanged(path, ExportWriter.ToJson(ExportWriter.BuildHistory(history, context)));
+        var path = Path.Combine(Folder, HistoryJsonWriter.FileName(uid, history.Banner.FilePrefix + PartialMarker.TrimEnd('_'), stamp));
+        WriteIfChanged(path, HistoryJsonWriter.ToJson(HistoryJsonWriter.BuildHistory(history, context)));
         return path;
     }
 

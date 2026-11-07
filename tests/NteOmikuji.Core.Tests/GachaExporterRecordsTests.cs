@@ -33,7 +33,7 @@ public class GachaExporterRecordsTests
     private static byte[] File(params JsonObject[] records) =>
         Encoding.UTF8.GetBytes(new JsonObject { ["schema_version"] = 1, ["records"] = new JsonArray(records.Cast<JsonNode>().ToArray()) }.ToJsonString());
 
-    private static GachaExporterImport Read(params JsonObject[] records) => ExportDocuments.ReadGachaExporter(File(records));
+    private static GachaExporterImport Read(params JsonObject[] records) => ImportedFiles.ReadGachaExporter(File(records));
 
     private static HistoryRow Captured(string uid, string time, string reward = "captured") => new()
     {
@@ -52,7 +52,7 @@ public class GachaExporterRecordsTests
     [Fact]
     public void TheFileIsRecognizedByItsContent()
     {
-        Assert.Equal(ImportKind.GachaExporterRecords, ExportDocuments.Classify("records.json", File(Record(0, OldTime, "x"))));
+        Assert.Equal(ImportKind.GachaExporterRecords, ImportedFiles.Classify("records.json", File(Record(0, OldTime, "x"))));
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public class GachaExporterRecordsTests
     {
         var bytes = Encoding.UTF8.GetBytes(new JsonObject { ["schema_version"] = 2, ["records"] = new JsonArray() }.ToJsonString());
 
-        Assert.Throws<InvalidDataException>(() => ExportDocuments.ReadGachaExporter(bytes));
+        Assert.Throws<InvalidDataException>(() => ImportedFiles.ReadGachaExporter(bytes));
     }
 
     [Theory]

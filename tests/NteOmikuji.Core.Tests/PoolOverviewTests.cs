@@ -408,9 +408,9 @@ public class PoolOverviewTests
         row.PoolGroupId = BannerInfo.LimitedCharacter.Id;
         var plain = Row(1);
         plain.PoolGroupId = BannerInfo.LimitedCharacter.Id;
-        var json = ExportWriter.ToJson(ExportWriter.BuildHistory(new BannerHistory(BannerInfo.LimitedCharacter, [row, plain], [], []), new ExportContext("test")));
+        var json = HistoryJsonWriter.ToJson(HistoryJsonWriter.BuildHistory(new BannerHistory(BannerInfo.LimitedCharacter, [row, plain], [], []), new ExportContext("test")));
 
-        var rows = ExportDocuments.ReadHistory(Encoding.UTF8.GetBytes(json)).Rows;
+        var rows = ImportedFiles.ReadHistory(Encoding.UTF8.GetBytes(json)).Rows;
 
         Assert.Equal(["Lottery_MingYin", null], rows.Select(item => item.BannerId));
     }

@@ -1,5 +1,5 @@
 @implements IDisposable
-@inject ExporterState State
+@inject AppState State
 
 <div class="page records-page" id="records">
     <div class="toolbar">
@@ -15,7 +15,7 @@
         case Tab.Import:
             <div class="panel form-card">
                 <label class="file" for="flows">.flows 擷取檔、匯出的 JSON，或對應表 CSV / JSON（可多選）</label>
-                <InputFile id="flows" OnChange="ImportAsync" accept=".flows,.json,.csv" multiple disabled="@(State.Status != ExporterStatus.Idle)" />
+                <InputFile id="flows" OnChange="ImportAsync" accept=".flows,.json,.csv" multiple disabled="@(State.Status != AppStatus.Idle)" />
             </div>
             break;
         default:

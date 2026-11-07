@@ -310,8 +310,8 @@ public class RewardEditingTests
         var store = Store(folder);
         var json = Encoding.UTF8.GetBytes("""{"pack_1": {"type": "character", "rank": "A", "focus": "S 限定角色", "names": {"zh-Hant": "繁中", "EN": "Eng", "pt-BR": "Port"}}}""");
 
-        Assert.Equal(ImportKind.RewardMapping, ExportDocuments.Classify("pack.json", json));
-        store.Import(false, ExportDocuments.ReadMapping("pack.json", json, false));
+        Assert.Equal(ImportKind.RewardMapping, ImportedFiles.Classify("pack.json", json));
+        store.Import(false, ImportedFiles.ReadMapping("pack.json", json, false));
         var meta = store.Load().Catalog!.Find("pack_1")!;
 
         Assert.Equal(("繁中", "Eng", "Port"), (meta.Localized("zh-hant"), meta.Localized("en"), meta.Localized("pt-br")));
@@ -325,8 +325,8 @@ public class RewardEditingTests
         var store = Store(folder);
         var csv = Encoding.UTF8.GetBytes("id,name.ja\r\n1010,ナナリー改\r\n");
 
-        Assert.Equal(ImportKind.RewardMapping, ExportDocuments.Classify("ja.csv", csv));
-        store.Import(false, ExportDocuments.ReadMapping("ja.csv", csv, false));
+        Assert.Equal(ImportKind.RewardMapping, ImportedFiles.Classify("ja.csv", csv));
+        store.Import(false, ImportedFiles.ReadMapping("ja.csv", csv, false));
         var meta = store.Load().Catalog!.Find("1010")!;
 
         Assert.Equal("ナナリー改", meta.Localized("ja"));

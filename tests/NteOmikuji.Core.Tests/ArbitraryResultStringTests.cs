@@ -48,7 +48,7 @@ public class ArbitraryResultStringTests
     }
 
     private static byte[] StructuredBlock(params byte[] row) =>
-        [.. StructuredParser.MonopolyMarker, 0, .. U32(0), .. U32((uint)row.Length), .. U32(1), .. row];
+        [.. RecordBlockParser.MonopolyMarker, 0, .. U32(0), .. U32((uint)row.Length), .. U32(1), .. row];
 
     private static byte[] MonopolyRow(byte[] item, string result) =>
         [.. U32(2), .. item, .. U32(0), .. U32(0), .. FString(""), .. FString(result), .. FString("CardPool_Character"), .. U64(Ticks)];
@@ -129,7 +129,7 @@ public class ArbitraryResultStringTests
     [InlineData("Item,7", "Item", 7)]
     [InlineData(",7", ",7", 1)]
     public void ItemSpecOnlySplitsAPositiveCount(string spec, string id, long count) =>
-        Assert.Equal((id, count), StructuredParser.ParseItemSpec(spec));
+        Assert.Equal((id, count), RecordBlockParser.ParseItemSpec(spec));
 
     [Fact]
     public void ExportPreservesTextAndAddsResultTextOnlyWhenPresent()
@@ -138,8 +138,8 @@ public class ArbitraryResultStringTests
         var plain = new HistoryRow { RewardId = "限定", PoolGroupId = "Lottery_Permanent", ResultType = "dice" };
         var history = new BannerHistory(BannerInfo.Permanent, [withResult, plain], [], [1]);
 
-        var export = ExportWriter.BuildHistory(history, new ExportContext("live_capture"));
-        var json = ExportWriter.ToJson(export);
+        var export = HistoryJsonWriter.BuildHistory(history, new ExportContext("live_capture"));
+        var json = HistoryJsonWriter.ToJson(export);
 
         Assert.Contains("\"reward_id\": \"限定\"", json);
         Assert.Contains("\"result_text\": \"結果 ✓\"", json);
@@ -149,7 +149,7 @@ public class ArbitraryResultStringTests
     [Fact]
     public void FileNameDropsPathCharactersFromUntrustedUid()
     {
-        var name = ExportWriter.FileName(@"..\..\evil:1", "Limited", new DateTime(2026, 1, 2, 3, 4, 5));
+        var name = HistoryJsonWriter.FileName(@"..\..\evil:1", "Limited", new DateTime(2026, 1, 2, 3, 4, 5));
         Assert.Equal("evil1_Limited_20260102_030405.json", name);
     }
 }
@@ -188,10 +188,10 @@ public class RobustnessTests
     [Fact]
     public void TruncatedStructuredBlocksAreIgnored()
     {
-        byte[] block = [.. StructuredParser.MonopolyMarker, 0, 0, 0, 0, 0, 200, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0];
+        byte[] block = [.. RecordBlockParser.MonopolyMarker, 0, 0, 0, 0, 0, 200, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0];
         for (var length = 0; length <= block.Length; length++)
         {
-            Assert.Empty(StructuredParser.ParseRecords(block[..length], StructuredRecordType.Monopoly));
+            Assert.Empty(RecordBlockParser.ParseRecords(block[..length], RecordBlockType.Monopoly));
         }
     }
 
@@ -201,7 +201,7 @@ public class RobustnessTests
     [InlineData("3:ab")]
     [InlineData("0:?")]
     public void CorruptFlowsAreRejected(string text) =>
-        Assert.Throws<InvalidDataException>(() => MitmproxyFlows.ReadFlows(Encoding.ASCII.GetBytes(text)));
+        Assert.Throws<InvalidDataException>(() => FlowCaptureFile.ReadFlows(Encoding.ASCII.GetBytes(text)));
 
     [Fact]
     public void DeeplyNestedFlowIsRejectedInsteadOfOverflowingTheStack()
@@ -211,7 +211,7 @@ public class RobustnessTests
         {
             nested = $"{nested.Length}:{nested}]";
         }
-        Assert.Throws<InvalidDataException>(() => MitmproxyFlows.ReadFlows(Encoding.ASCII.GetBytes(nested)));
+        Assert.Throws<InvalidDataException>(() => FlowCaptureFile.ReadFlows(Encoding.ASCII.GetBytes(nested)));
     }
 
     [Fact]

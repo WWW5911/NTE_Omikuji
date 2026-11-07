@@ -81,7 +81,7 @@ public sealed class HistoryRow
     public ulong TimestampTicks { get; set; }
     public string TimestampDecoded { get; set; } = "";
     public string RecordHex { get; set; } = "";
-    public string DecoderMode { get; set; } = "heuristic";
+    public string DecoderMode { get; set; } = "scan";
     public int GroupOrdinal { get; set; }
     public string Uid { get; set; } = "";
 }

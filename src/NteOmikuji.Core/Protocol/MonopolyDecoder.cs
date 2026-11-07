@@ -44,7 +44,7 @@ public static class MonopolyDecoder
 
     public static List<HistoryRow> DecodeResponse(byte[] response, RewardCatalog catalog)
     {
-        var structured = StructuredParser.ParseRecords(response, StructuredRecordType.Monopoly);
+        var structured = RecordBlockParser.ParseRecords(response, RecordBlockType.Monopoly);
         foreach (var view in Alignments(response))
         {
             if (!Markers.Any(marker => view.AsSpan().IndexOf(marker) >= 0))
@@ -69,7 +69,7 @@ public static class MonopolyDecoder
         return RowsFromStructured(structured, catalog);
     }
 
-    public static List<HistoryRow> RowsFromStructured(IEnumerable<StructuredRecord> records, RewardCatalog catalog)
+    public static List<HistoryRow> RowsFromStructured(IEnumerable<BlockRecord> records, RewardCatalog catalog)
     {
         var rows = new List<HistoryRow>();
         foreach (var record in records)
@@ -82,7 +82,7 @@ public static class MonopolyDecoder
                 TimestampTicks = record.Ticks,
                 TimestampDecoded = record.TimestampDecoded,
                 RecordHex = record.RecordHex,
-                DecoderMode = "structured_fallback",
+                DecoderMode = "block_fallback",
             };
             ApplyReward(row, record.ItemId, catalog);
             (row.Dice, row.ResultType) = ClassifyStructured(record.RollPointsRaw);
@@ -359,7 +359,7 @@ public static class MonopolyDecoder
         return rewardId.Length > 0 ? 1 : null;
     }
 
-    private static void Enrich(List<HistoryRow> rows, IReadOnlyList<StructuredRecord> structured, RewardCatalog catalog)
+    private static void Enrich(List<HistoryRow> rows, IReadOnlyList<BlockRecord> structured, RewardCatalog catalog)
     {
         if (rows.Count != structured.Count)
         {
@@ -392,7 +392,7 @@ public static class MonopolyDecoder
             {
                 (row.Dice, row.ResultType) = ClassifyStructured(record.RollPointsRaw);
             }
-            row.DecoderMode = "heuristic_enriched";
+            row.DecoderMode = "scan_checked";
         }
     }
 }

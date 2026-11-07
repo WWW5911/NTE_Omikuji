@@ -1,7 +1,7 @@
 ﻿@page "/"
 @using NteOmikuji.Core.Analysis
 @implements IDisposable
-@inject ExporterState State
+@inject AppState State
 
 <div class="app">
     <header class="topbar">
@@ -128,13 +128,13 @@
     private string _shareTemplate = "pool";
     private int _shareVisit;
 
-    private bool IsCapturing => State.Status is ExporterStatus.Capturing or ExporterStatus.Stopping;
+    private bool IsCapturing => State.Status is AppStatus.Capturing or AppStatus.Stopping;
 
     private string StatusText => State.Status switch
     {
-        ExporterStatus.Capturing => "擷取中",
-        ExporterStatus.Stopping => "停止中",
-        ExporterStatus.Importing => "匯入中",
+        AppStatus.Capturing => "擷取中",
+        AppStatus.Stopping => "停止中",
+        AppStatus.Importing => "匯入中",
         _ => "待命",
     };
 

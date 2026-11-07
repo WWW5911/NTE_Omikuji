@@ -22,7 +22,7 @@ README 裡的畫面都使用模擬資料。
 
 ## 使用方式
 
-需要 64 位元 Windows 10 1809 以上。不用另外安裝 .NET、Npcap 或 Python。WebView2 執行階段是 Windows 11 內建，Windows 10 通常也已安裝。
+需要 64 位元 Windows 10 1809 以上。不用另外安裝 .NET 或 Npcap。WebView2 執行階段是 Windows 11 內建，Windows 10 通常也已安裝。
 
 1. 把 `NteOmikuji.exe` 放在一個可寫入的資料夾，再執行。檔案約 94 MB，沒有數位簽章，SmartScreen 可能會警告。
 2. 開啟 **開始擷取** 並按下按鈕。Windows 會要求系統管理員權限，因為讀取網路封包需要這個權限。如果已安裝 Npcap，就不會要求。
@@ -235,8 +235,7 @@ dotnet publish src\NteOmikuji.App -p:PublishProfile=Portable
 | --- | --- |
 | `src/NteOmikuji.Core` | 解碼、工作階段、匯出、匯入、擷取、內建對應表，不含介面 |
 | `src/NteOmikuji.App` | .NET MAUI Blazor Hybrid 介面，`WebRoot` 的檔案內嵌在組件裡 |
-| `tests/NteOmikuji.Core.Tests` | 單元測試，含和 Python 版輸出比對的測試 |
-| `ref` | 原本的 Python 版，僅供參考，建置不會用到 |
+| `tests/NteOmikuji.Core.Tests` | 單元測試 |
 
 介面的顏色定義在 `WebRoot/app.css`。
 
@@ -244,17 +243,14 @@ dotnet publish src\NteOmikuji.App -p:PublishProfile=Portable
 
 `.github/workflows/release.yml` 會在每次 push 和 pull request 時建置並測試。要發布新版時，提高 `Directory.Build.props` 的 `<Version>` 並推送到 `main`。如果這個版本還沒發布過，會建立 `v<版本>` 標籤和 Release，附上 exe 和 SHA-256。版本有後綴（例如 `0.3.0-beta.1`）時會標為預先發行。
 
-這個流程還沒有實際跑過。
 
-### 和 Python 版的差異
+### 解碼方式
 
-
+- 棋盤的骰點和數量從每筆紀錄的欄位解析。解析不了的紀錄會改用掃描。
 - 支援任意結果字串：用長度前綴讀取獎勵，不靠已知前綴判斷。沒有對應的獎勵會保留遊戲原字串並標示。結果文字和獎勵不同時，JSON 會多一個 `result_text` 欄位。UTF-16 的處理只有合成測試，沒有在真實封包裡看過。
-- `exporter.name` 是 `nte-omikuji`。UID 的計算方式相同。`result_type` 仍用 `points_gift` 表示每 10 抽的贈禮。
-- 只支援 Windows。
-- `wpcap.dll` 只從 System32 以絕對路徑載入，剪貼簿用平台 API。
+- `result_type` 用 `points_gift` 表示每 10 抽的贈禮。
+- `wpcap.dll` 只從 System32 以絕對路徑載入。
 - TCP 重組和 LZ4 輸出有大小上限，`.flows` 讀取有巢狀深度上限。
-- 沒有移植診斷檔、CSV 除錯輸出和更新檢查。
 
 ### 資料來源
 
