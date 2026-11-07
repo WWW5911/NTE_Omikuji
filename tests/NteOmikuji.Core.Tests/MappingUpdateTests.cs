@@ -165,6 +165,34 @@ public sealed class MappingUpdateTests : IDisposable
     }
 
     [Fact]
+    public void AnUndoneUpdateStaysOutUntilTheKeptDownloadIsRemoved()
+    {
+        var update = Files((MappingStore.RewardsFile, "id,type,rank\nnew_item,item,A\n"));
+        _store.ApplyUpdate(update);
+        _store.Undo();
+
+        Assert.Equal(0, _store.ApplyUpdate(update));
+        Assert.Null(Row(MappingStore.RewardsFile, "new_item"));
+
+        Directory.Delete(Path.Combine(_folder, "upstream"), recursive: true);
+        _store.ApplyUpdate(update);
+
+        Assert.NotNull(Row(MappingStore.RewardsFile, "new_item"));
+    }
+
+    [Fact]
+    public void AValueFromAnOlderSeedIsKeptAsIfEditedHere()
+    {
+        var path = Path.Combine(_folder, MappingStore.EventsFile);
+        File.WriteAllText(path, File.ReadAllText(path).Replace("Lottery_Xun,1052", "Lottery_Xun,older"));
+        Directory.Delete(Path.Combine(_folder, "upstream"), recursive: true);
+
+        _store.ApplyUpdate(Files((MappingStore.EventsFile, "id,featured\nLottery_Xun,1052\n")));
+
+        Assert.Equal("older", Row(MappingStore.EventsFile, "Lottery_Xun")!.Get("featured"));
+    }
+
+    [Fact]
     public void EachEditKeepsItsOwnUndo()
     {
         _store.SaveEvent("Lottery_A", ["1"]);
