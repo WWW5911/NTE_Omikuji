@@ -58,30 +58,32 @@ README 裡的畫面都使用模擬資料。
 
 ### 實際演示：遊戲推出新活動
 
-以下用程式實際操作一次，紅框是為了說明才加上的。情境是虛構的：遊戲推出新一期活動，你抽到了新角色 `1099` 和新弧盤 `fork_DemoStar`，而程式和對應表都還不認識它們。
+以下用程式實際操作一次，以 1.5 版的曳爾沐和她的弧盤靜候彩鈴為例。紅框和「只顯示這兩列」都是為了說明才加上的。
+
+> 撰寫時 1.5 版還沒開放，**抽卡紀錄是模擬的，`1090`、`fork_EchoesOnHold`、`Lottery_Elyms`、`ForkLottery_Elyms` 這些 ID 也是假設的**。實際操作時，請以程式列出來的 ID 為準。
 
 **1. 先看哪裡不對**
 
-重新擷取後，紀錄不會遺失，但新角色還不算 S。畫面上方會提醒有活動沒設定，各期運氣顯示「無法判定」，距上次 S 也還在累加。
+重新擷取後，紀錄不會遺失，但曳爾沐還不算 S。畫面上方會提醒有活動沒設定，各期運氣顯示「無法判定」，距上次 S 也還在累加。
 
-![改版後的限定棋盤：活動未設定，新角色還沒計入 S](docs/images/update-before.png)
+![改版後的限定棋盤：活動未設定，曳爾沐還沒計入 S](docs/images/update-before.png)
 
 **2. 補上新獎勵**
 
 按提醒裡的 **前往設定**，或開啟 **獎勵與卡池設定** 的 **獎勵** 分頁。沒有對應的獎勵會排在最上面，並標示「未對應」。
 
-![獎勵分頁：新獎勵排在最上面並標示未對應](docs/images/update-rewards-unmapped.png)
+![獎勵分頁：曳爾沐和靜候彩鈴排在最上面並標示未對應](docs/images/update-rewards-unmapped.png)
 
 在該列直接填寫，改完就會存檔：
 
-| 欄位 | `1099` 填 | `fork_DemoStar` 填 | 從哪裡看 |
+| 欄位 | `1090` 填 | `fork_EchoesOnHold` 填 | 從哪裡看 |
 | --- | --- | --- | --- |
-| 中文、英文 | 示範角色、Demo Hero | 示範弧盤、Demo Arc | 遊戲內的名稱 |
+| 中文、英文 | 曳爾沐、Elyms | 靜候彩鈴、Echoes on Hold | 遊戲內的名稱 |
 | 類型 | `character` | `arc` | 角色或弧盤 |
 | 稀有 | `S` | `S` | 遊戲內的稀有度 |
 | 關注類別 | 不用改 | 不用改 | 填好類型和稀有度後，會自動變成 S 角色、S 弧盤 |
 
-![獎勵填好後，關注類別自動變成 S 角色和 S 弧盤](docs/images/update-rewards-filled.png)
+![曳爾沐和靜候彩鈴填好後，關注類別自動變成 S 角色和 S 弧盤](docs/images/update-rewards-filled.png)
 
 **3. 設定這期的限定大獎**
 
@@ -89,7 +91,7 @@ README 裡的畫面都使用模擬資料。
 
 ![活動卡池分頁：新活動標示未設定](docs/images/update-events-unset.png)
 
-在 **限定大獎** 欄填這期主打獎勵的 ID。棋盤填 `1099`，弧盤填 `fork_DemoStar`。有多個時用分號隔開，第一個會當作活動名稱。先做完第 2 步，名稱才會顯示出來；否則會顯示「對應表找不到」。
+在 **限定大獎** 欄填這期主打獎勵的 ID。棋盤填 `1090`，弧盤填 `fork_EchoesOnHold`。有多個時用分號隔開，第一個會當作活動名稱。先做完第 2 步，名稱才會顯示出來；否則會顯示「對應表找不到」。
 
 ![限定大獎填好後，名稱欄顯示獎勵名稱](docs/images/update-events-set.png)
 
@@ -104,21 +106,23 @@ README 裡的畫面都使用模擬資料。
 | S 限定數量 | 1 | 2 |
 | 這期的運氣 | 無法判定 | 正常（+0.47σ） |
 
-![修改後的限定棋盤：提醒消失，新角色計入 S 和限定](docs/images/update-after.png)
+![修改後的限定棋盤：提醒消失，曳爾沐計入 S 和限定](docs/images/update-after.png)
 
 改錯了可以按 **復原**。以上改動都存在 `mappings` 資料夾，用 Excel 或文字編輯器直接改也可以：
 
 ```csv
 # mappings\rewards.csv：id,type,rank,focus,name.zh-hant,name.en
-1099,character,S,,示範角色,Demo Hero
-fork_DemoStar,arc,S,,示範弧盤,Demo Arc
+1090,character,S,,曳爾沐,Elyms
+fork_EchoesOnHold,arc,S,,靜候彩鈴,Echoes on Hold
 
 # mappings\events.csv：id,featured
-Lottery_Demo,1099
-ForkLottery_Demo,fork_DemoStar
+Lottery_Elyms,1090
+ForkLottery_Elyms,fork_EchoesOnHold
 ```
 
 上面的 `#` 開頭只是說明，不要寫進檔案。欄位順序以檔案第一行為準，少填的欄位留空。
+
+`mappings\schedule.csv` 裡曳爾沐和靜候彩鈴的兩列（`1.5-1-board-elyms`、`1.5-1-arc-elyms`）已經有名稱和期間，只差 `event_id`。擷取到實際的活動 ID 後，可以順手填上。
 
 ### 把維護成果分享給別人
 
