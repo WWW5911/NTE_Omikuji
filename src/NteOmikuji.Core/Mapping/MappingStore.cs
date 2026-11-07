@@ -6,13 +6,14 @@ using NteOmikuji.Core.Protocol;
 namespace NteOmikuji.Core.Mapping;
 
 /// <param name="Catalog">Null when a file could not be used, so the caller keeps its previous mappings.</param>
-public sealed record MappingLoadResult(RewardCatalog? Catalog, RewardTable Rewards, IReadOnlyList<string> Issues);
+public sealed record MappingLoadResult(RewardCatalog? Catalog, RewardTable Rewards, IReadOnlyList<string> Issues, BannerTable? Banners = null);
 
 /// <summary>Owns the user-editable mapping CSVs in a folder beside the app.</summary>
 public sealed class MappingStore(string folder)
 {
     public const string RewardsFile = "rewards.csv";
     public const string AchievementsFile = "achievements.csv";
+    public const string BannersFile = "banners.csv";
 
     /// <summary>The single-language rewards.csv from version 0.1, which holds no user edits if it still matches.</summary>
     private const string UneditedLegacySeedHash = "03d148c13979026e08eab92fe5390812e5b139be301d4d002945415e713c05d8";
@@ -31,7 +32,7 @@ public sealed class MappingStore(string folder)
     public void EnsureSeeded()
     {
         Directory.CreateDirectory(Folder);
-        foreach (var name in new[] { RewardsFile, AchievementsFile })
+        foreach (var name in new[] { RewardsFile, AchievementsFile, BannersFile })
         {
             var path = Path.Combine(Folder, name);
             if (!File.Exists(path))
@@ -50,9 +51,10 @@ public sealed class MappingStore(string folder)
         try
         {
             var rewards = ReadTable(RewardsFile);
-            var catalog = RewardCatalog.FromTables(rewards, ReadTable(AchievementsFile), issues);
+            var banners = ReadBanners();
+            var catalog = RewardCatalog.FromTables(rewards, ReadTable(AchievementsFile), issues, banners);
             _lastLoaded = Fingerprint();
-            return new MappingLoadResult(catalog, ToRewardTable(rewards), issues);
+            return new MappingLoadResult(catalog, ToRewardTable(rewards), issues, ToBannerTable(banners));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
         {
@@ -107,6 +109,34 @@ public sealed class MappingStore(string folder)
         WriteRewards(table);
     }
 
+    /// <summary>Writes one event's featured rewards, keeping any other columns.</summary>
+    public void SaveBanner(string id, IEnumerable<string> featured)
+    {
+        var key = id.Trim();
+        if (key.Length == 0)
+        {
+            throw new InvalidDataException("活動 ID 不能是空白。");
+        }
+        var table = ReadBanners();
+        var row = table.Rows.FirstOrDefault(row => row.Get("id").Equals(key, StringComparison.OrdinalIgnoreCase));
+        if (row is null)
+        {
+            row = new CsvRow(0, new() { ["id"] = key });
+            table.Rows.Add(row);
+        }
+        row.Values[BannerEntry.FeaturedColumn] = BannerEntry.JoinFeatured(featured);
+        Write(BannersFile, table);
+    }
+
+    public void DeleteBanner(string id)
+    {
+        var table = ReadBanners();
+        if (table.Rows.RemoveAll(row => row.Get("id").Equals(id, StringComparison.OrdinalIgnoreCase)) > 0)
+        {
+            Write(BannersFile, table);
+        }
+    }
+
     public void DeleteReward(string id)
     {
         var table = ReadRewards();
@@ -141,7 +171,13 @@ public sealed class MappingStore(string folder)
         {
             WriteRewards(table);
         }
-        return changed;
+        var banners = ReadBanners();
+        var changedBanners = MergeBlanks(banners, ReadSeed(BannersFile));
+        if (changedBanners > 0)
+        {
+            Write(BannersFile, banners);
+        }
+        return changed + changedBanners;
     }
 
     public bool Undo()
@@ -274,6 +310,11 @@ public sealed class MappingStore(string folder)
         return new RewardTable(locales, rewards.Rows.Where(row => row.Get("id").Length > 0).Select(row => RewardSchema.ToEntry(row, locales, out _)).ToList());
     }
 
+    private static BannerTable ToBannerTable(CsvTable banners) =>
+        new(banners.Rows.Where(row => row.Get("id").Length > 0)
+            .Select(row => new BannerEntry(row.Get("id"), BannerEntry.ParseFeatured(row.Get(BannerEntry.FeaturedColumn))))
+            .ToList());
+
     private static int MergeBlanks(CsvTable table, CsvTable seed)
     {
         foreach (var header in seed.Headers.Where(header => !table.Has(header)))
@@ -340,12 +381,24 @@ public sealed class MappingStore(string folder)
         }
     }
 
-    private static CsvTable ReadSeedRewards()
+    private static CsvTable ReadSeedRewards() => ReadSeed(RewardsFile);
+
+    private static CsvTable ReadSeed(string name)
     {
-        using var seed = RewardCatalog.OpenSeed(RewardsFile);
+        using var seed = RewardCatalog.OpenSeed(name);
         using var buffer = new MemoryStream();
         seed.CopyTo(buffer);
         return CsvTable.Parse(CsvTable.DecodeText(buffer.ToArray()));
+    }
+
+    private CsvTable ReadBanners()
+    {
+        var table = File.Exists(Path.Combine(Folder, BannersFile)) ? ReadTable(BannersFile) : new CsvTable(["id"]);
+        if (!table.Has(BannerEntry.FeaturedColumn))
+        {
+            table.Headers.Add(BannerEntry.FeaturedColumn);
+        }
+        return table;
     }
 
     private CsvTable ReadRewards()
@@ -371,8 +424,12 @@ public sealed class MappingStore(string folder)
         }
     }
 
-    private string Fingerprint() =>
-        Convert.ToHexStringLower(SHA256.HashData(ReadShared(Path.Combine(Folder, RewardsFile)).Concat(ReadShared(Path.Combine(Folder, AchievementsFile))).ToArray()));
+    private string Fingerprint()
+    {
+        var banners = Path.Combine(Folder, BannersFile);
+        byte[] bannerBytes = File.Exists(banners) ? ReadShared(banners) : [];
+        return Convert.ToHexStringLower(SHA256.HashData([.. ReadShared(Path.Combine(Folder, RewardsFile)), .. ReadShared(Path.Combine(Folder, AchievementsFile)), .. bannerBytes]));
+    }
 
     private CsvTable ReadTable(string name)
     {

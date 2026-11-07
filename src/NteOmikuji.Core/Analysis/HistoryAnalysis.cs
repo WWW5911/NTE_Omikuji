@@ -6,7 +6,10 @@ namespace NteOmikuji.Core.Analysis;
 /// <param name="PullsSpent">Pulls since the previous top-rank reward, including this one.</param>
 /// <param name="IsLowerBound">True for the oldest entry, whose earlier pulls may lie before the saved history.</param>
 /// <param name="Source">How a board reward arrived when it was not a dice roll, such as the reward given every 10 pulls.</param>
-public sealed record TopRankPull(string RewardId, string Name, string Type, string Timestamp, int PullsSpent, bool IsLowerBound, string FocusLabel, bool IsLimited, string? Source, string? BannerId = null);
+/// <param name="LimitedSpent">For a limited reward, pulls since the previous limited one, including this one.</param>
+/// <param name="IsLimitedLowerBound">True for the oldest limited reward, whose earlier pulls may lie before the saved history.</param>
+/// <param name="IsGuaranteed">True when the pool's limited guarantee forced this reward rather than chance.</param>
+public sealed record TopRankPull(string RewardId, string Name, string Type, string Timestamp, int PullsSpent, bool IsLowerBound, string FocusLabel, bool IsLimited, string? Source, string? BannerId = null, int? LimitedSpent = null, bool IsLimitedLowerBound = false, bool IsGuaranteed = false);
 
 /// <param name="IsLowerBound">True when the last reset lies before the saved history, so the real count may be higher.</param>
 /// <param name="RisesFrom">The pull from which the odds improve, when the pool has such a point.</param>
@@ -54,12 +57,11 @@ public sealed record BannerAnalysis(
     PityStatus? TopRankPity = null,
     PityStatus? LimitedPity = null,
     PityStatus? SecondRankPity = null,
-    int? TopRanksBeforeRise = null);
+    int? TopRanksBeforeRise = null,
+    int GuaranteedLimitedCount = 0,
+    double? ObservedLimitedRate = null);
 
-/// <summary>
-/// Measures what is in the history and claims nothing about game rules. Pity
-/// thresholds are not built in because published figures disagree.
-/// </summary>
+/// <summary>Measures what is in the history against each pool's stated guarantees, and predicts nothing.</summary>
 public static class HistoryAnalyzer
 {
     private const string TopRank = "S";
@@ -83,6 +85,7 @@ public static class HistoryAnalyzer
         var isMonopoly = IsMonopoly(history);
         bool IsPull(HistoryRow row) => !isMonopoly || row.ResultType == "dice";
 
+        var rule = history.Banner.Pity;
         var pulls = chronological.Where(IsPull).ToList();
         var topRankPulls = new List<TopRankPull>();
         var sinceTopRank = 0;
@@ -109,7 +112,9 @@ public static class HistoryAnalyzer
             {
                 topRankPulls.Add(new TopRankPull(row.RewardId, nameOf(row), row.RewardType,
                     row.TimestampDecoded, sinceTopRank, topRankPulls.Count == 0,
-                    RewardSchema.FocusLabel(row.Focus), row.Focus.IsLimited(), IsPull(row) ? null : ResultLabel(row), row.BannerId));
+                    RewardSchema.FocusLabel(row.Focus), row.Focus.IsLimited(), IsPull(row) ? null : ResultLabel(row), row.BannerId,
+                    row.Focus.IsLimited() ? sinceLimited : null, row.Focus.IsLimited() && !sawLimited,
+                    row.Focus.IsLimited() && sinceLimited == rule?.LimitedAt));
                 sinceTopRank = 0;
             }
             if (row.Focus.IsLimited())
@@ -120,13 +125,18 @@ public static class HistoryAnalyzer
         }
 
         var overallTopCount = topRankPulls.Count;
-        var rule = history.Banner.Pity;
         if (bannerId is not null)
         {
             topRankPulls = topRankPulls.Where(pull => pull.BannerId == bannerId).ToList();
         }
         var exact = topRankPulls.Where(pull => !pull.IsLowerBound).Select(pull => pull.PullsSpent).ToList();
         var topCount = topRankPulls.Count;
+        // Forced rewards say nothing about the odds, so the rate only looks at the rest.
+        var guaranteed = topRankPulls.Count(pull => pull.IsGuaranteed);
+        var byChance = topCount - guaranteed;
+        double? observedLimitedRate = rule?.LimitedChance is not null && byChance > 0
+            ? (double)topRankPulls.Count(pull => pull.IsLimited && !pull.IsGuaranteed) / byChance
+            : null;
         topRankPulls.Reverse();
         var excessRewards = isMonopoly && chronological.Count(row => row.ResultType == PointsReward) > (pulls.Count / PullsPerPointsReward) + 1;
         var (overTime, unit) = BucketByTime(pulls);
@@ -165,11 +175,14 @@ public static class HistoryAnalyzer
             bannerId is null && rule is not null ? new PityStatus(sinceTopRank, rule.TopRankAt, overallTopCount == 0, rule.RisesFrom) : null,
             bannerId is null && rule?.LimitedAt is { } limitedAt ? new PityStatus(sinceLimited, limitedAt, !sawLimited) : null,
             bannerId is null && !excessRewards && rule?.SecondRankAt is { } secondRankAt ? new PityStatus(sinceSecondRank, secondRankAt, !sawSecondRank) : null,
-            rule?.RisesFrom is { } risesFrom ? exact.Count(value => value < risesFrom) : null);
+            rule?.RisesFrom is { } risesFrom ? exact.Count(value => value < risesFrom) : null,
+            guaranteed,
+            observedLimitedRate);
     }
 
-    /// <summary>Events in a pool, newest first. Each is named after its most frequent S, since IDs alone are not readable.</summary>
-    public static IReadOnlyList<BannerGroup> Banners(BannerHistory history, Func<HistoryRow, string>? nameOf = null)
+    /// <summary>Events in a pool, newest first.</summary>
+    /// <param name="bannerName">The name of an event's featured reward. Without one, its most frequent S names it, since IDs alone are not readable.</param>
+    public static IReadOnlyList<BannerGroup> Banners(BannerHistory history, Func<HistoryRow, string>? nameOf = null, Func<string, string?>? bannerName = null)
     {
         nameOf ??= DefaultName;
         var isMonopoly = IsMonopoly(history);
@@ -178,7 +191,8 @@ public static class HistoryAnalyzer
             .Select(group =>
             {
                 var top = group.Where(row => row.Focus.IsTopRank()).ToList();
-                var name = top.GroupBy(nameOf).OrderByDescending(names => names.Count()).ThenBy(names => names.Key, StringComparer.Ordinal).FirstOrDefault()?.Key
+                var name = bannerName?.Invoke(group.Key)
+                    ?? top.GroupBy(nameOf).OrderByDescending(names => names.Count()).ThenBy(names => names.Key, StringComparer.Ordinal).FirstOrDefault()?.Key
                     ?? group.Key[(group.Key.IndexOf('_') + 1)..];
                 var dates = group.Select(row => row.TimestampDecoded).Where(date => date.Length > 0).Order(StringComparer.Ordinal).ToList();
                 return new BannerGroup(group.Key, name, dates.FirstOrDefault(), dates.LastOrDefault(),

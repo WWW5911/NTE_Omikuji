@@ -14,6 +14,23 @@ public sealed record RewardTable(IReadOnlyList<string> Locales, IReadOnlyList<Re
     public static RewardTable Empty { get; } = new([], []);
 }
 
+/// <summary>One row of banners.csv. Limited status belongs to the event, since a reward featured on one can be off-banner on another.</summary>
+public sealed record BannerEntry(string Id, IReadOnlyList<string> Featured)
+{
+    public const string FeaturedColumn = "featured";
+    private const char Separator = ';';
+
+    public static IReadOnlyList<string> ParseFeatured(string? text) =>
+        (text ?? "").Split(Separator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    public static string JoinFeatured(IEnumerable<string> featured) => string.Join(Separator, featured);
+}
+
+public sealed record BannerTable(IReadOnlyList<BannerEntry> Entries)
+{
+    public static BannerTable Empty { get; } = new([]);
+}
+
 /// <summary>
 /// The rewards.csv layout: <c>id,type,rank,focus,name.zh-hant,name.en,...</c>.
 /// Adding a <c>name.xx</c> column adds a language, with no code or app update.

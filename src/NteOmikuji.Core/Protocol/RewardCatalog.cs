@@ -30,6 +30,7 @@ public sealed class RewardCatalog
 {
     private readonly Dictionary<string, RewardMeta> _rewards = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, AchievementMeta> _achievements = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, HashSet<string>> _featured = new(StringComparer.OrdinalIgnoreCase);
 
     public static RewardCatalog Empty { get; } = new();
 
@@ -43,6 +44,31 @@ public sealed class RewardCatalog
     /// <summary>A reward with no row is still sorted by its ID, so a new outfit counts before anyone maps it.</summary>
     public RewardFocus FocusOf(string rewardId) =>
         Find(rewardId)?.Focus ?? RewardSchema.InferFocus(rewardId, "", InferType(rewardId));
+
+    /// <summary>
+    /// The reward's category on one event. An event with a featured list decides what is
+    /// limited there: its featured reward is limited however it is mapped, and a reward
+    /// marked limited elsewhere is an ordinary S. Other events follow the mapping.
+    /// </summary>
+    public RewardFocus FocusOf(string rewardId, string? bannerId)
+    {
+        var focus = FocusOf(rewardId);
+        if (bannerId is null || !_featured.TryGetValue(bannerId, out var featured) || featured.Count == 0)
+        {
+            return focus;
+        }
+        if (featured.Contains(rewardId))
+        {
+            var type = Find(rewardId)?.Type ?? InferType(rewardId);
+            return type.Equals("arc", StringComparison.OrdinalIgnoreCase) ? RewardFocus.SLimitedArc : RewardFocus.SLimitedCharacter;
+        }
+        return focus switch
+        {
+            RewardFocus.SLimitedArc => RewardFocus.SArc,
+            RewardFocus.SLimitedCharacter => RewardFocus.SCharacter,
+            _ => focus,
+        };
+    }
 
     public AchievementMeta? FindAchievement(string achievementId) => _achievements.GetValueOrDefault(achievementId);
 
@@ -68,7 +94,7 @@ public sealed class RewardCatalog
         ?? throw new InvalidOperationException($"missing bundled mapping {fileName}");
 
     /// <summary>Builds a catalog, reporting bad rows in <paramref name="issues"/> instead of failing on them.</summary>
-    public static RewardCatalog FromTables(CsvTable rewards, CsvTable achievements, List<string> issues)
+    public static RewardCatalog FromTables(CsvTable rewards, CsvTable achievements, List<string> issues, CsvTable? banners = null)
     {
         RewardSchema.Normalize(rewards);
         var locales = RewardSchema.Locales(rewards);
@@ -83,6 +109,13 @@ public sealed class RewardCatalog
         Require(achievements, MappingStore.AchievementsFile, "id", "name");
 
         var catalog = new RewardCatalog();
+        foreach (var row in banners?.Rows ?? [])
+        {
+            if (row.Get("id").Length > 0)
+            {
+                catalog._featured[row.Get("id")] = new HashSet<string>(BannerEntry.ParseFeatured(row.Get(BannerEntry.FeaturedColumn)), StringComparer.OrdinalIgnoreCase);
+            }
+        }
         foreach (var row in rewards.Rows)
         {
             var entry = RewardSchema.ToEntry(row, locales, out var validFocus);
@@ -172,7 +205,7 @@ public sealed class RewardCatalog
     private static RewardCatalog LoadBundled()
     {
         var issues = new List<string>();
-        var catalog = FromTables(ReadSeed(MappingStore.RewardsFile), ReadSeed(MappingStore.AchievementsFile), issues);
+        var catalog = FromTables(ReadSeed(MappingStore.RewardsFile), ReadSeed(MappingStore.AchievementsFile), issues, ReadSeed(MappingStore.BannersFile));
         return issues.Count == 0 ? catalog : throw new InvalidOperationException(string.Join("; ", issues));
     }
 

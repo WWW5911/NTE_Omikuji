@@ -83,6 +83,84 @@ public class PoolOverviewTests
         Assert.Equal(new PityStatus(26, 80, false), result.LimitedPity);
     }
 
+    /// <summary>Limited arcs after 2, 80, and 3 pulls, with an off-banner S between the second pair.</summary>
+    private static BannerHistory ArcRun()
+    {
+        var rows = new List<HistoryRow>();
+        void Add(int plain, string reward, RewardFocus focus)
+        {
+            rows.AddRange(Pulls(plain, rows.Count));
+            rows.Add(Row(rows.Count, reward, focus, banner: "ForkLottery_A", rank: "S"));
+        }
+        Add(1, "first", RewardFocus.SLimitedArc);
+        Add(39, "off", RewardFocus.SArc);
+        Add(39, "forced", RewardFocus.SLimitedArc);
+        Add(2, "lucky", RewardFocus.SLimitedArc);
+        return Pool(BannerInfo.ArcMiracleBox, [.. rows]);
+    }
+
+    [Fact]
+    public void LimitedArcsRecordTheirOwnIntervals()
+    {
+        var pulls = HistoryAnalyzer.Analyze(ArcRun()).TopRankPulls.Where(pull => pull.IsLimited).ToList();
+
+        Assert.Equal(["lucky", "forced", "first"], pulls.Select(pull => pull.RewardId));
+        Assert.Equal([3, 80, 2], pulls.Select(pull => pull.LimitedSpent!.Value));
+        Assert.Equal([false, false, true], pulls.Select(pull => pull.IsLimitedLowerBound));
+    }
+
+    [Fact]
+    public void ALimitedArcAtEightyPullsIsTheGuarantee()
+    {
+        var result = HistoryAnalyzer.Analyze(ArcRun());
+
+        Assert.Equal(["forced"], result.TopRankPulls.Where(pull => pull.IsGuaranteed).Select(pull => pull.RewardId));
+        Assert.Equal(1, result.GuaranteedLimitedCount);
+    }
+
+    [Fact]
+    public void ObservedLimitedRateLeavesOutForcedRewards()
+    {
+        // Four S, one forced: of the other three, two were limited.
+        Assert.Equal(2.0 / 3, HistoryAnalyzer.Analyze(ArcRun()).ObservedLimitedRate);
+    }
+
+    [Fact]
+    public void BoardsHaveNoLimitedRateOrGuarantee()
+    {
+        var result = HistoryAnalyzer.Analyze(Pool(BannerInfo.LimitedCharacter, [.. Pulls(79), Row(79, "s", RewardFocus.SLimitedCharacter)]));
+
+        Assert.Null(result.ObservedLimitedRate);
+        Assert.Equal(0, result.GuaranteedLimitedCount);
+    }
+
+    [Fact]
+    public void AnEventsLimitedStatsCountItsOwnRewards()
+    {
+        var rows = new List<HistoryRow>(Pulls(5, 0, "ForkLottery_A"));
+        rows.Add(Row(5, "a", RewardFocus.SLimitedArc, banner: "ForkLottery_A"));
+        rows.AddRange(Pulls(79, 6, "ForkLottery_B"));
+        rows.Add(Row(85, "b", RewardFocus.SLimitedArc, banner: "ForkLottery_B"));
+
+        var result = HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox, [.. rows]), bannerId: "ForkLottery_B");
+
+        Assert.Equal(80, Assert.Single(result.TopRankPulls).LimitedSpent);
+        Assert.Equal(1, result.GuaranteedLimitedCount);
+    }
+
+    [Fact]
+    public void AnEventIsNamedAfterItsFeaturedRewardBeforeItsCommonestS()
+    {
+        var pool = Pool(BannerInfo.ArcMiracleBox,
+            Row(0, "off", RewardFocus.SArc, banner: "ForkLottery_A"),
+            Row(1, "off", RewardFocus.SArc, banner: "ForkLottery_A"),
+            Row(2, "plain", banner: "ForkLottery_B"));
+
+        var groups = HistoryAnalyzer.Banners(pool, bannerName: id => id == "ForkLottery_A" ? "限定大獎" : null);
+
+        Assert.Equal(["B", "限定大獎"], groups.Select(group => group.Name));
+    }
+
     [Fact]
     public void LimitedArcCountIsALowerBoundUntilOneIsMarked()
     {

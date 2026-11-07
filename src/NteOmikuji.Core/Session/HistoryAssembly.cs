@@ -19,7 +19,11 @@ public static class HistoryAssembly
             HistoryKind.MysteryBox => BuildRows(run, catalog, MysteryBoxDecoder.DecodeResponse, null, null),
             _ => BuildRows(run, catalog, MonopolyDecoder.DecodeResponse, StructuredRecordType.Monopoly, MonopolyDecoder.RowsFromStructured),
         };
-        rows.ForEach(row => row.PoolGroupId = banner.Id);
+        rows.ForEach(row =>
+        {
+            row.PoolGroupId = banner.Id;
+            row.Focus = catalog.FocusOf(row.RewardId, row.BannerId);
+        });
         switch (kind)
         {
             case HistoryKind.ArcMiracleBox:

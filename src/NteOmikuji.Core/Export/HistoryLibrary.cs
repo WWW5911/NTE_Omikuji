@@ -220,7 +220,7 @@ public sealed class HistoryLibrary(string folder)
         var isArc = kind == HistoryKind.ArcMiracleBox;
         var meta = catalog.Find(row.RewardId);
         row.IsMappedReward = meta is not null;
-        row.Focus = catalog.FocusOf(row.RewardId);
+        row.Focus = catalog.FocusOf(row.RewardId, row.BannerId);
         row.RewardId = meta?.Id ?? row.RewardId;
         row.RewardName = meta?.Name ?? (isArc ? "UNKNOWN" : "");
         row.RewardRank = meta?.Rank ?? (isArc ? "" : null);
