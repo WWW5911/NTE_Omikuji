@@ -19,6 +19,11 @@ public sealed class MappingStore(string folder)
     private const string FormerEventsFile = "banners.csv";
     public const string ScheduleFile = "schedule.csv";
 
+    /// <summary>Where the last downloaded copies are kept, to tell what changed upstream from what was edited here.</summary>
+    private const string UpstreamFolder = "upstream";
+
+    public static readonly IReadOnlyList<string> UpdatableFiles = [RewardsFile, AchievementsFile, EventsFile, ScheduleFile];
+
     /// <summary>The single-language rewards.csv from version 0.1, which holds no user edits if it still matches.</summary>
     private const string UneditedLegacySeedHash = "03d148c13979026e08eab92fe5390812e5b139be301d4d002945415e713c05d8";
     private const int MaxUndoSteps = 50;
@@ -195,6 +200,113 @@ public sealed class MappingStore(string folder)
             Write(ScheduleFile, schedule);
         }
         return changed + changedEvents + changedSchedule;
+    }
+
+    /// <summary>
+    /// Takes what changed upstream since the last update, so a corrected date or rank arrives while anything edited
+    /// here stays. Every download is checked before any file is written. Returns how many rows and cells changed.
+    /// </summary>
+    public int ApplyUpdate(IReadOnlyDictionary<string, byte[]> downloads)
+    {
+        var incoming = downloads.ToDictionary(file => file.Key, file => ParseDownload(file.Key, file.Value));
+        var changed = 0;
+        foreach (var (name, upstream) in incoming)
+        {
+            var table = ReadUpdatable(name);
+            var lastTaken = ReadLastTaken(name);
+            var baseline = lastTaken ?? ReadSeed(name);
+            if (name == RewardsFile)
+            {
+                RewardSchema.Normalize(upstream);
+                RewardSchema.Normalize(baseline);
+            }
+            var cells = MergeUpstream(table, upstream, baseline, lastTaken is not null);
+            if (cells > 0)
+            {
+                Write(name, table);
+                changed += cells;
+            }
+            Directory.CreateDirectory(Path.Combine(Folder, UpstreamFolder));
+            AtomicFile.WriteAllText(Path.Combine(Folder, UpstreamFolder, name), upstream.ToText(), withBom: true);
+        }
+        return changed;
+    }
+
+    private static CsvTable ParseDownload(string name, byte[] bytes)
+    {
+        var table = CsvTable.Parse(CsvTable.DecodeText(bytes));
+        if (!table.Has("id") || table.Rows.Count == 0)
+        {
+            throw new InvalidDataException($"下載的 {name} 不是對應檔，沒有套用任何更新。");
+        }
+        return table;
+    }
+
+    private CsvTable ReadUpdatable(string name) => name switch
+    {
+        RewardsFile => ReadRewards(),
+        EventsFile => ReadEvents(),
+        ScheduleFile => ReadSchedule(),
+        _ => ReadTable(name),
+    };
+
+    private CsvTable? ReadLastTaken(string name)
+    {
+        var path = Path.Combine(Folder, UpstreamFolder, name);
+        try
+        {
+            return File.Exists(path) ? CsvTable.Parse(CsvTable.DecodeText(ReadShared(path))) : null;
+        }
+        catch (InvalidDataException)
+        {
+            return null;
+        }
+    }
+
+    private static int MergeUpstream(CsvTable table, CsvTable upstream, CsvTable baseline, bool baselineWasTaken)
+    {
+        foreach (var header in upstream.Headers.Where(header => !table.Has(header)))
+        {
+            table.Headers.Add(header);
+        }
+        var existing = new Dictionary<string, CsvRow>(StringComparer.OrdinalIgnoreCase);
+        foreach (var row in table.Rows)
+        {
+            existing[row.Get("id")] = row;
+        }
+        var known = new Dictionary<string, CsvRow>(StringComparer.OrdinalIgnoreCase);
+        foreach (var row in baseline.Rows)
+        {
+            known[row.Get("id")] = row;
+        }
+        var changed = 0;
+        foreach (var row in upstream.Rows.Where(row => row.Get("id").Length > 0))
+        {
+            var was = known.GetValueOrDefault(row.Get("id"));
+            if (!existing.TryGetValue(row.Get("id"), out var current))
+            {
+                // A row the last update brought and this folder no longer has was deleted here.
+                if (was is null || !baselineWasTaken)
+                {
+                    table.Rows.Add(new CsvRow(0, new(row.Values)));
+                    changed++;
+                }
+                continue;
+            }
+            foreach (var (column, value) in row.Values.Where(cell => cell.Key != "id"))
+            {
+                var next = value.Trim();
+                var now = current.Get(column);
+                // A blank category follows the rank and ID, so a cleared one stays cleared.
+                var fillsBlank = now.Length == 0 && column != RewardSchema.FocusColumn;
+                if (next != now && (now == (was?.Get(column) ?? "") || fillsBlank))
+                {
+                    current.Values[column] = next;
+                    changed++;
+                }
+            }
+        }
+        return changed;
     }
 
     public bool Undo()

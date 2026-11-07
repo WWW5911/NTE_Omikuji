@@ -122,6 +122,7 @@ public static class ImportedFiles
                 Quantity = Number(record, "quantity"),
                 SourceType = Text(record, "source_type"),
                 DecoderMode = "imported",
+                Unverified = record.TryGetProperty("unverified", out var unverified) && unverified.ValueKind == JsonValueKind.True,
             });
         }
         return new HistoryDocument(poolInfo, rows, Text(root, "user_uid"), Text(root, "server_id"), Text(root, "source"), Text(root, "capture_source"));

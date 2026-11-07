@@ -1,0 +1,149 @@
+using System.Net;
+using System.Text;
+using NteOmikuji.Core.Mapping;
+using Xunit;
+
+namespace NteOmikuji.Core.Tests;
+
+public sealed class MappingUpdateTests : IDisposable
+{
+    private readonly string _folder = Path.Combine(Path.GetTempPath(), "nte-update-" + Guid.NewGuid().ToString("N"));
+    private readonly MappingStore _store;
+
+    public MappingUpdateTests()
+    {
+        _store = new MappingStore(_folder);
+        _store.EnsureSeeded();
+    }
+
+    public void Dispose() => Directory.Delete(_folder, recursive: true);
+
+    private static Dictionary<string, byte[]> Files(params (string Name, string Text)[] files) =>
+        files.ToDictionary(file => file.Name, file => Encoding.UTF8.GetBytes(file.Text));
+
+    private CsvRow? Row(string file, string id) =>
+        CsvTable.Parse(CsvTable.DecodeText(File.ReadAllBytes(Path.Combine(_folder, file)))).Rows.FirstOrDefault(row => row.Get("id") == id);
+
+    [Fact]
+    public void ANewRewardIsAdded()
+    {
+        var changed = _store.ApplyUpdate(Files((MappingStore.RewardsFile, "id,type,rank,name.en\nFashion_vehicle_new,cosmetic,S,New Skin\n")));
+
+        Assert.Equal(1, changed);
+        Assert.Equal("New Skin", Row(MappingStore.RewardsFile, "Fashion_vehicle_new")!.Get("name.en"));
+    }
+
+    [Fact]
+    public void AnUpstreamCorrectionReplacesAnUntouchedValueButNotAnEditedOne()
+    {
+        _store.ApplyUpdate(Files((MappingStore.EventsFile, "id,featured\nLottery_Xun,1052\nLottery_Nanali,1010\n")));
+        _store.SaveEvent("Lottery_Nanali", ["mine"]);
+
+        _store.ApplyUpdate(Files((MappingStore.EventsFile, "id,featured\nLottery_Xun,5555\nLottery_Nanali,6666\n")));
+
+        Assert.Equal("5555", Row(MappingStore.EventsFile, "Lottery_Xun")!.Get("featured"));
+        Assert.Equal("mine", Row(MappingStore.EventsFile, "Lottery_Nanali")!.Get("featured"));
+    }
+
+    [Fact]
+    public void AConfirmedDateReplacesTheEstimateAndClearsItsFlag()
+    {
+        _store.ApplyUpdate(Files((MappingStore.ScheduleFile, "id,starts,estimate\nnext-board,2026-12-01,yes\n")));
+
+        _store.ApplyUpdate(Files((MappingStore.ScheduleFile, "id,starts,estimate\nnext-board,2026-12-03,\n")));
+
+        var row = Row(MappingStore.ScheduleFile, "next-board")!;
+        Assert.Equal("2026-12-03", row.Get("starts"));
+        Assert.Equal("", row.Get("estimate"));
+    }
+
+    [Fact]
+    public void ARowDeletedHereDoesNotComeBack()
+    {
+        var update = Files((MappingStore.RewardsFile, "id,type,rank\nnew_item,item,A\n"));
+        _store.ApplyUpdate(update);
+        _store.DeleteReward("new_item");
+
+        Assert.Equal(0, _store.ApplyUpdate(update));
+
+        Assert.Null(Row(MappingStore.RewardsFile, "new_item"));
+    }
+
+    [Fact]
+    public void AnUnchangedSourceChangesNothing()
+    {
+        var update = Files((MappingStore.EventsFile, "id,featured\nLottery_Xun,1052\n"));
+        _store.ApplyUpdate(update);
+
+        Assert.Equal(0, _store.ApplyUpdate(update));
+        Assert.False(_store.CanUndo);
+    }
+
+    [Fact]
+    public void AnUpdateCanBeUndone()
+    {
+        _store.ApplyUpdate(Files((MappingStore.RewardsFile, "id,type,rank\nnew_item,item,A\n")));
+
+        Assert.True(_store.Undo());
+
+        Assert.Null(Row(MappingStore.RewardsFile, "new_item"));
+    }
+
+    [Fact]
+    public void ABadFileStopsTheWholeUpdate()
+    {
+        var update = Files(
+            (MappingStore.RewardsFile, "id,type,rank\nnew_item,item,A\n"),
+            (MappingStore.EventsFile, "<html>Rate limited</html>\n"));
+
+        Assert.Throws<InvalidDataException>(() => _store.ApplyUpdate(update));
+
+        Assert.Null(Row(MappingStore.RewardsFile, "new_item"));
+    }
+
+    [Fact]
+    public void TheUpdatedTablesStillLoad()
+    {
+        _store.ApplyUpdate(Files((MappingStore.RewardsFile, "id,type,rank,name.en\nnew_item,item,A,New Item\n")));
+
+        var loaded = _store.Load();
+
+        Assert.NotNull(loaded.Catalog);
+        Assert.Equal("New Item", loaded.Catalog!.Find("new_item")!.Name);
+    }
+
+    private sealed class FakeHandler(Func<string, HttpResponseMessage> respond) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token) =>
+            Task.FromResult(respond(request.RequestUri!.Segments[^1]));
+    }
+
+    private static MappingUpdater Updater(Func<string, HttpResponseMessage> respond) =>
+        new(new HttpClient(new FakeHandler(respond)), "https://example.test/");
+
+    [Fact]
+    public async Task AFileTheSourceLacksIsReportedAndTheRestDownload()
+    {
+        var download = await Updater(name => name == MappingStore.EventsFile
+            ? new HttpResponseMessage(HttpStatusCode.NotFound)
+            : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(name) }).DownloadAsync();
+
+        Assert.Equal([MappingStore.EventsFile], download.Missing);
+        Assert.Equal(3, download.Files.Count);
+        Assert.Equal(MappingStore.RewardsFile, Encoding.UTF8.GetString(download.Files[MappingStore.RewardsFile]));
+    }
+
+    [Fact]
+    public async Task AServerErrorFailsTheDownload()
+    {
+        await Assert.ThrowsAsync<HttpRequestException>(() =>
+            Updater(_ => new HttpResponseMessage(HttpStatusCode.InternalServerError)).DownloadAsync());
+    }
+
+    [Fact]
+    public async Task AnOversizedFileIsRefused()
+    {
+        await Assert.ThrowsAsync<InvalidDataException>(() =>
+            Updater(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(new byte[9 * 1024 * 1024]) }).DownloadAsync());
+    }
+}

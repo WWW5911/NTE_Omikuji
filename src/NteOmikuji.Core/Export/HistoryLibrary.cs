@@ -1,8 +1,15 @@
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using NteOmikuji.Core.Import;
 using NteOmikuji.Core.Mapping;
 using NteOmikuji.Core.Protocol;
 
 namespace NteOmikuji.Core.Export;
+
+/// <param name="HeldBack">Rows left out because nothing confirmed them and saved rows already cover their time.</param>
+/// <param name="ChangedSeconds">Times whose saved content new data changed. The old rows are kept in the changes folder.</param>
+public sealed record MergeNotes(int HeldBack, int ChangedSeconds);
 
 /// <summary>
 /// The cumulative per-account history in user_data. The game only shows recent
@@ -30,12 +37,26 @@ public sealed class HistoryLibrary(string folder)
     private readonly HashSet<string> _unreadable = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<(string Uid, string Label)> _dirty = [];
     private readonly HashSet<string> _backedUp = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<(string File, string Line)> _changes = [];
+    private int _heldBack;
+    private int _changedSeconds;
 
     public const int BackupsPerFile = 10;
 
     public string Folder { get; } = folder;
 
     public string BackupFolder => Path.Combine(Folder, "backups");
+
+    /// <summary>Every saved row that new data changed, kept for good so a mistake can be found and undone at any later time.</summary>
+    public string ChangesFolder => Path.Combine(Folder, "changes");
+
+    /// <summary>What the merges since the last call held back or changed.</summary>
+    public MergeNotes TakeNotes()
+    {
+        var notes = new MergeNotes(_heldBack, _changedSeconds);
+        (_heldBack, _changedSeconds) = (0, 0);
+        return notes;
+    }
 
     public IReadOnlyList<string> Accounts =>
         _accounts.Values.OrderByDescending(account => account.LastChanged).Select(account => account.Uid).ToList();
@@ -79,16 +100,20 @@ public sealed class HistoryLibrary(string folder)
         var account = Find(uid);
         Remember(account, serverId, source, captureSource);
         var existing = account.Rows.GetValueOrDefault(kind) ?? [];
-        var incoming = rows.Select(row => row.Uid).ToHashSet();
-        var incomingPerSecond = rows.GroupBy(row => row.TimestampDecoded).ToDictionary(group => group.Key, group => group.Count());
+        var saved = existing.Select(row => row.TimestampDecoded).ToHashSet(StringComparer.Ordinal);
+        var accepted = rows.Where(row => !row.Unverified || !saved.Contains(row.TimestampDecoded)).ToList();
+        KeepKnownEvents(accepted, existing);
+        var incoming = accepted.Select(row => row.Uid).ToHashSet();
+        var incomingPerSecond = accepted.GroupBy(row => row.TimestampDecoded).ToDictionary(group => group.Key, group => group.Count());
         var existingPerSecond = existing.GroupBy(row => row.TimestampDecoded).ToDictionary(group => group.Key, group => group.Count());
         // Regrouping a batch split across pages changes its UIDs, so rows from a second the
         // new data fully covers are replaced. Fewer new rows may be a cut-off scan, so those stay.
         bool IsReplaced(HistoryRow row) =>
             incoming.Contains(row.Uid)
             || (row.TimestampDecoded.Length > 0 && incomingPerSecond.GetValueOrDefault(row.TimestampDecoded) >= existingPerSecond[row.TimestampDecoded]);
+        var replaced = existing.Where(IsReplaced).ToList();
         // New rows come first so a stable sort keeps the decoder's order within the same second.
-        account.Rows[kind] = rows.Concat(existing.Where(row => !IsReplaced(row)))
+        account.Rows[kind] = accepted.Concat(existing.Where(row => !IsReplaced(row)))
             .OrderByDescending(row => row.TimestampDecoded, StringComparer.Ordinal)
             .ToList();
         foreach (var row in account.Rows[kind])
@@ -97,9 +122,84 @@ public sealed class HistoryLibrary(string folder)
         }
         if (markDirty)
         {
+            _heldBack += rows.Count - accepted.Count;
+            RecordChanges(account, kind, replaced);
             account.LastChanged = DateTime.UtcNow;
             _dirty.Add((account.Uid, PoolInfo.For(kind).FilePrefix));
         }
+    }
+
+    /// <summary>A row that could not read its event keeps the one already saved for that time.</summary>
+    private static void KeepKnownEvents(List<HistoryRow> incoming, List<HistoryRow> existing)
+    {
+        var known = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var row in existing.Where(row => !string.IsNullOrEmpty(row.EventId)))
+        {
+            known.TryAdd(row.TimestampDecoded, row.EventId!);
+        }
+        foreach (var row in incoming.Where(row => string.IsNullOrEmpty(row.EventId)))
+        {
+            row.EventId = known.GetValueOrDefault(row.TimestampDecoded);
+        }
+    }
+
+    /// <summary>
+    /// Sets aside saved rows whose content is gone after a merge. A batch that only grew, or one that gained its
+    /// event, loses nothing and is not a change.
+    /// </summary>
+    private void RecordChanges(Account account, HistoryKind kind, List<HistoryRow> replaced)
+    {
+        var poolInfo = PoolInfo.For(kind);
+        var now = account.Rows[kind].ToLookup(row => row.TimestampDecoded, StringComparer.Ordinal);
+        foreach (var second in replaced.GroupBy(row => row.TimestampDecoded, StringComparer.Ordinal))
+        {
+            var remaining = now[second.Key].ToList();
+            var lost = second.Count(old =>
+            {
+                var match = remaining.FindIndex(row => HoldsContentOf(row, old));
+                if (match >= 0)
+                {
+                    remaining.RemoveAt(match);
+                }
+                return match < 0;
+            });
+            if (lost == 0)
+            {
+                continue;
+            }
+            _changedSeconds++;
+            var entry = new JsonObject
+            {
+                ["changed_at"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                ["timestamp"] = second.Key,
+                ["replaced"] = new JsonArray(second.Select(row => (JsonNode?)HistoryJsonWriter.RecordNode(poolInfo, row)).ToArray()),
+                ["now"] = new JsonArray(now[second.Key].Select(row => (JsonNode?)HistoryJsonWriter.RecordNode(poolInfo, row)).ToArray()),
+            };
+            var file = Path.ChangeExtension(HistoryJsonWriter.LibraryFileName(account.Uid, poolInfo.FilePrefix), ".jsonl");
+            _changes.Add((file, entry.ToJsonString(ChangeLineOptions)));
+        }
+    }
+
+    private static bool HoldsContentOf(HistoryRow row, HistoryRow old) =>
+        row.RewardId.Equals(old.RewardId, StringComparison.OrdinalIgnoreCase)
+        && row.Dice == old.Dice
+        && row.ResultType == old.ResultType
+        && (string.IsNullOrEmpty(old.EventId) || old.EventId == row.EventId);
+
+    private static readonly JsonSerializerOptions ChangeLineOptions = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
+    private void WriteChanges()
+    {
+        if (_changes.Count == 0)
+        {
+            return;
+        }
+        Directory.CreateDirectory(ChangesFolder);
+        foreach (var file in _changes.GroupBy(change => change.File))
+        {
+            File.AppendAllLines(Path.Combine(ChangesFolder, file.Key), file.Select(change => change.Line));
+        }
+        _changes.Clear();
     }
 
     /// <summary>
@@ -198,6 +298,8 @@ public sealed class HistoryLibrary(string folder)
     public int Save(RewardCatalog catalog)
     {
         Directory.CreateDirectory(Folder);
+        // First, so a saved file never holds a change whose old rows were not set aside.
+        WriteChanges();
         var written = 0;
         foreach (var (uid, label) in _dirty.ToList())
         {

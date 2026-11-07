@@ -11,10 +11,16 @@
         </div>
         <div class="actions">
             <button id="editor-undo" disabled="@(!State.CanUndoMapping)" @onclick="State.UndoMapping">復原</button>
+            <button id="editor-update" title="下載最新的獎勵、成就和活動資料。你改過的內容不會被改動，可以用復原還原。" disabled="@State.UpdatingMappings" @onclick="() => State.UpdateMappingsAsync()">@(State.UpdatingMappings ? "更新中…" : "從 GitHub 更新")</button>
             <button id="editor-fill" title="加入內建資料有、這裡沒有的項目，並填入空白欄位。已填寫的內容不會被改動。" @onclick="State.FillMappingsFromBundled">從內建補齊</button>
             <button id="editor-folder" @onclick="OpenFolderAsync">開啟資料夾</button>
+            <label class="check"><input id="editor-auto-update" type="checkbox" checked="@State.AutoUpdateMappings" @onchange="change => State.SetAutoUpdateMappings(change.Value is true)" /> 啟動時自動更新</label>
         </div>
     </div>
+    @if (State.MappingUpdateStatus is { } updateStatus)
+    {
+        <p class="hint" id="update-status" role="status">@updateStatus</p>
+    }
 
     <div class="toolbar">
         <div class="actions">

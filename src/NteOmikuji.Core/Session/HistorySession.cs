@@ -12,6 +12,9 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
 
     private readonly List<PendingRequest> _pending = [];
     private readonly List<CapturedPage> _pages = [];
+    private readonly List<PoolHistory> _superseded = [];
+    private readonly Dictionary<HistoryKind, int> _replies = [];
+    private HistoryKind? _lastRequested;
     private readonly Dictionary<string, int> _uidCandidates = [];
     private readonly AchievementCollector _achievements = new(localIp);
     private readonly object _gate = new();
@@ -24,6 +27,21 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
     public string? UserUid { get; private set; }
     public string? ServerId { get; private set; }
     public PacketDebugLog? DebugLog { get; set; }
+
+    /// <summary>The history the game asked for most recently, which is the one on its screen.</summary>
+    public HistoryKind? LastRequested
+    {
+        get { lock (_gate) { return _lastRequested; } }
+    }
+
+    /// <summary>How many replies have arrived for this history, including repeats of pages already seen.</summary>
+    public int RepliesSeen(HistoryKind kind)
+    {
+        lock (_gate)
+        {
+            return _replies.GetValueOrDefault(kind);
+        }
+    }
 
     public IReadOnlyList<AchievementRecord> Achievements
     {
@@ -115,6 +133,17 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
         }
     }
 
+    /// <summary>Hands over scans the history has since moved past, oldest first. Merge these before <see cref="BuildHistories"/>.</summary>
+    public IReadOnlyList<PoolHistory> TakeSuperseded()
+    {
+        lock (_gate)
+        {
+            var taken = _superseded.ToList();
+            _superseded.Clear();
+            return taken;
+        }
+    }
+
     /// <summary>Tries the data still buffered below the parse threshold.</summary>
     public void Finish()
     {
@@ -156,6 +185,7 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
             && pending.SrcPort == request.SrcPort && pending.DstPort == request.DstPort
             && (page == 1 || pending.Page == page));
         _pending.Add(request);
+        _lastRequested = kind;
         DebugLog?.Request(packet, kind, page, pool);
         return true;
     }
@@ -240,10 +270,38 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
             {
                 break;
             }
-            captured.Add(new CapturedPage(selected[slice].Page, selected[slice].Kind, packet.Payload, start, count, records[start].EventId ?? selected[slice].Pool));
+            var pool = selected[slice].Kind == HistoryKind.MysteryBox ? records[start].EventId ?? selected[slice].Pool : null;
+            var content = string.Join('\n', records.Skip(start).Take(count).Select(row => $"{row.TimestampRawHex}|{row.RewardId}|{row.Dice}"));
+            captured.Add(new CapturedPage(selected[slice].Page, selected[slice].Kind, packet.Payload, start, count, pool, content));
         }
+        RetireMovedPages(captured);
         _pages.AddRange(captured);
+        if (captured.Count > 0)
+        {
+            _replies[captured[0].Kind] = _replies.GetValueOrDefault(captured[0].Kind) + 1;
+        }
         return captured;
+    }
+
+    /// <summary>
+    /// New pulls push every row to a later page, so once a page changes, the pages seen before it no longer line up
+    /// with it. Joining them would skip rows and shift the ordinals UIDs rely on. A page that repeats unchanged is
+    /// kept, because a second pass is how a missed page gets filled in.
+    /// </summary>
+    private void RetireMovedPages(List<CapturedPage> captured)
+    {
+        bool SamePool(CapturedPage a, CapturedPage b) => a.Kind == b.Kind && string.Equals(a.Pool, b.Pool, StringComparison.OrdinalIgnoreCase);
+
+        var moved = captured.Where(page => _pages.Any(seen => SamePool(seen, page) && seen.Page == page.Page && !string.Equals(seen.Content, page.Content, StringComparison.OrdinalIgnoreCase)));
+        foreach (var page in moved.ToList())
+        {
+            var earlier = _pages.Where(seen => SamePool(seen, page)).ToList();
+            if (earlier.Count > 0)
+            {
+                _superseded.Add(HistoryAssembly.Build(page.Kind, earlier, Catalog));
+                _pages.RemoveAll(seen => SamePool(seen, page));
+            }
+        }
     }
 }
 

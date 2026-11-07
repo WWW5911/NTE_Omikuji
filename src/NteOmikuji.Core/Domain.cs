@@ -82,6 +82,9 @@ public sealed class HistoryRow
     public string TimestampDecoded { get; set; } = "";
     public string RecordHex { get; set; } = "";
     public string DecoderMode { get; set; } = "scan";
+
+    /// <summary>Only the fallback scan read this row, so nothing confirmed its fields. Such a row never replaces a saved one.</summary>
+    public bool Unverified { get; set; }
     public int GroupOrdinal { get; set; }
     public string Uid { get; set; } = "";
 }
@@ -103,7 +106,9 @@ public static class GameCalendar
 
 public sealed record CaptureWarning(string Code, string Reason, IReadOnlyList<int>? IgnoredPages = null);
 
-public sealed record CapturedPage(int Page, HistoryKind Kind, byte[] Payload, int SliceStart, int SliceCount, string? Pool = null);
+/// <param name="Pool">The Mystery Box this page belongs to, since each numbers its own pages. Other kinds share one sequence of pages.</param>
+/// <param name="Content">What the page's rows were, to tell a repeat of this page from a history that has moved.</param>
+public sealed record CapturedPage(int Page, HistoryKind Kind, byte[] Payload, int SliceStart, int SliceCount, string? Pool = null, string? Content = null);
 
 public sealed record PoolHistory(
     PoolInfo Pool,

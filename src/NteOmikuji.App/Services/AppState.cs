@@ -28,6 +28,9 @@ public sealed class AppState : IDisposable
     private static readonly TimeSpan RefreshInterval = TimeSpan.FromMilliseconds(400);
     private static readonly TimeSpan InboundGracePeriod = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan MappingReloadDelay = TimeSpan.FromMilliseconds(600);
+    private static readonly HttpClient UpdateClient = new() { Timeout = TimeSpan.FromSeconds(20) };
+    private static readonly TimeSpan AutoPageSwitchWait = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan AutoPageStartDelay = TimeSpan.FromMilliseconds(800);
 
     private readonly object _gate = new();
     private readonly object _dataGate = new();
@@ -43,6 +46,7 @@ public sealed class AppState : IDisposable
 
     private RewardCatalog _catalog = RewardCatalog.Bundled.Value;
     private CancellationTokenSource? _cancellation;
+    private CancellationTokenSource? _autoPageCancellation;
     private Task? _captureTask;
     private HistorySession? _session;
     private string? _account;
@@ -84,6 +88,10 @@ public sealed class AppState : IDisposable
             }
             _account = _library.Accounts.FirstOrDefault();
             RefreshView();
+            if (_settings.AutoUpdateMappings)
+            {
+                _ = Task.Run(() => UpdateMappingsAsync(quiet: true));
+            }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -112,6 +120,11 @@ public sealed class AppState : IDisposable
     public IReadOnlyList<string> UnsetEvents =>
         SeenEvents.Keys.Where(id => !Events.Entries.Any(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase))).Order(StringComparer.Ordinal).ToList();
     public bool CanUndoMapping => _mappings.CanUndo;
+    public bool AutoPaging { get; private set; }
+    public string? AutoPageStatus { get; private set; }
+    public bool UpdatingMappings { get; private set; }
+    public string? MappingUpdateStatus { get; private set; }
+    public bool AutoUpdateMappings => _settings.AutoUpdateMappings;
     public int MappingWriteFailures { get; private set; }
     public string DisplayLanguage => _settings.DisplayLanguage;
     public DateTime? LastSaved { get; private set; }
@@ -178,12 +191,86 @@ public sealed class AppState : IDisposable
         NotifyChanged();
     }
 
+    /// <summary>The history auto paging would turn: open in the game as far as the packets show, and one with a known button.</summary>
+    public HistoryKind? PageableHistory =>
+        Status == AppStatus.Capturing && _session?.LastRequested is { } kind && GameWindowInput.CanPage(kind) ? kind : null;
+
+    public static string HistoryLabel(HistoryKind kind) => kind switch
+    {
+        HistoryKind.LimitedCharacter => "限定棋盤",
+        HistoryKind.Permanent => "常駐棋盤",
+        HistoryKind.ArcMiracleBox => "弧盤研募",
+        _ => "盲盒",
+    };
+
+    /// <summary>Waits for the player to switch to the game, then turns pages until the history ends or the player steps in.</summary>
+    public async Task StartAutoPageAsync()
+    {
+        if (AutoPaging || PageableHistory is not { } kind || _session is not { } session)
+        {
+            return;
+        }
+        var cancellation = new CancellationTokenSource();
+        _autoPageCancellation = cancellation;
+        AutoPaging = true;
+        AutoPageStatus = $"請在 {(int)AutoPageSwitchWait.TotalSeconds} 秒內切回遊戲，並停在{HistoryLabel(kind)}的紀錄頁。";
+        NotifyChanged();
+        var outcome = await Task.Run(async () =>
+        {
+            try
+            {
+                var deadline = DateTime.UtcNow + AutoPageSwitchWait;
+                while (!GameWindowInput.GameIsForeground())
+                {
+                    if (DateTime.UtcNow >= deadline)
+                    {
+                        return AutoPageOutcome.LostFocus;
+                    }
+                    await Task.Delay(100, cancellation.Token);
+                }
+                await Task.Delay(AutoPageStartDelay, cancellation.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                return AutoPageOutcome.Cancelled;
+            }
+            using var input = new GameWindowInput(kind);
+            if (!input.HoldsPhysicalMouse)
+            {
+                Log("無法在點擊時暫停實體滑鼠，翻頁期間請不要碰滑鼠。");
+            }
+            var pager = new AutoPager(input, () => session.RepliesSeen(kind));
+            return await pager.RunAsync(clicks =>
+            {
+                AutoPageStatus = $"自動翻頁中：已點 {clicks} 次。按 Esc 或移動滑鼠可以停止。";
+                NotifyChanged();
+            }, cancellation.Token);
+        });
+        AutoPaging = false;
+        _autoPageCancellation = null;
+        cancellation.Dispose();
+        AutoPageStatus = outcome switch
+        {
+            AutoPageOutcome.ReachedEnd => $"{HistoryLabel(kind)}已沒有新的頁面，自動翻頁結束。",
+            AutoPageOutcome.LostFocus => "遊戲不在前景，自動翻頁已停止。",
+            AutoPageOutcome.Interrupted => "偵測到 Esc 或滑鼠移動，自動翻頁已停止。",
+            AutoPageOutcome.ClickRefused => "Windows 拒絕把點擊送給遊戲。遊戲以系統管理員身分執行時，本程式也要提權：停止後把擷取方式改成「內建擷取」再開始。",
+            AutoPageOutcome.ReachedLimit => $"已點 {AutoPager.MaxClicks} 次，自動翻頁先停止。",
+            _ => "已取消自動翻頁。",
+        };
+        Log(AutoPageStatus);
+        NotifyChanged();
+    }
+
+    public void StopAutoPage() => _autoPageCancellation?.Cancel();
+
     public async Task StopAsync()
     {
         if (Status != AppStatus.Capturing || _captureTask is null)
         {
             return;
         }
+        StopAutoPage();
         Status = AppStatus.Stopping;
         NotifyChanged();
         _cancellation?.Cancel();
@@ -365,6 +452,54 @@ public sealed class AppState : IDisposable
     public void UndoMapping() => ChangeMappings(() => _mappings.Undo());
 
     public void FillMappingsFromBundled() => ChangeMappings(() => Log($"已從內建資料補齊 {_mappings.FillFromBundled()} 個欄位或項目。"));
+
+    public void SetAutoUpdateMappings(bool enabled)
+    {
+        _settings.AutoUpdateMappings = enabled;
+        SaveSettings();
+        NotifyChanged();
+    }
+
+    /// <summary>Downloads the latest tables and takes what changed, keeping local edits. A failed startup check is only logged.</summary>
+    public async Task UpdateMappingsAsync(bool quiet = false)
+    {
+        if (UpdatingMappings)
+        {
+            return;
+        }
+        UpdatingMappings = true;
+        NotifyChanged();
+        try
+        {
+            var download = await new MappingUpdater(UpdateClient).DownloadAsync();
+            if (download.Files.Count == 0)
+            {
+                throw new InvalidDataException("來源沒有對應檔。");
+            }
+            var changed = 0;
+            var applied = ChangeMappings(() => changed = _mappings.ApplyUpdate(download.Files));
+            if (applied)
+            {
+                var skipped = download.Missing.Count > 0 ? $"來源沒有 {string.Join("、", download.Missing)}，這些檔案維持原樣。" : "";
+                MappingUpdateStatus = (changed > 0 ? $"已從 GitHub 更新 {changed} 個欄位或項目。" : "對應資料已是最新。") + skipped;
+                Log(MappingUpdateStatus);
+            }
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidDataException)
+        {
+            MappingUpdateStatus = $"無法從 GitHub 更新對應資料：{exception.Message}";
+            Log(MappingUpdateStatus);
+            if (!quiet)
+            {
+                Error = MappingUpdateStatus;
+            }
+        }
+        finally
+        {
+            UpdatingMappings = false;
+            NotifyChanged();
+        }
+    }
 
     /// <summary>Returns true when the language now exists, and shows it.</summary>
     public bool AddLocale(string locale)
@@ -622,6 +757,10 @@ public sealed class AppState : IDisposable
             {
                 _account = _typedUid ?? session.UserUid ?? _sessionAccount;
                 var captureName = CaptureName;
+                foreach (var earlier in session.TakeSuperseded().Where(history => history.Warnings.All(warning => warning.Code != MissedFirstPage)))
+                {
+                    _library.Merge(_account, earlier.Pool.Kind, earlier.Rows, session.ServerId, source, captureName, _catalog);
+                }
                 foreach (var history in session.BuildHistories())
                 {
                     _warnings[history.Pool.Kind] = history.Warnings;
@@ -641,9 +780,28 @@ public sealed class AppState : IDisposable
                     _library.Merge(_account, session.Achievements, session.ServerId, source, captureName);
                 }
             }
+            ReportMergeNotes(_library.TakeNotes());
             RefreshView();
         }
         Persist();
+    }
+
+    private void ReportMergeNotes(MergeNotes notes)
+    {
+        if (notes.ChangedSeconds > 0)
+        {
+            Notice = $"已存的紀錄有 {notes.ChangedSeconds} 個時間點被新資料改動。舊內容保留在 {_library.ChangesFolder}，也可以從 {_library.BackupFolder} 還原。";
+            Log(Notice);
+        }
+        else if (notes.HeldBack > 0)
+        {
+            var message = "有紀錄的格式無法確認，可能是遊戲改版。已存的紀錄沒有被改動，請等程式更新後重新擷取。";
+            if (Notice != message)
+            {
+                Notice = message;
+                Log(message);
+            }
+        }
     }
 
     private void Persist()
@@ -685,7 +843,13 @@ public sealed class AppState : IDisposable
                 rows = partial.Rows.Where(row => !known.Contains(row.Uid)).Concat(rows)
                     .OrderByDescending(row => row.TimestampDecoded, StringComparer.Ordinal).ToList();
             }
-            return new PoolHistory(PoolInfo.For(kind), rows, _warnings.GetValueOrDefault(kind) ?? [], []);
+            var warnings = _warnings.GetValueOrDefault(kind) ?? [];
+            // The flag is saved with the rows, so this still shows after a restart.
+            if (rows.Any(row => row.Unverified) && warnings.All(warning => warning.Code != HistoryAssembly.UnverifiedCode))
+            {
+                warnings = [.. warnings, HistoryAssembly.UnverifiedWarning()];
+            }
+            return new PoolHistory(PoolInfo.For(kind), rows, warnings, []);
         }).ToList();
         Achievements = _library.AchievementsOf(_account);
         SeenRewards = Histories.SelectMany(history => history.Rows).Where(row => row.RewardId.Length > 0)

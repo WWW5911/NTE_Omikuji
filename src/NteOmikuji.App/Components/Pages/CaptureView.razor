@@ -39,6 +39,30 @@
         <p class="hint">開始時 Windows 會請你同意系統管理員權限，這是讀取網路封包所必需的。請在遊戲主選單按下開始之前啟動。</p>
     </div>
 
+    @if (State.Status == AppStatus.Capturing)
+    {
+        <div class="panel form-card" id="auto-page">
+            <h3>自動翻頁</h3>
+            @if (State.AutoPaging)
+            {
+                <button id="auto-page-stop" class="danger wide-button" @onclick="State.StopAutoPage">停止翻頁</button>
+            }
+            else if (State.PageableHistory is { } history)
+            {
+                <button id="auto-page-start" class="wide-button" @onclick="State.StartAutoPageAsync">翻完@(AppState.HistoryLabel(history))的紀錄</button>
+                <p class="hint">按下後切回遊戲。程式會自動點「下一頁」，游標每次會跳到按鈕再跳回來，這段時間不要操作電腦。按 Esc 或移動滑鼠可以停止。</p>
+            }
+            else
+            {
+                <p class="hint">先在遊戲打開限定棋盤、常駐棋盤或弧盤研募的紀錄頁。盲盒只有幾頁，請手動翻。</p>
+            }
+            @if (State.AutoPageStatus is { } status)
+            {
+                <p class="hint" id="auto-page-status" role="status">@status</p>
+            }
+        </div>
+    }
+
     <div class="stat-row">
         <div class="stat"><span>來源</span><strong>@(State.CaptureName ?? "—")</strong></div>
         <div class="stat"><span>封包（收 / 送）</span><strong id="packets" data-in="@State.InboundCount" data-out="@State.OutboundCount">@State.InboundCount.ToString("N0") / @State.OutboundCount.ToString("N0")</strong></div>

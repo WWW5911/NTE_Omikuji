@@ -168,7 +168,7 @@ public static class HistoryJsonWriter
         return node;
     }
 
-    private static JsonObject RecordNode(PoolInfo poolInfo, HistoryRow row)
+    internal static JsonObject RecordNode(PoolInfo poolInfo, HistoryRow row)
     {
         var node = new JsonObject
         {
@@ -205,6 +205,11 @@ public static class HistoryJsonWriter
         if (row.EventId is not null)
         {
             node["pool_id"] = row.EventId;
+        }
+        // Also additive: present only when nothing confirmed the row's fields.
+        if (row.Unverified)
+        {
+            node["unverified"] = true;
         }
         return node;
     }

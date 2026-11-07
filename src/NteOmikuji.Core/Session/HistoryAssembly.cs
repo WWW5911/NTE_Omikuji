@@ -9,6 +9,12 @@ public static class HistoryAssembly
 {
     private const int PullSetSize = 10;
 
+    public const string UnverifiedCode = "UNVERIFIED_DECODE";
+
+    public static CaptureWarning UnverifiedWarning() => new(
+        UnverifiedCode,
+        "有紀錄的格式無法確認，可能是遊戲改版。這些紀錄不會蓋掉已存的資料，內容也可能不準，程式更新後重新擷取就會更正。");
+
     public static PoolHistory Build(HistoryKind kind, IReadOnlyList<CapturedPage> pages, RewardCatalog catalog)
     {
         // Each Mystery Box pool numbers its own pages from 1.
@@ -31,7 +37,13 @@ public static class HistoryAssembly
         {
             row.PoolGroupId = poolInfo.Id;
             row.Focus = catalog.FocusOf(row.RewardId, row.EventId);
+            // A Mystery Box has only one way to read its rows, so there is nothing for it to fall back from.
+            row.Unverified = kind != HistoryKind.MysteryBox && row.DecoderMode is not ("scan_checked" or "block_fallback");
         });
+        if (rows.Any(row => row.Unverified))
+        {
+            warnings.Add(UnverifiedWarning());
+        }
         switch (kind)
         {
             case HistoryKind.ArcMiracleBox:

@@ -12,6 +12,8 @@ public sealed class AppSettings
 
     public HashSet<string> VisibleLocales { get; set; } = [RewardSchema.Chinese, RewardSchema.English];
 
+    public bool AutoUpdateMappings { get; set; } = true;
+
     public static AppSettings Load(string folder)
     {
         try

@@ -44,10 +44,12 @@ public class ExportSnapshotTests
         var history = Replay().BuildHistories().Single(entry => entry.Pool.Kind == kind);
         var export = HistoryJsonWriter.BuildHistory(history, new ExportContext("packet_capture"));
 
-        // The event ID is additive to format version 1, and the stored export does not have it.
+        // The event ID and the unverified flag are additive to format version 1, and the stored export has neither.
+        // This traffic has no record blocks, so only the scan can read it and every row carries the flag.
         foreach (var record in export["records"]!.AsArray())
         {
             record!.AsObject().Remove("pool_id");
+            record.AsObject().Remove("unverified");
         }
         var expected = JsonNode.Parse(Golden.GetProperty(goldenKey).GetRawText());
         Assert.True(JsonNode.DeepEquals(expected, export["records"]), export["records"]!.ToJsonString());
