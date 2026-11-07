@@ -102,8 +102,8 @@ public static class LuckModel
 
     /// <summary>
     /// Ranks every outcome of these pulls exactly: more rewards is better, and with the same count, the last
-    /// one landing earlier is better. This holds at any sample size, where a normal approximation of the
-    /// skewed count does not.
+    /// one landing in an earlier draw is better. Places inside one draw tie, since the player pays for all of
+    /// it either way. This holds at any sample size, where a normal approximation of the skewed count does not.
     /// </summary>
     private static double PercentileOf(PityRule rule, int hits, int pulls, int carried, int? sinceLast)
     {
@@ -139,15 +139,15 @@ public static class LuckModel
                 }
                 var below = 1 - waiting.Sum();
                 double same = 0;
+                int DrawOf(int pull) => (pull - 1) / rule.PullsPerDraw;
                 for (var last = 1; last <= pulls; last++)
                 {
-                    var since = pulls - last;
-                    var chance = waiting[last] * Math.Max(0, 1 - pmf.Take(since).Sum());
-                    if (sinceLast is not { } actual || since == actual)
+                    var chance = waiting[last] * Math.Max(0, 1 - pmf.Take(pulls - last).Sum());
+                    if (sinceLast is not { } actual || DrawOf(last) == DrawOf(pulls - actual))
                     {
                         same += chance;
                     }
-                    else if (since < actual)
+                    else if (DrawOf(last) > DrawOf(pulls - actual))
                     {
                         below += chance;
                     }

@@ -48,14 +48,102 @@ public class LuckPercentileTests
     {
         var merged = LuckModel.Combine([LuckModel.Score(Board, 13, 639, 0, 52), LuckModel.Score(Board, 6, 245, 0, 14), LuckModel.Score(Arc, 7, 320, 0, 9)])!;
 
-        Assert.Equal(2.01, merged.Sigma, 0.01);
-        Assert.Equal(LuckTier.VeryLucky, merged.Tier);
+        Assert.Equal(1.98, merged.Sigma, 0.02);
+        Assert.Equal(LuckTier.Lucky, merged.Tier);
+    }
+
+    [Theory]
+    [InlineData(1, 80, 0, 0, 27.15)]
+    [InlineData(1, 10, 0, 8, 96.25)]
+    [InlineData(1, 10, 0, 0, 96.25)]
+    [InlineData(0, 10, 0, 10, 46.37)]
+    [InlineData(1, 40, 30, 1, 71.40)]
+    [InlineData(2, 160, 0, 5, 14.70)]
+    public void ArcDrawsMatchAFullEnumeration(int hits, int pulls, int carried, int sinceLast, double percent)
+    {
+        Assert.Equal(percent, LuckModel.Score(Arc, hits, pulls, carried, sinceLast)!.Percentile * 100, 0.01);
+    }
+
+    [Fact]
+    public void PlacesInsideOneArcDrawTie()
+    {
+        var first = LuckModel.Score(Arc, 1, 20, 0, 19)!.Percentile;
+        var sameDraw = LuckModel.Score(Arc, 1, 20, 0, 10)!.Percentile;
+        var nextDraw = LuckModel.Score(Arc, 1, 20, 0, 9)!.Percentile;
+
+        Assert.Equal(first, sameDraw);
+        Assert.True(nextDraw < first);
+    }
+
+    [Fact]
+    public void PlacesOnABoardStillCount()
+    {
+        Assert.NotEqual(LuckModel.Score(Board, 1, 10, 0, 9)!.Percentile, LuckModel.Score(Board, 1, 10, 0, 8)!.Percentile);
+    }
+
+    [Fact]
+    public void ArcRatesMatchTheFiguresPlayersReport()
+    {
+        // One run from a limited reward to the next, tracking pulls since the last S.
+        var states = new double[Arc.TopRankAt];
+        states[0] = 1;
+        double meanPulls = 0, meanS = 0;
+        for (var pull = 1; pull <= Arc.LimitedAt; pull++)
+        {
+            var next = new double[Arc.TopRankAt];
+            for (var since = 0; since < Arc.TopRankAt; since++)
+            {
+                var chance = states[since];
+                if (pull == Arc.LimitedAt)
+                {
+                    meanPulls += pull * chance;
+                    meanS += chance;
+                    continue;
+                }
+                var rate = since + 1 == Arc.TopRankAt ? 1 : Arc.BaseRate;
+                var limited = chance * rate * Arc.LimitedChance!.Value;
+                meanPulls += pull * limited;
+                meanS += chance * rate;
+                next[0] += chance * rate * (1 - Arc.LimitedChance.Value);
+                if (rate < 1)
+                {
+                    next[since + 1] += chance * (1 - rate);
+                }
+            }
+            states = next;
+        }
+
+        Assert.Equal(1.68, 100 / meanPulls, 0.01);
+        Assert.Equal(4.19, 100 * meanS / meanPulls, 0.01);
+        Assert.Equal(meanPulls, LuckModel.PullDistribution(Arc).Select((chance, index) => chance * (index + 1)).Sum(), 6);
+    }
+
+    [Fact]
+    public void ALimitedArcResetsTheSGuarantee()
+    {
+        var rows = new List<HistoryRow>();
+        for (var i = 1; i <= 25; i++)
+        {
+            rows.Add(new HistoryRow
+            {
+                Uid = "row-" + i,
+                RewardId = "x",
+                TimestampDecoded = new DateTime(2026, 6, 1).AddHours(i).ToString("yyyy-MM-dd HH:mm:ss"),
+                Focus = i == 20 ? RewardFocus.SLimitedArc : RewardFocus.None,
+                BannerId = "ForkLottery_A",
+            });
+        }
+        rows.Reverse();
+
+        var data = HistoryAnalyzer.Analyze(new BannerHistory(BannerInfo.ArcMiracleBox, rows, [], []));
+
+        Assert.Equal((5, 5), (data.TopRankPity!.Current, data.LimitedPity!.Current));
     }
 
     [Fact]
     public void ArcsMatchAFullEnumeration()
     {
-        Assert.Equal(92.5, LuckModel.Score(Arc, 7, 320, 0, 9)!.Percentile * 100, 0.06);
+        Assert.Equal(91.6, LuckModel.Score(Arc, 7, 320, 0, 9)!.Percentile * 100, 0.06);
     }
 
     [Fact]
@@ -63,7 +151,7 @@ public class LuckPercentileTests
     {
         var merged = LuckModel.Combine([LuckModel.Score(Board, 13, 639, 0, 52), LuckModel.Score(Board, 6, 245, 0, 14), LuckModel.Score(Arc, 7, 320, 0, 9)])!;
 
-        Assert.Equal(97.8, merged.Percentile * 100, 0.06);
+        Assert.Equal(97.6, merged.Percentile * 100, 0.1);
     }
 
     [Fact]

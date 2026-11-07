@@ -124,13 +124,16 @@ most-obtained rewards. Boards also show dice rolls and result types.
   pulls may predate the saved history. The game keeps about six months of records.
 - 總覽 and each pool show a luck tag, from 非酋 through 正常 to 歐皇. It ranks all the
   outcomes that many pulls can bring, exactly: more rewards is better, and with the
-  same count, the last one landing earlier is better. It counts S on boards and the
+  same count, the last one landing earlier is better. Arcs only come as ten-pull draws,
+  so places inside one draw tie, though each reward's own count still uses its place. It counts S on boards and the
   limited reward on Arcs. The rank is shown as 前 N% 歐 and as the matching standard
   deviation, and tags change at ±0.5, ±1, and ±2σ. So the σ is not the plain distance
   from the expected count, which overstates small samples because counts are skewed.
   Rates
   come from published guides, since no in-game figures were available: 0.99% on
-  boards and 19.59% after 70 pulls, and 3% on Arcs. These reproduce the published
+  boards and 19.59% after 70 pulls, and 3% on Arcs, where a limited reward also resets
+  the guarantee of an S. With guarantees this comes to 4.19% for any S and 1.68% for a
+  limited one, matching the figures players report. These reproduce the published
   averages of about 53.5 pulls per S and 59.5 per limited Arc. A misread history or an
   unset event shows no tag.
 - 總覽 merges pools as normal scores weighted by their expected counts. All of this

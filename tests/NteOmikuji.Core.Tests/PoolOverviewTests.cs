@@ -33,7 +33,7 @@ public class PoolOverviewTests
     [InlineData(HistoryKind.ArcMiracleBox, 60, 80, 0.25, null, 0.03, null)]
     public void EachPoolHasItsGuarantee(HistoryKind kind, int topRank, int? limited, double? chance, int? rises, double rate, double? raised)
     {
-        Assert.Equal(new PityRule(topRank, limited, chance, rises, 10, rate, raised), BannerInfo.For(kind).Pity);
+        Assert.Equal(new PityRule(topRank, limited, chance, rises, 10, rate, raised, PullsPerDraw: kind == HistoryKind.ArcMiracleBox ? 10 : 1), BannerInfo.For(kind).Pity);
     }
 
     [Fact]
