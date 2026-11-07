@@ -44,6 +44,11 @@ public class ParityTests
         var history = Replay().BuildHistories().Single(entry => entry.Banner.Kind == kind);
         var export = ExportWriter.BuildHistory(history, new ExportContext("packet_capture"));
 
+        // The event ID is additive to format version 1, and the Python exporter does not write it.
+        foreach (var record in export["records"]!.AsArray())
+        {
+            record!.AsObject().Remove("pool_id");
+        }
         var expected = JsonNode.Parse(Golden.GetProperty(goldenKey).GetRawText());
         Assert.True(JsonNode.DeepEquals(expected, export["records"]), export["records"]!.ToJsonString());
     }

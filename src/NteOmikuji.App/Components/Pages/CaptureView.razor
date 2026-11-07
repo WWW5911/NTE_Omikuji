@@ -1,0 +1,85 @@
+@implements IDisposable
+@inject ExporterState State
+
+<div class="page capture-panel" id="capture">
+    <h2 class="page-title">開始擷取</h2>
+    <div class="panel form-card">
+        <div class="form-row">
+            <label for="address">網路介面</label>
+            <select id="address" value="@Options.LocalIp" @onchange="change => Options.LocalIp = change.Value as string" disabled="@(!IsIdle)">
+                @foreach (var address in _addresses)
+                {
+                    <option value="@address.Ip" selected="@(address.Ip == Options.LocalIp)">@address.Ip（@address.InterfaceName）</option>
+                }
+            </select>
+        </div>
+        <div class="form-row">
+            <label for="backend">擷取方式</label>
+            <select id="backend" @bind="Options.Backend" disabled="@(!IsIdle)">
+                <option value="@CaptureBackendKind.Auto">自動（建議）</option>
+                <option value="@CaptureBackendKind.Npcap">只用已安裝的 Npcap</option>
+                <option value="@CaptureBackendKind.RawSocket">內建擷取（免安裝）</option>
+            </select>
+        </div>
+        <label class="check debug-option"><input id="record-packets" type="checkbox" @bind="Options.RecordPackets" disabled="@(!IsIdle)" /> 記錄除錯封包</label>
+        @if (Options.RecordPackets)
+        {
+            <p class="hint" id="record-packets-hint">只記錄歷史紀錄的 UDP 封包，不含登入用的 TCP，存到程式旁的 debug_packets。內容可能含帳號資料，分享前請先確認。</p>
+        }
+        @if (State.Status is ExporterStatus.Capturing or ExporterStatus.Stopping)
+        {
+            <button id="stop" class="primary danger wide-button" @onclick="State.StopAsync" disabled="@(State.Status == ExporterStatus.Stopping)">
+                @(State.Status == ExporterStatus.Stopping ? "停止中…" : "停止擷取")
+            </button>
+        }
+        else
+        {
+            <button id="start" class="primary wide-button" @onclick="Start" disabled="@(!IsIdle || string.IsNullOrEmpty(Options.LocalIp))">開始擷取</button>
+        }
+        <p class="hint">開始時 Windows 會請你同意系統管理員權限，這是讀取網路封包所必需的。請在遊戲主選單按下開始之前啟動。</p>
+    </div>
+
+    <div class="stat-row">
+        <div class="stat"><span>來源</span><strong>@(State.CaptureName ?? "—")</strong></div>
+        <div class="stat"><span>封包（收 / 送）</span><strong id="packets" data-in="@State.InboundCount" data-out="@State.OutboundCount">@State.InboundCount.ToString("N0") / @State.OutboundCount.ToString("N0")</strong></div>
+        <div class="stat"><span>紀錄</span><strong id="record-count">@State.Histories.Sum(history => history.Rows.Count).ToString("N0")</strong></div>
+        <div class="stat"><span>成就</span><strong>@State.Achievements.Count.ToString("N0")</strong></div>
+    </div>
+
+    <section class="panel activity">
+        <h3>活動紀錄</h3>
+        <ul aria-live="polite">
+            @foreach (var line in State.Activity.Take(40))
+            {
+                <li>@line</li>
+            }
+        </ul>
+    </section>
+</div>
+
+@code {
+    private IReadOnlyList<LocalAddress> _addresses = [];
+
+    [Parameter, EditorRequired]
+    public CaptureOptions Options { get; set; } = null!;
+
+    private bool IsIdle => State.Status == ExporterStatus.Idle;
+
+    protected override void OnInitialized()
+    {
+        _addresses = LocalAddresses.List();
+        State.Changed += OnStateChanged;
+    }
+
+    private void Start()
+    {
+        if (Options.LocalIp is not null)
+        {
+            State.Start(Options.LocalIp, Options.Backend, Options.RecordPackets);
+        }
+    }
+
+    private void OnStateChanged() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => State.Changed -= OnStateChanged;
+}

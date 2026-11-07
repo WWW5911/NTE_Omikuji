@@ -9,11 +9,15 @@ Blazor Hybrid.
 Download `NteOmikuji.App.exe` and double-click it. There is nothing to install:
 no .NET, no Npcap, no Python.
 
-1. Press **開始擷取** before pressing Start on the game's main menu. Windows asks
-   for Administrator approval, because reading network packets requires it.
+1. Open **開始擷取** and start it before pressing Start on the game's main menu.
+   Windows asks for Administrator approval, because reading network packets
+   requires it.
 2. Open the in-game history and scroll down from page 1.
-3. Everything saves automatically to `user_data` beside the exe. The **分析** view
-   updates as pages arrive.
+3. Everything saves automatically to `user_data` beside the exe. **總覽** and each
+   pool's page update as pages arrive.
+
+The top bar holds 開始擷取, 擷取說明, 原始紀錄, and 帳號. The left side lists 總覽
+and the three pools, and 限定棋盤 and 弧盤研募 expand into each event.
 
 Keep the exe in a writable folder of its own, because it creates these beside itself:
 
@@ -28,7 +32,7 @@ and tells them apart by content. None of these need Administrator approval.
 
 ### Maintaining mappings
 
-Press **維護對應** to edit names, rarity, and each reward's category. Each change
+Open **原始紀錄 > 對應維護** to edit names, rarity, and each reward's category. Each change
 saves at once and also corrects saved history, so no app update is needed when the
 game adds rewards:
 
@@ -77,23 +81,29 @@ Upgrading an older `rewards.csv` keeps the original as `rewards.csv.v1.bak` or
 
 ### Analysis
 
-Each banner shows pulls since the last S, total pulls, S rate and intervals, the
-rarity mix, pulls over time, and most-obtained rewards. Boards also show dice
-rolls and result types.
+**總覽** shows how close each pool is to its guarantee, a comparison table, and the
+latest S rewards. Each pool shows pulls since the last S, total pulls, S rate,
+interval average, median and spread, the rarity mix, pulls over time, and
+most-obtained rewards. Boards also show dice rolls and result types.
 
 - S means the four S categories in the mapping table. Limited totals appear once
   a reward is marked limited.
-- Only dice rows count as pulls on boards. The 集點獎勵 given every 10 pulls and
-  chase rewards do not.
+- Only dice rows count as pulls on boards. The 集點贈禮 given every 10 pulls and
+  沉眠地 rewards do not.
 - A reward's category applies however it arrived, and anything other than a dice
   roll is tagged with its source.
-- Files saved before 0.3.0 misread many pulls as 集點獎勵. They hold no bytes to
+- Files saved before 0.3.0 misread many pulls as 集點贈禮. They hold no bytes to
   correct from, so the analysis says so when a file has more of these than the
   game gives. Capturing the history again corrects it.
 - The oldest S is shown as "至少 N" and left out of the average, because earlier
   pulls may predate the saved history.
-- Pity thresholds are not built in. Published figures disagree, so the app reports
-  what happened rather than predicting.
+- Guarantees are built in: 90 pulls for an S on both boards with better odds from
+  pull 70, and on Arcs 60 for an S and 80 for a limited one, with an A every 10 on
+  all three. A board's A is the 集點贈禮 itself. An event's page counts only its own
+  pulls, while intervals run across events because pity carries over.
+- The rarity mix counts S characters and Arcs apart from S items and cosmetics,
+  since items also carry an S.
+- The limited Arc count needs limited Arcs marked in the mapping table.
 - Everything stays on this computer, so there is no global luck comparison.
 
 ### Recording packets for debugging
@@ -159,8 +169,8 @@ run. Reward names come from [NTE_Assets](https://github.com/Waifus-Grace/NTE_Ass
 at commit `1816e23`. They are not updated automatically; a new reward still
 exports, flagged as unmapped, until someone maintains it.
 
-The interface uses Japanese traditional colors centered on the sakura family. The
-color names are noted beside each value in `WebRoot/app.css`.
+The interface uses pale Morandi tones centered on dusty rose, defined in
+`WebRoot/app.css`.
 
 ## Arbitrary result strings
 

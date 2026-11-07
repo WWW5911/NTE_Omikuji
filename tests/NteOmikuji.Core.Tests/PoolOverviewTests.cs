@@ -1,0 +1,284 @@
+using NteOmikuji.Core.Analysis;
+using NteOmikuji.Core.Export;
+using NteOmikuji.Core.Import;
+using NteOmikuji.Core.Session;
+using System.Text;
+using Xunit;
+
+namespace NteOmikuji.Core.Tests;
+
+public class PoolOverviewTests
+{
+    private static HistoryRow Row(int second, string reward = "x", RewardFocus focus = RewardFocus.None, string result = "dice", string? banner = null, string? rank = null) => new()
+    {
+        RewardRank = rank,
+        Uid = $"u{second}",
+        TimestampDecoded = $"2026-01-01 00:{second / 60:00}:{second % 60:00}",
+        RewardId = reward,
+        RewardName = reward,
+        IsMappedReward = true,
+        ResultType = result,
+        Focus = focus,
+        BannerId = banner,
+    };
+
+    private static BannerHistory Pool(BannerInfo banner, params HistoryRow[] oldestFirst) => new(banner, oldestFirst.Reverse().ToList(), [], []);
+
+    private static HistoryRow[] Pulls(int count, int startSecond = 0, string? banner = null) =>
+        Enumerable.Range(startSecond, count).Select(second => Row(second, banner: banner)).ToArray();
+
+    [Theory]
+    [InlineData(HistoryKind.LimitedCharacter, 90, null, null, 70)]
+    [InlineData(HistoryKind.Permanent, 90, null, null, 70)]
+    [InlineData(HistoryKind.ArcMiracleBox, 60, 80, 0.25, null)]
+    public void EachPoolHasItsGuarantee(HistoryKind kind, int topRank, int? limited, double? chance, int? rises)
+    {
+        Assert.Equal(new PityRule(topRank, limited, chance, rises, 10), BannerInfo.For(kind).Pity);
+    }
+
+    [Fact]
+    public void PityCountsPullsSinceTheLastTopRank()
+    {
+        var result = HistoryAnalyzer.Analyze(Pool(BannerInfo.LimitedCharacter, [.. Pulls(5), Row(5, "s", RewardFocus.SCharacter), .. Pulls(52, 6)]));
+
+        Assert.Equal(new PityStatus(52, 90, false, 70), result.TopRankPity);
+        Assert.Equal(38, result.TopRankPity!.Remaining);
+        Assert.Equal(18, result.TopRankPity.PullsUntilRise);
+        Assert.False(result.TopRankPity.HasRisen);
+        Assert.Null(result.LimitedPity);
+    }
+
+    [Fact]
+    public void NoTopRankYetIsOnlyALowerBound()
+    {
+        var pity = HistoryAnalyzer.Analyze(Pool(BannerInfo.Permanent, Pulls(30))).TopRankPity!;
+
+        Assert.True(pity.IsLowerBound);
+        Assert.Equal(30, pity.Current);
+    }
+
+    [Fact]
+    public void PityPastTheGuaranteeIsFlaggedAndCappedForDisplay()
+    {
+        var pity = HistoryAnalyzer.Analyze(Pool(BannerInfo.Permanent, Pulls(95))).TopRankPity!;
+
+        Assert.True(pity.Exceeded);
+        Assert.Equal(0, pity.Remaining);
+        Assert.Equal(1.0, pity.Progress);
+    }
+
+    [Fact]
+    public void ArcsTrackTheLimitedGuaranteeSeparately()
+    {
+        var result = HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox,
+        [
+            .. Pulls(10),
+            Row(10, "limited", RewardFocus.SLimitedArc),
+            .. Pulls(20, 11),
+            Row(31, "standard", RewardFocus.SArc),
+            .. Pulls(5, 32),
+        ]));
+
+        Assert.Equal(new PityStatus(5, 60, false), result.TopRankPity);
+        Assert.Equal(new PityStatus(26, 80, false), result.LimitedPity);
+    }
+
+    [Fact]
+    public void LimitedArcCountIsALowerBoundUntilOneIsMarked()
+    {
+        var limited = HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox, [.. Pulls(3), Row(3, "standard", RewardFocus.SArc)])).LimitedPity!;
+
+        Assert.True(limited.IsLowerBound);
+        Assert.Equal(4, limited.Current);
+    }
+
+    [Theory]
+    [InlineData(69, false, 1)]
+    [InlineData(70, true, null)]
+    [InlineData(84, true, null)]
+    public void OddsRiseFromPullSeventy(int pulls, bool risen, int? until)
+    {
+        var pity = HistoryAnalyzer.Analyze(Pool(BannerInfo.Permanent, [Row(0, "s", RewardFocus.SCharacter), .. Pulls(pulls, 1)])).TopRankPity!;
+
+        Assert.Equal((risen, until), (pity.HasRisen, pity.PullsUntilRise));
+    }
+
+    [Fact]
+    public void ArcsHaveNoStatedRisePoint()
+    {
+        var pity = HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox, Pulls(50))).TopRankPity!;
+
+        Assert.False(pity.HasRisen);
+        Assert.Null(pity.PullsUntilRise);
+    }
+
+    [Fact]
+    public void TopRanksBeforeTheRiseAreCounted()
+    {
+        var result = HistoryAnalyzer.Analyze(Pool(BannerInfo.Permanent,
+        [
+            Row(0, "s", RewardFocus.SCharacter),
+            .. Pulls(5, 1), Row(6, "s", RewardFocus.SCharacter),
+            .. Pulls(74, 7), Row(81, "s", RewardFocus.SCharacter),
+        ]));
+
+        Assert.Equal(1, result.TopRanksBeforeRise);
+        Assert.Null(HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox, Pulls(5))).TopRanksBeforeRise);
+    }
+
+    [Fact]
+    public void ABoardsAGuaranteeIsTheRewardEveryTenPulls()
+    {
+        // An A from the dice does not restart it: the reward arrives every 10 pulls regardless.
+        var result = HistoryAnalyzer.Analyze(Pool(BannerInfo.LimitedCharacter,
+        [
+            .. Pulls(10),
+            Row(10, "gift", result: "points_gift", rank: "A"),
+            .. Pulls(4, 11),
+            Row(15, "a-from-dice", rank: "A"),
+            .. Pulls(4, 16),
+        ]));
+
+        Assert.Equal(new PityStatus(9, 10, false), result.SecondRankPity);
+        Assert.Equal(1, result.SecondRankPity!.Remaining);
+    }
+
+    [Fact]
+    public void AnArcAGuaranteeRestartsOnAnyAOrS()
+    {
+        var pity = HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox,
+        [
+            .. Pulls(3),
+            Row(3, "a", rank: "A"),
+            .. Pulls(2, 4),
+            Row(6, "s", RewardFocus.SArc, rank: "S"),
+            .. Pulls(4, 7),
+        ])).SecondRankPity;
+
+        Assert.Equal(new PityStatus(4, 10, false), pity);
+    }
+
+    [Fact]
+    public void AGuaranteeIsALowerBoundUntilOneIsSeen()
+    {
+        var pity = HistoryAnalyzer.Analyze(Pool(BannerInfo.LimitedCharacter, Pulls(5))).SecondRankPity!;
+
+        Assert.True(pity.IsLowerBound);
+        Assert.Equal(5, pity.Current);
+    }
+
+    [Fact]
+    public void MisreadRewardsDoNotProduceAnAGuarantee()
+    {
+        HistoryRow[] rows = [.. Pulls(5), .. Enumerable.Range(5, 20).Select(second => Row(second, "gift", result: "points_gift"))];
+
+        Assert.Null(HistoryAnalyzer.Analyze(Pool(BannerInfo.LimitedCharacter, rows)).SecondRankPity);
+    }
+
+    [Fact]
+    public void RarityMixKeepsSRewardsApartFromSItems()
+    {
+        var mix = HistoryAnalyzer.Analyze(Pool(BannerInfo.LimitedCharacter,
+            Row(0, "character", RewardFocus.SCharacter, rank: "S"),
+            Row(1, "dice", rank: "S"),
+            Row(2, "dice", rank: "S"),
+            Row(3, "a", rank: "A"),
+            Row(4, "b", rank: "B"),
+            Row(5, "unranked"))).RarityMix.ToDictionary(bucket => bucket.Label, bucket => bucket.Count);
+
+        Assert.Equal(1, mix[HistoryAnalyzer.TopRankTargets]);
+        Assert.Equal(2, mix[HistoryAnalyzer.TopRankOthers]);
+        Assert.Equal((1, 1, 1), (mix["A"], mix["B"], mix["未分級"]));
+    }
+
+    [Fact]
+    public void MedianHandlesOddAndEvenCounts()
+    {
+        HistoryRow[] Sequence(params int[] gaps)
+        {
+            var rows = new List<HistoryRow> { Row(0, "first", RewardFocus.SCharacter) };
+            foreach (var gap in gaps)
+            {
+                rows.AddRange(Pulls(gap - 1, rows.Count));
+                rows.Add(Row(rows.Count, "s", RewardFocus.SCharacter));
+            }
+            return [.. rows];
+        }
+
+        Assert.Equal(5, HistoryAnalyzer.Analyze(Pool(BannerInfo.Permanent, Sequence(2, 5, 9))).MedianInterval);
+        Assert.Equal(3.5, HistoryAnalyzer.Analyze(Pool(BannerInfo.Permanent, Sequence(2, 5))).MedianInterval);
+        Assert.Null(HistoryAnalyzer.Analyze(Pool(BannerInfo.Permanent, Pulls(3))).MedianInterval);
+    }
+
+    [Fact]
+    public void HistogramRunsToTheGuaranteeEvenWhenEmpty()
+    {
+        var buckets = HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox, [Row(0, "a", RewardFocus.SArc), .. Pulls(14, 1), Row(15, "b", RewardFocus.SArc)])).IntervalHistogram!;
+
+        Assert.Equal(["1–10", "11–20", "21–30", "31–40", "41–50", "51–60"], buckets.Select(bucket => bucket.Label));
+        Assert.Equal([0, 1, 0, 0, 0, 0], buckets.Select(bucket => bucket.Count));
+    }
+
+    [Fact]
+    public void AnEventViewCountsItsOwnPullsButIntervalsCarryAcrossEvents()
+    {
+        var pool = Pool(BannerInfo.LimitedCharacter,
+        [
+            Row(0, "a", RewardFocus.SCharacter, banner: "Lottery_A"),
+            .. Pulls(10, 1, "Lottery_A"),
+            .. Pulls(20, 11, "Lottery_B"),
+            Row(31, "b", RewardFocus.SCharacter, banner: "Lottery_B"),
+        ]);
+
+        var second = HistoryAnalyzer.Analyze(pool, bannerId: "Lottery_B");
+
+        Assert.Equal(21, second.TotalPulls);
+        Assert.Equal(31, Assert.Single(second.TopRankPulls).PullsSpent);
+        Assert.Null(second.TopRankPity);
+        Assert.Equal(2, HistoryAnalyzer.Analyze(pool).TopRankCount);
+    }
+
+    [Fact]
+    public void AnEventViewListsOnlyItsOwnCosmetics()
+    {
+        var pool = Pool(BannerInfo.LimitedCharacter,
+            Row(0, "older", RewardFocus.Glider, banner: "Lottery_A"),
+            Row(1, "newer", RewardFocus.Glider, banner: "Lottery_B"),
+            Row(2, "newest", RewardFocus.Outfit, banner: "Lottery_B"));
+
+        Assert.Equal(["newest", "newer"], HistoryAnalyzer.Analyze(pool, bannerId: "Lottery_B").CosmeticItems.Select(item => item.RewardId));
+        Assert.Equal(["newest", "newer", "older"], HistoryAnalyzer.Analyze(pool).CosmeticItems.Select(item => item.RewardId));
+    }
+
+    [Fact]
+    public void EventsAreNamedAfterTheirMostFrequentTopRankNewestFirst()
+    {
+        var groups = HistoryAnalyzer.Banners(Pool(BannerInfo.LimitedCharacter,
+        [
+            Row(0, "角色甲", RewardFocus.SCharacter, banner: "Lottery_A"),
+            Row(1, "x", banner: "Lottery_NoTop"),
+            Row(2, "角色乙", RewardFocus.SCharacter, banner: "Lottery_B"),
+            Row(3, "角色乙", RewardFocus.SCharacter, banner: "Lottery_B"),
+            Row(4, "角色甲", RewardFocus.SCharacter, banner: "Lottery_B"),
+            Row(5, "x", banner: null),
+        ]));
+
+        Assert.Equal(["Lottery_B", "Lottery_NoTop", "Lottery_A"], groups.Select(group => group.Id));
+        Assert.Equal(["角色乙", "NoTop", "角色甲"], groups.Select(group => group.Name));
+        Assert.Equal([3, 0, 1], groups.Select(group => group.TopRankCount));
+    }
+
+    [Fact]
+    public void EventIdSurvivesExportAndImport()
+    {
+        var row = Row(0, banner: "Lottery_MingYin");
+        row.PoolGroupId = BannerInfo.LimitedCharacter.Id;
+        var plain = Row(1);
+        plain.PoolGroupId = BannerInfo.LimitedCharacter.Id;
+        var json = ExportWriter.ToJson(ExportWriter.BuildHistory(new BannerHistory(BannerInfo.LimitedCharacter, [row, plain], [], []), new ExportContext("test")));
+
+        var rows = ExportDocuments.ReadHistory(Encoding.UTF8.GetBytes(json)).Rows;
+
+        Assert.Equal(["Lottery_MingYin", null], rows.Select(item => item.BannerId));
+    }
+}

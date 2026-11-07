@@ -1,0 +1,191 @@
+@using NteOmikuji.Core.Analysis
+
+<div class="page" id="overview">
+    @if (_pools.Any(pool => pool.Data?.HasExcessPointsRewards == true))
+    {
+        <div class="alert" id="old-decoding" role="status">有卡池的集點贈禮比遊戲實際給的多，可能有抽數被舊版誤判，下面的數字會不準。重新擷取一次歷史紀錄即可更正。</div>
+    }
+
+    <h2 class="page-title">保底狀態</h2>
+    <section class="pity-grid">
+        @foreach (var pool in _pools)
+        {
+            var kind = pool.Banner.Kind;
+            <article class="pity-card" data-pool="@kind">
+                <header>
+                    <button class="link-title" @onclick="() => OnOpenPool.InvokeAsync(kind)">@pool.Label</button>
+                </header>
+                @if (pool.Data?.TopRankPity is { } pity)
+                {
+                    <p class="pity-hero">
+                        <strong id="pity-left-@kind">@pity.Remaining</strong>
+                        <span>@(pity.Exceeded ? "已超過保底" : $"抽內必出 {pool.TopLabel}")</span>
+                    </p>
+                    <PityMeter Status="pity" Label="@($"距上次 {pool.TopLabel}")" Id="@($"pity-{kind}")" />
+                    @if (pity.Exceeded)
+                    {
+                        <p class="pity-note warn">超過 @pity.Threshold 抽還沒有 S，紀錄可能缺頁，或有 S 的關注類別沒有設定。</p>
+                    }
+                    else if (pity.IsLowerBound)
+                    {
+                        <p class="pity-note">紀錄裡還沒有 S，更早的抽數不在紀錄內，實際可能更多。</p>
+                    }
+                    @if (!pity.Exceeded && pity.RisesFrom is { } rise)
+                    {
+                        <p class="pity-note" id="rise-@kind">
+                            @if (pity.HasRisen)
+                            {
+                                <span class="pity-raised">機率已上升（第 @rise 抽起）</span>
+                            }
+                            else
+                            {
+                                <span>再 @pity.PullsUntilRise 抽機率開始上升（第 @rise 抽起）</span>
+                            }
+                        </p>
+                    }
+                    @if (pool.Data.LimitedPity is { } limited)
+                    {
+                        <PityMeter Status="limited" Label="距上次限定" Id="@($"pity-limited-{kind}")" />
+                        <p class="pity-note">
+                            @if (limited.IsLowerBound)
+                            {
+                                <span>還沒有標記限定弧盤。到原始紀錄的對應維護把限定項目設為「S 限定弧盤」，這裡才會準。</span>
+                            }
+                            else if (limited.Exceeded)
+                            {
+                                <span class="warn">超過 @limited.Threshold 抽還沒有限定，請檢查限定弧盤的標記。</span>
+                            }
+                            else
+                            {
+                                <span>再 @limited.Remaining 抽內必出限定。</span>
+                            }
+                            <span>每個 S 弧盤有 @(pool.Banner.Pity!.LimitedChance!.Value.ToString("0%")) 是限定。</span>
+                        </p>
+                    }
+                    @if (pool.Data.SecondRankPity is { } second)
+                    {
+                        <PityMeter Status="second" Label="@(kind == HistoryKind.ArcMiracleBox ? "距上次 A" : "距上次集點贈禮（A）")" Id="@($"pity-a-{kind}")" />
+                        @if (second.Exceeded)
+                        {
+                            <p class="pity-note warn" id="a-note-@kind">超過 @second.Threshold 抽還沒有 A，紀錄可能缺頁，或這些項目的稀有度沒有設定。</p>
+                        }
+                        else
+                        {
+                            <p class="pity-note" id="a-note-@kind">再 @second.Remaining 抽內必出 A@(kind == HistoryKind.ArcMiracleBox ? "" : "：集點贈禮固定每 10 抽給一次")</p>
+                        }
+                    }
+                }
+                else
+                {
+                    <p class="pity-hero empty-pool"><strong>—</strong><span>@pool.Banner.Pity!.TopRankAt 抽內必出 @pool.TopLabel</span></p>
+                    <p class="pity-note">還沒有紀錄。<button class="link-inline" @onclick="() => OnStartCapture.InvokeAsync()">前往擷取</button></p>
+                }
+            </article>
+        }
+    </section>
+
+    <section class="chart">
+        <h3>各卡池統計</h3>
+        <div class="table-scroll">
+            <table class="summary" id="pool-summary">
+                <thead>
+                    <tr>
+                        <th>卡池</th>
+                        <th class="num">總抽數</th>
+                        <th class="num">S 數量</th>
+                        <th class="num">S 比例</th>
+                        <th class="num">平均間隔</th>
+                        <th class="num">中位數</th>
+                        <th class="num">最短 / 最長</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var pool in _pools)
+                    {
+                        <tr data-pool="@pool.Banner.Kind">
+                            <th scope="row">@pool.Label</th>
+                            @if (pool.Data is { } data)
+                            {
+                                <td class="num">@data.TotalPulls.ToString("N0")</td>
+                                <td class="num">@data.TopRankCount</td>
+                                <td class="num">@(data.TopRankRate?.ToString("0.0%") ?? "—")</td>
+                                <td class="num">@(data.AverageInterval?.ToString("0.0") ?? "—")</td>
+                                <td class="num">@(data.MedianInterval?.ToString("0.#") ?? "—")</td>
+                                <td class="num">@(data.ShortestInterval?.ToString() ?? "—") / @(data.LongestInterval?.ToString() ?? "—")</td>
+                            }
+                            else
+                            {
+                                <td class="num" colspan="6">尚無紀錄</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <p class="hint">間隔計算跨活動累積。最舊一筆 S 之前的抽數可能不在紀錄內，所以不計入平均。</p>
+    </section>
+
+    <section class="chart">
+        <h3>最近的 S</h3>
+        @if (_recent.Count == 0)
+        {
+            <p class="no-match">還沒有抽到 S。</p>
+        }
+        else
+        {
+            <ol class="recent-list" id="recent-top">
+                @foreach (var (pull, label) in _recent)
+                {
+                    <li>
+                        <span class="interval-date">@pull.Timestamp[..Math.Min(10, pull.Timestamp.Length)]</span>
+                        <span class="interval-name" title="@pull.RewardId">@pull.Name</span>
+                        <span class="interval-tag">@label・@pull.FocusLabel</span>
+                        <span class="interval-value">@(pull.IsLowerBound ? "至少 " : "")@pull.PullsSpent 抽</span>
+                    </li>
+                }
+            </ol>
+        }
+    </section>
+</div>
+
+@code {
+    private const int RecentCount = 8;
+
+    private sealed record Pool(BannerInfo Banner, string Label, string TopLabel, BannerAnalysis? Data);
+
+    private List<Pool> _pools = [];
+    private List<(TopRankPull Pull, string Label)> _recent = [];
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<BannerHistory> Histories { get; set; } = [];
+
+    [Parameter]
+    public Func<HistoryRow, string>? NameOf { get; set; }
+
+    [Parameter]
+    public EventCallback<HistoryKind> OnOpenPool { get; set; }
+
+    [Parameter]
+    public EventCallback OnStartCapture { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        _pools =
+        [
+            Build(BannerInfo.LimitedCharacter, "限定棋盤", "S"),
+            Build(BannerInfo.Permanent, "常駐棋盤", "S"),
+            Build(BannerInfo.ArcMiracleBox, "弧盤研募", "S 弧盤"),
+        ];
+        _recent = _pools.Where(pool => pool.Data is not null)
+            .SelectMany(pool => pool.Data!.TopRankPulls.Select(pull => (Pull: pull, pool.Label)))
+            .OrderByDescending(entry => entry.Pull.Timestamp, StringComparer.Ordinal)
+            .Take(RecentCount)
+            .ToList();
+    }
+
+    private Pool Build(BannerInfo banner, string label, string topLabel)
+    {
+        var history = Histories.FirstOrDefault(item => item.Banner.Kind == banner.Kind);
+        return new Pool(banner, label, topLabel, history is null ? null : HistoryAnalyzer.Analyze(history, NameOf));
+    }
+}

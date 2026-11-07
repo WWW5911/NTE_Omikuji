@@ -98,6 +98,7 @@ public static class ExportDocuments
             {
                 Uid = Text(record, "uid") ?? throw new InvalidDataException("紀錄缺少 uid。"),
                 PoolGroupId = banner.Id,
+                BannerId = Text(record, "pool_id"),
                 TimestampDecoded = Text(record, "timestamp") ?? "",
                 GroupOrdinal = (int)(Number(record, "timestamp_group_ordinal") ?? 0),
                 Dice = (int?)Number(record, "roll_result"),

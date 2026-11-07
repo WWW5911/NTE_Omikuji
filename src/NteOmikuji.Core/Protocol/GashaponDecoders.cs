@@ -48,6 +48,7 @@ public static class ArcDecoder
             row.TimestampDecoded = record.TimestampDecoded;
             row.RecordHex = record.RecordHex;
             row.DecoderMode = "structured_fallback";
+            row.BannerId = StructuredParser.IsEventBanner(record.PoolId) ? record.PoolId : null;
             return row;
         }).ToList();
 
@@ -74,13 +75,15 @@ public static class ArcDecoder
         while (position + 4 <= response.Length)
         {
             var start = position;
-            if (!TryReadPackedField(response, ref position, 4, out var name) || !TryReadPackedField(response, ref position, 8, out _))
+            if (!TryReadPackedField(response, ref position, 4, out var name) || !TryReadPackedField(response, ref position, 8, out var pool))
             {
                 break;
             }
             var timestamp = response.AsSpan(position, 8);
             position += 8;
             var row = NewRow(DecodeKey(name.Span), catalog);
+            var banner = DecodeKey(pool.Span);
+            row.BannerId = StructuredParser.IsEventBanner(banner) ? banner : null;
             try
             {
                 (row.TimestampTicks, row.TimestampDecoded) = MonopolyDecoder.DecodeTimestamp(timestamp, TicksScale);

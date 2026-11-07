@@ -1,0 +1,211 @@
+@implements IDisposable
+@inject ExporterState State
+
+<div class="page records-page" id="records">
+    <div class="toolbar">
+        <h2 class="page-title">原始紀錄</h2>
+        <div class="view-switch" role="tablist">
+            <button id="records-tab-list" role="tab" aria-selected="@(_tab == Tab.List)" class="@(_tab == Tab.List ? "active" : "")" @onclick="() => _tab = Tab.List">紀錄</button>
+            <button id="open-editor" role="tab" aria-selected="@(_tab == Tab.Mapping)" class="@(_tab == Tab.Mapping ? "active" : "")" @onclick="() => _tab = Tab.Mapping">對應維護</button>
+            <button id="records-tab-import" role="tab" aria-selected="@(_tab == Tab.Import)" class="@(_tab == Tab.Import ? "active" : "")" @onclick="() => _tab = Tab.Import">匯入</button>
+        </div>
+    </div>
+
+    @switch (_tab)
+    {
+        case Tab.Mapping:
+            @if (State.MappingIssues.Count > 0)
+            {
+                <ul class="issues" id="mapping-issues">
+                    @foreach (var issue in State.MappingIssues.Take(5))
+                    {
+                        <li>@issue</li>
+                    }
+                </ul>
+            }
+            <MappingEditor />
+            break;
+        case Tab.Import:
+            <div class="panel form-card">
+                <label class="file" for="flows">.flows 擷取檔、匯出的 JSON，或對應表 CSV / JSON（可多選）</label>
+                <InputFile id="flows" OnChange="ImportAsync" accept=".flows,.json,.csv" multiple disabled="@(State.Status != ExporterStatus.Idle)" />
+                <p class="hint" id="mapping-status">已載入 @State.MappedRewardCount 筆獎勵@(UnmappedTotal > 0 ? $"，{UnmappedTotal} 筆未對應" : "")。</p>
+                <button id="reload-mappings" @onclick="State.ReloadMappings">重新載入對應表</button>
+            </div>
+            break;
+        default:
+            @if (State.Histories.Count == 0)
+            {
+                <div class="panel empty">
+                    <h2>還沒有紀錄</h2>
+                    <p>開始擷取，或匯入 .flows / JSON 檔。紀錄會自動累積保存在程式旁的 user_data 資料夾。</p>
+                    <p>任何獎勵字串都會保留：對照表裡沒有的項目照樣匯出原文，並標記為「未對應」。</p>
+                </div>
+            }
+            else
+            {
+                <div class="panel results">
+                    <div class="toolbar">
+                        <div class="tabs" role="tablist">
+                            @foreach (var history in State.Histories)
+                            {
+                                var kind = history.Banner.Kind;
+                                <button role="tab" class="@(kind == ActiveKind ? "tab active" : "tab")" aria-selected="@(kind == ActiveKind)" @onclick="() => _activeKind = kind">
+                                    @PoolLabel(kind) <small>@history.Rows.Count</small>
+                                </button>
+                            }
+                        </div>
+                        <div class="actions">
+                            <input id="filter" class="filter" placeholder="搜尋獎勵或結果…" aria-label="搜尋" @bind="_filter" @bind:event="oninput" />
+                            <label class="check"><input id="unmapped" type="checkbox" @bind="_unmappedOnly" /> 只看未對應（@UnmappedCount）</label>
+                            <button id="copy" @onclick="CopyAsync">複製 JSON</button>
+                        </div>
+                    </div>
+
+                    @if (Active is { } active)
+                    {
+                        @foreach (var warning in active.Warnings)
+                        {
+                            <div class="alert">@warning.Reason</div>
+                        }
+                    }
+                    <div class="table-wrap">
+                        <table class="records">
+                            <thead>
+                                <tr>
+                                    <th class="time">時間</th>
+                                    <th>獎勵</th>
+                                    <th class="narrow">稀有度</th>
+                                    <th class="narrow">類型</th>
+                                    <th class="narrow">數量</th>
+                                    <th>結果</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <Virtualize Items="FilteredRows" Context="row" ItemSize="38" SpacerElement="tr">
+                                    <tr>
+                                        <td class="time">@row.TimestampDecoded</td>
+                                        <td class="reward">
+                                            <span class="name">@State.DisplayName(row)</span>
+                                            @if (row.IsMappedReward)
+                                            {
+                                                <span class="id">@row.RewardId</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge">未對應</span>
+                                            }
+                                        </td>
+                                        <td class="narrow"><span class="@RankClass(row.RewardRank)">@(string.IsNullOrEmpty(row.RewardRank) ? "—" : row.RewardRank)</span></td>
+                                        <td class="narrow">@row.RewardType</td>
+                                        <td class="narrow">@(row.Quantity?.ToString() ?? "—")</td>
+                                        <td class="result">@ResultLabel(row)</td>
+                                    </tr>
+                                </Virtualize>
+                            </tbody>
+                        </table>
+                        @if (FilteredRows.Count == 0)
+                        {
+                            <p class="no-match">沒有符合條件的紀錄。</p>
+                        }
+                    </div>
+                </div>
+            }
+            break;
+    }
+</div>
+
+@code {
+    private enum Tab
+    {
+        List,
+        Mapping,
+        Import,
+    }
+
+    private Tab _tab = Tab.List;
+    private HistoryKind? _activeKind;
+    private string _filter = "";
+    private bool _unmappedOnly;
+
+    private int UnmappedTotal => State.SeenRewards.Keys.Count(id => !State.Rewards.Entries.Any(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase)));
+
+    private BannerHistory? Active =>
+        State.Histories.FirstOrDefault(history => history.Banner.Kind == _activeKind) ?? State.Histories.FirstOrDefault();
+
+    private HistoryKind? ActiveKind => Active?.Banner.Kind;
+
+    private int UnmappedCount => Active?.Rows.Count(row => !row.IsMappedReward) ?? 0;
+
+    private List<HistoryRow> FilteredRows =>
+        (Active?.Rows ?? []).Where(row => (!_unmappedOnly || !row.IsMappedReward) && Matches(row)).ToList();
+
+    protected override void OnInitialized() => State.Changed += OnStateChanged;
+
+    private void OnStateChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private static string PoolLabel(HistoryKind kind) => kind switch
+    {
+        HistoryKind.LimitedCharacter => "限定棋盤",
+        HistoryKind.Permanent => "常駐棋盤",
+        HistoryKind.ArcMiracleBox => "弧盤研募",
+        HistoryKind.MysteryBox => "神秘箱",
+        _ => kind.ToString(),
+    };
+
+    private bool Matches(HistoryRow row) =>
+        _filter.Length == 0
+        || row.RewardId.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+        || row.RewardName.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+        || State.DisplayName(row).Contains(_filter, StringComparison.OrdinalIgnoreCase)
+        || row.ResultType.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+        || (row.ResultText?.Contains(_filter, StringComparison.OrdinalIgnoreCase) ?? false);
+
+    private static string ResultLabel(HistoryRow row)
+    {
+        var label = row.ResultType switch
+        {
+            "dice" => $"骰子 {row.Dice}",
+            "points_gift" => "集點贈禮",
+            "chase_reward" => "沉眠地",
+            "single_pull" => "單抽",
+            "" or "unknown" => "—",
+            var other => other,
+        };
+        return row.ResultText is null ? label : $"{label}：{row.ResultText}";
+    }
+
+    private static string RankClass(string? rank) => rank switch
+    {
+        "S" => "rank rank-s",
+        "A" => "rank rank-a",
+        "B" => "rank rank-b",
+        _ => "rank rank-none",
+    };
+
+    private async Task ImportAsync(InputFileChangeEventArgs change)
+    {
+        const long maxFileBytes = 1024L * 1024 * 1024;
+        const int maxFiles = 50;
+        var files = new List<(string Name, byte[] Bytes)>();
+        foreach (var file in change.GetMultipleFiles(maxFiles))
+        {
+            await using var stream = file.OpenReadStream(maxFileBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            files.Add((file.Name, buffer.ToArray()));
+        }
+        await State.ImportAsync(files);
+        _activeKind = null;
+    }
+
+    private async Task CopyAsync()
+    {
+        if (Active is { } active)
+        {
+            await Clipboard.Default.SetTextAsync(State.ExportJson(active));
+        }
+    }
+
+    public void Dispose() => State.Changed -= OnStateChanged;
+}

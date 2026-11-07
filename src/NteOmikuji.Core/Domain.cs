@@ -32,11 +32,16 @@ public enum HistoryKind
     MysteryBox,
 }
 
-public sealed record BannerInfo(HistoryKind Kind, string Id, string Name, string System, bool SharedPity, string FilePrefix)
+/// <param name="LimitedChance">How often a top-rank reward is the limited one, when that is not always so.</param>
+/// <param name="RisesFrom">The pull from which a top-rank reward becomes more likely.</param>
+/// <param name="SecondRankAt">How many pulls guarantee an A. On boards this is the reward given every 10 pulls.</param>
+public sealed record PityRule(int TopRankAt, int? LimitedAt = null, double? LimitedChance = null, int? RisesFrom = null, int? SecondRankAt = null);
+
+public sealed record BannerInfo(HistoryKind Kind, string Id, string Name, string System, bool SharedPity, string FilePrefix, PityRule? Pity = null)
 {
-    public static readonly BannerInfo Permanent = new(HistoryKind.Permanent, "Lottery_Permanent", "Standard Board", "Monopoly", false, "Permanent");
-    public static readonly BannerInfo LimitedCharacter = new(HistoryKind.LimitedCharacter, "Lottery_LimitedCharacter", "Limited Character Board", "Monopoly", true, "Limited");
-    public static readonly BannerInfo ArcMiracleBox = new(HistoryKind.ArcMiracleBox, "Arc_MiracleBox", "Arc Miracle Box", "Gashapon", true, "Arc");
+    public static readonly BannerInfo Permanent = new(HistoryKind.Permanent, "Lottery_Permanent", "Standard Board", "Monopoly", false, "Permanent", new PityRule(90, RisesFrom: 70, SecondRankAt: 10));
+    public static readonly BannerInfo LimitedCharacter = new(HistoryKind.LimitedCharacter, "Lottery_LimitedCharacter", "Limited Character Board", "Monopoly", true, "Limited", new PityRule(90, RisesFrom: 70, SecondRankAt: 10));
+    public static readonly BannerInfo ArcMiracleBox = new(HistoryKind.ArcMiracleBox, "Arc_MiracleBox", "Arc Miracle Box", "Gashapon", true, "Arc", new PityRule(60, 80, 0.25, SecondRankAt: 10));
     public static readonly BannerInfo MysteryBox = new(HistoryKind.MysteryBox, "Gashapon_MysteryBox", "Mystery Box", "Gashapon", false, "MysteryBox");
 
     public static BannerInfo For(HistoryKind kind) => kind switch
@@ -54,6 +59,10 @@ public sealed class HistoryRow
 {
     public int Page { get; set; }
     public string PoolGroupId { get; set; } = "";
+
+    /// <summary>The event the row was pulled on, such as Lottery_MingYin. Null when it could not be read.</summary>
+    public string? BannerId { get; set; }
+
     public int? Dice { get; set; }
     public string ResultType { get; set; } = "unknown";
     public string? ResultText { get; set; }

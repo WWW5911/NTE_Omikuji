@@ -495,7 +495,7 @@ public class AnalysisTests
     {
         var result = HistoryAnalyzer.Analyze(Monopoly(Row("2026-01-01 00:00:00", "gift", "S", result: "points_gift")));
 
-        Assert.Equal("集點獎勵", Assert.Single(result.TopRankPulls).Source);
+        Assert.Equal("集點贈禮", Assert.Single(result.TopRankPulls).Source);
     }
 
     [Fact]

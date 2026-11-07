@@ -71,6 +71,14 @@ public class MonopolyFieldDecodingTests
     }
 
     [Fact]
+    public void RowsKeepTheirEventBanner()
+    {
+        var rows = Decode(Single(4, "fork_vine", "fork_vine"), Row(1, "fork_nonos", ["fork_nonos"], banner: "Lottery_ZhenHong"));
+
+        Assert.Equal(["Lottery_MingYin", "Lottery_ZhenHong"], rows.Select(row => row.BannerId));
+    }
+
+    [Fact]
     public void BannerIsOptionalSoTheOlderLayoutStillParses()
     {
         var records = StructuredParser.ParseRecords(Page(Row(3, "fork_vine", ["fork_vine"], banner: null), Row(5, "fork_vine", ["fork_vine"], banner: null)), StructuredRecordType.Monopoly);

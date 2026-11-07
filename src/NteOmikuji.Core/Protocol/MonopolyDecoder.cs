@@ -86,6 +86,7 @@ public static class MonopolyDecoder
             };
             ApplyReward(row, record.ItemId, catalog);
             (row.Dice, row.ResultType) = ClassifyStructured(record.RollPointsRaw);
+            row.BannerId = record.EventBanner;
             rows.Add(row);
         }
         return rows;
@@ -385,6 +386,7 @@ public static class MonopolyDecoder
             }
             row.Quantity = record.Count;
             row.ResultText = record.ResultText;
+            row.BannerId = record.EventBanner;
             // The parsed field is the real roll. The scan above can land on any zero byte near a record.
             if (record.RollPointsRaw is not null || row.ResultType == "unknown" || row.Dice is null)
             {

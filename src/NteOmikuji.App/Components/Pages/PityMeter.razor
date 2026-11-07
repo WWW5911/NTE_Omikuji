@@ -1,0 +1,31 @@
+@using NteOmikuji.Core.Analysis
+@using System.Globalization
+
+<div class="pity-meter" id="@Id">
+    <div class="pity-line">
+        <span class="pity-label">@Label</span>
+        <span class="pity-count"><span class="pity-now">@(Status.IsLowerBound ? "至少 " : "")@Status.Current</span> / @Status.Threshold 抽</span>
+    </div>
+    <div class="pity-bar" role="progressbar" aria-label="@Label" aria-valuenow="@Math.Min(Status.Current, Status.Threshold)" aria-valuemin="0" aria-valuemax="@Status.Threshold">
+        <span style="width:@Width"></span>
+        @if (Status.RisesFrom is { } rise)
+        {
+            <i class="pity-mark" style="left:@Percent((double)rise / Status.Threshold)" title="第 @rise 抽起機率上升"></i>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public PityStatus Status { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = "";
+
+    [Parameter]
+    public string? Id { get; set; }
+
+    private string Width => Percent(Status.Progress);
+
+    private static string Percent(double share) => $"{(share * 100).ToString("0.#", CultureInfo.InvariantCulture)}%";
+}

@@ -22,7 +22,8 @@ public sealed record StructuredRecord(
     string? ResultText,
     string RecordHex,
     string ProtocolView,
-    int? SourceIndex = null);
+    int? SourceIndex = null,
+    string? EventBanner = null);
 
 public sealed record ProtocolEnvelope(string StreamKey, int SegmentIndex);
 
@@ -38,10 +39,14 @@ public static class StructuredParser
     private const uint MonopolyBlockKind = 527;
     private const uint ForkBlockKind = 5906;
     private const uint MonopolyEnvelopeFooter = 1_774_080;
-    private const string EventBannerPrefix = "Lottery_";
+    private const string BoardBannerPrefix = "Lottery_";
+    private const string ArcBannerPrefix = "ForkLottery_";
 
     public static readonly byte[] MonopolyMarker = "FMonopolyLotteryRecordData"u8.ToArray();
     public static readonly byte[] ForkMarker = "FForkLotteryRecordData"u8.ToArray();
+
+    public static bool IsEventBanner(string? text) =>
+        text is not null && (text.StartsWith(BoardBannerPrefix, StringComparison.Ordinal) || text.StartsWith(ArcBannerPrefix, StringComparison.Ordinal));
 
     public static IReadOnlyList<StructuredRecord> ParseRecords(byte[] payload, StructuredRecordType type)
     {
@@ -153,8 +158,10 @@ public static class StructuredParser
         var ticks = reader.U64();
         // Rows end with their event banner. Missing it puts the next row out of position.
         var bannerPosition = reader.Position;
-        if (reader.TryString() is not { } banner || !banner.StartsWith(EventBannerPrefix, StringComparison.Ordinal))
+        var banner = reader.TryString();
+        if (!IsEventBanner(banner))
         {
+            banner = null;
             reader.Position = bannerPosition;
         }
         var end = reader.Position;
@@ -162,7 +169,7 @@ public static class StructuredParser
         var record = MakeRecord(reader, StructuredRecordType.Monopoly, itemSpec, ticks, poolId, rollPoints,
             secondaryItem.Length == 0 ? null : secondaryItem, secondaryCount, resultText, start, viewName, sourceIndex);
         reader.Position = end;
-        return record;
+        return record with { EventBanner = banner };
     }
 
     private static StructuredRecord ParseForkRow(FieldReader reader, string viewName, int? sourceIndex)

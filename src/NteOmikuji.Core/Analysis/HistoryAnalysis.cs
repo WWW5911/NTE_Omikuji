@@ -6,7 +6,21 @@ namespace NteOmikuji.Core.Analysis;
 /// <param name="PullsSpent">Pulls since the previous top-rank reward, including this one.</param>
 /// <param name="IsLowerBound">True for the oldest entry, whose earlier pulls may lie before the saved history.</param>
 /// <param name="Source">How a board reward arrived when it was not a dice roll, such as the reward given every 10 pulls.</param>
-public sealed record TopRankPull(string RewardId, string Name, string Type, string Timestamp, int PullsSpent, bool IsLowerBound, string FocusLabel, bool IsLimited, string? Source);
+public sealed record TopRankPull(string RewardId, string Name, string Type, string Timestamp, int PullsSpent, bool IsLowerBound, string FocusLabel, bool IsLimited, string? Source, string? BannerId = null);
+
+/// <param name="IsLowerBound">True when the last reset lies before the saved history, so the real count may be higher.</param>
+/// <param name="RisesFrom">The pull from which the odds improve, when the pool has such a point.</param>
+public sealed record PityStatus(int Current, int Threshold, bool IsLowerBound, int? RisesFrom = null)
+{
+    public int Remaining => Math.Max(0, Threshold - Current);
+    public bool HasRisen => RisesFrom is { } start && Current >= start;
+    public int? PullsUntilRise => RisesFrom is { } start && Current < start ? start - Current : null;
+    public bool Exceeded => Current > Threshold;
+    public double Progress => Math.Min(1.0, (double)Current / Threshold);
+}
+
+/// <summary>One event's rows within a pool. Top-rank intervals still run across events, since pity carries over.</summary>
+public sealed record BannerGroup(string Id, string Name, string? FirstDate, string? LastDate, int Pulls, int TopRankCount);
 
 public sealed record FocusItem(string RewardId, string Name, string FocusLabel, string Timestamp);
 
@@ -34,7 +48,13 @@ public sealed record BannerAnalysis(
     IReadOnlyList<CountBucket> TopRewards,
     IReadOnlyList<CountBucket> FocusCounts,
     IReadOnlyList<FocusItem> CosmeticItems,
-    bool HasExcessPointsRewards = false);
+    bool HasExcessPointsRewards = false,
+    double? MedianInterval = null,
+    IReadOnlyList<CountBucket>? IntervalHistogram = null,
+    PityStatus? TopRankPity = null,
+    PityStatus? LimitedPity = null,
+    PityStatus? SecondRankPity = null,
+    int? TopRanksBeforeRise = null);
 
 /// <summary>
 /// Measures what is in the history and claims nothing about game rules. Pity
@@ -45,17 +65,22 @@ public static class HistoryAnalyzer
     private const string TopRank = "S";
     private const string SecondRank = "A";
     private const string PointsReward = "points_gift";
+    public const string TopRankTargets = "S 角色／弧盤";
+    public const string TopRankOthers = "S 道具／外觀";
     private const int MaxDailyBuckets = 62;
     private const int TopRewardCount = 10;
     private const int PullsPerPointsReward = 10;
+    private const int HistogramStep = 10;
 
     /// <param name="nameOf">How to show a reward. Defaults to its export name, or its ID when unmapped.</param>
-    public static BannerAnalysis Analyze(BannerHistory history, Func<HistoryRow, string>? nameOf = null)
+    /// <param name="bannerId">Limits totals to one event. Intervals are still counted across every event in the pool.</param>
+    public static BannerAnalysis Analyze(BannerHistory history, Func<HistoryRow, string>? nameOf = null, string? bannerId = null)
     {
-        nameOf ??= row => row.IsMappedReward && row.RewardName.Length > 0 ? row.RewardName : row.RewardId;
+        nameOf ??= DefaultName;
         // Rows are newest first; intervals are counted forward in time.
-        var chronological = history.Rows.Reverse().ToList();
-        var isMonopoly = history.Banner.Kind is HistoryKind.Permanent or HistoryKind.LimitedCharacter;
+        var all = history.Rows.Reverse().ToList();
+        var chronological = bannerId is null ? all : all.Where(row => row.BannerId == bannerId).ToList();
+        var isMonopoly = IsMonopoly(history);
         bool IsPull(HistoryRow row) => !isMonopoly || row.ResultType == "dice";
 
         var pulls = chronological.Where(IsPull).ToList();
@@ -63,19 +88,28 @@ public static class HistoryAnalyzer
         var sinceTopRank = 0;
         var sinceLimited = 0;
         var sawLimited = false;
-        foreach (var row in chronological)
+        var sinceSecondRank = 0;
+        var sawSecondRank = false;
+        foreach (var row in all)
         {
             if (IsPull(row))
             {
                 sinceTopRank++;
                 sinceLimited++;
+                sinceSecondRank++;
+            }
+            // A board's A comes from the fixed reward every 10 pulls, whatever the dice landed on.
+            if (isMonopoly ? row.ResultType == PointsReward : IsRank(row, SecondRank) || IsRank(row, TopRank))
+            {
+                sinceSecondRank = 0;
+                sawSecondRank = true;
             }
             // Set per reward in the mapping table, because an S quality alone also covers dice and cosmetics.
             if (row.Focus.IsTopRank())
             {
                 topRankPulls.Add(new TopRankPull(row.RewardId, nameOf(row), row.RewardType,
                     row.TimestampDecoded, sinceTopRank, topRankPulls.Count == 0,
-                    RewardSchema.FocusLabel(row.Focus), row.Focus.IsLimited(), IsPull(row) ? null : ResultLabel(row)));
+                    RewardSchema.FocusLabel(row.Focus), row.Focus.IsLimited(), IsPull(row) ? null : ResultLabel(row), row.BannerId));
                 sinceTopRank = 0;
             }
             if (row.Focus.IsLimited())
@@ -85,9 +119,16 @@ public static class HistoryAnalyzer
             }
         }
 
+        var overallTopCount = topRankPulls.Count;
+        var rule = history.Banner.Pity;
+        if (bannerId is not null)
+        {
+            topRankPulls = topRankPulls.Where(pull => pull.BannerId == bannerId).ToList();
+        }
         var exact = topRankPulls.Where(pull => !pull.IsLowerBound).Select(pull => pull.PullsSpent).ToList();
         var topCount = topRankPulls.Count;
         topRankPulls.Reverse();
+        var excessRewards = isMonopoly && chronological.Count(row => row.ResultType == PointsReward) > (pulls.Count / PullsPerPointsReward) + 1;
         var (overTime, unit) = BucketByTime(pulls);
         return new BannerAnalysis(
             pulls.Count,
@@ -115,10 +156,64 @@ public static class HistoryAnalyzer
             RewardSchema.AllFocus.Where(focus => focus != RewardFocus.None)
                 .Select(focus => new CountBucket(RewardSchema.FocusLabel(focus), chronological.Count(row => row.Focus == focus)))
                 .Where(bucket => bucket.Count > 0).ToList(),
-            history.Rows.Where(row => row.Focus.IsCosmetic())
+            Enumerable.Reverse(chronological).Where(row => row.Focus.IsCosmetic())
                 .Select(row => new FocusItem(row.RewardId, nameOf(row), RewardSchema.FocusLabel(row.Focus), row.TimestampDecoded)).ToList(),
             // Saved JSON cannot be corrected without its bytes, so older decoding has to be pointed out.
-            isMonopoly && chronological.Count(row => row.ResultType == PointsReward) > (pulls.Count / PullsPerPointsReward) + 1);
+            excessRewards,
+            Median(exact),
+            Histogram(exact, rule?.TopRankAt),
+            bannerId is null && rule is not null ? new PityStatus(sinceTopRank, rule.TopRankAt, overallTopCount == 0, rule.RisesFrom) : null,
+            bannerId is null && rule?.LimitedAt is { } limitedAt ? new PityStatus(sinceLimited, limitedAt, !sawLimited) : null,
+            bannerId is null && !excessRewards && rule?.SecondRankAt is { } secondRankAt ? new PityStatus(sinceSecondRank, secondRankAt, !sawSecondRank) : null,
+            rule?.RisesFrom is { } risesFrom ? exact.Count(value => value < risesFrom) : null);
+    }
+
+    /// <summary>Events in a pool, newest first. Each is named after its most frequent S, since IDs alone are not readable.</summary>
+    public static IReadOnlyList<BannerGroup> Banners(BannerHistory history, Func<HistoryRow, string>? nameOf = null)
+    {
+        nameOf ??= DefaultName;
+        var isMonopoly = IsMonopoly(history);
+        return history.Rows.Where(row => !string.IsNullOrEmpty(row.BannerId))
+            .GroupBy(row => row.BannerId!)
+            .Select(group =>
+            {
+                var top = group.Where(row => row.Focus.IsTopRank()).ToList();
+                var name = top.GroupBy(nameOf).OrderByDescending(names => names.Count()).ThenBy(names => names.Key, StringComparer.Ordinal).FirstOrDefault()?.Key
+                    ?? group.Key[(group.Key.IndexOf('_') + 1)..];
+                var dates = group.Select(row => row.TimestampDecoded).Where(date => date.Length > 0).Order(StringComparer.Ordinal).ToList();
+                return new BannerGroup(group.Key, name, dates.FirstOrDefault(), dates.LastOrDefault(),
+                    group.Count(row => !isMonopoly || row.ResultType == "dice"), top.Count);
+            })
+            .OrderByDescending(group => group.LastDate, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    private static string DefaultName(HistoryRow row) => row.IsMappedReward && row.RewardName.Length > 0 ? row.RewardName : row.RewardId;
+
+    private static bool IsMonopoly(BannerHistory history) => history.Banner.Kind is HistoryKind.Permanent or HistoryKind.LimitedCharacter;
+
+    private static double? Median(List<int> values)
+    {
+        if (values.Count == 0)
+        {
+            return null;
+        }
+        var sorted = values.Order().ToList();
+        var middle = sorted.Count / 2;
+        return sorted.Count % 2 == 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2.0;
+    }
+
+    /// <summary>Runs to the guaranteed count even where empty, so the shape reads against the pity limit.</summary>
+    private static List<CountBucket> Histogram(List<int> intervals, int? limit)
+    {
+        var top = Math.Max(limit ?? 0, intervals.DefaultIfEmpty(0).Max());
+        var buckets = new List<CountBucket>();
+        for (var start = 1; start <= top; start += HistogramStep)
+        {
+            var end = start + HistogramStep - 1;
+            buckets.Add(new CountBucket($"{start}–{end}", intervals.Count(value => value >= start && value <= end)));
+        }
+        return buckets;
     }
 
     private static bool IsRank(HistoryRow row, string rank) =>
@@ -126,10 +221,16 @@ public static class HistoryAnalyzer
 
     private static List<CountBucket> RarityMix(List<HistoryRow> pulls)
     {
+        // Items and cosmetics also carry an S, so the rewards people count are shown apart from them.
         var known = new[] { TopRank, SecondRank, "B" };
-        var buckets = known.Select(rank => new CountBucket(rank, pulls.Count(row => IsRank(row, rank)))).ToList();
-        buckets.Add(new CountBucket("未分級", pulls.Count(row => !known.Any(rank => IsRank(row, rank)))));
-        return buckets;
+        return
+        [
+            new CountBucket(TopRankTargets, pulls.Count(row => row.Focus.IsTopRank())),
+            new CountBucket(TopRankOthers, pulls.Count(row => IsRank(row, TopRank) && !row.Focus.IsTopRank())),
+            new CountBucket(SecondRank, pulls.Count(row => IsRank(row, SecondRank) && !row.Focus.IsTopRank())),
+            new CountBucket("B", pulls.Count(row => IsRank(row, "B") && !row.Focus.IsTopRank())),
+            new CountBucket("未分級", pulls.Count(row => !row.Focus.IsTopRank() && !known.Any(rank => IsRank(row, rank)))),
+        ];
     }
 
     private static List<CountBucket> DiceRolls(List<HistoryRow> pulls)
@@ -143,8 +244,8 @@ public static class HistoryAnalyzer
     private static string ResultLabel(HistoryRow row) => row.ResultType switch
     {
         "dice" => "骰子",
-        PointsReward => "集點獎勵",
-        "chase_reward" => "追逐獎勵",
+        PointsReward => "集點贈禮",
+        "chase_reward" => "沉眠地",
         "" or "unknown" => "未知",
         var other => other,
     };

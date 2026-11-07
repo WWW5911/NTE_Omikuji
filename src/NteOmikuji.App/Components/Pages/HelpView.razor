@@ -1,0 +1,41 @@
+<div class="page help" id="help">
+    <h2 class="page-title">擷取說明</h2>
+
+    <section class="panel help-card">
+        <h3>怎麼取得紀錄</h3>
+        <ol class="steps">
+            <li>先開這個程式，在遊戲主選單按下開始<strong>之前</strong>按「開始擷取」，才能取得帳號與成就資訊。</li>
+            <li>Windows 會請你同意系統管理員權限，程式會自動重新開啟並開始擷取。</li>
+            <li>進遊戲後開啟卡池的歷史紀錄，<strong>從第 1 頁開始</strong>往下捲到最舊一頁。三個卡池要各做一次。</li>
+            <li>回來按「停止擷取」。紀錄會自動累積保存，不用手動存檔。</li>
+        </ol>
+        <button class="primary" id="help-start" @onclick="() => OnStartCapture.InvokeAsync()">前往開始擷取</button>
+    </section>
+
+    <section class="panel help-card">
+        <h3>保底規則</h3>
+        <table class="summary" id="pity-rules">
+            <thead><tr><th>卡池</th><th>S 保底</th><th>A 保底</th><th>是否跨活動累積</th></tr></thead>
+            <tbody>
+                <tr><th scope="row">限定棋盤</th><td>90 抽必出，第 70 抽起機率上升</td><td>每 10 抽（集點贈禮）</td><td>是</td></tr>
+                <tr><th scope="row">常駐棋盤</th><td>90 抽必出，第 70 抽起機率上升</td><td>每 10 抽（集點贈禮）</td><td>—</td></tr>
+                <tr><th scope="row">弧盤研募</th><td>60 抽必出 S 弧盤，其中 25% 是限定；80 抽必出限定</td><td>每 10 抽</td><td>是</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="panel help-card">
+        <h3>怎麼算的</h3>
+        <ul class="steps plain">
+            <li>棋盤每 10 抽另外給一個 A 級的<strong>集點贈禮</strong>，沉眠地也是額外給的，這兩種都不算抽數。</li>
+            <li>S 由「原始紀錄」的對應維護決定。服裝、車皮與降落傘只統計，不重置間隔。</li>
+            <li>紀錄最舊一筆 S 之前的抽數可能不在紀錄內，所以標成「至少」，也不計入平均。</li>
+            <li>所有資料只存在這台電腦，放在程式旁的 user_data 資料夾。</li>
+        </ul>
+    </section>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback OnStartCapture { get; set; }
+}

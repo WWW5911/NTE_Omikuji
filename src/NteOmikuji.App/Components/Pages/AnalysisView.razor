@@ -1,6 +1,10 @@
 @using NteOmikuji.Core.Analysis
 
-<div class="analysis" id="analysis">
+<div class="page analysis" id="analysis">
+    <div class="toolbar">
+        <h2 class="page-title" id="pool-title">@Title</h2>
+        <span class="hint">範圍 @_data.FirstDate 至 @_data.LastDate</span>
+    </div>
     @if (_data.TotalPulls == 0)
     {
         <p class="no-match">這個卡池還沒有抽取紀錄。</p>
@@ -9,40 +13,60 @@
     {
         @if (_data.HasExcessPointsRewards)
         {
-            <div class="alert" id="old-decoding" role="status">這份紀錄的集點獎勵比遊戲實際給的多，可能有抽數被舊版誤判，以下的抽數與間隔會不準。重新擷取一次歷史紀錄即可更正。</div>
+            <div class="alert" id="old-decoding" role="status">這份紀錄的集點贈禮比遊戲實際給的多，可能有抽數被舊版誤判，以下的抽數與間隔會不準。重新擷取一次歷史紀錄即可更正。</div>
+        }
+        @if (BannerId is null && History.Banner.Kind != HistoryKind.Permanent && History.Rows.All(row => row.BannerId is null))
+        {
+            <p class="hint" id="no-banners">這份紀錄沒有活動資訊，所以無法分期查看。重新擷取一次就會在左側列出各期。</p>
         }
         <div class="tiles">
-            <div class="tile hero">
-                <span>距上次 S</span>
-                <strong id="since-top">@_data.PullsSinceTopRank</strong>
-                <small>抽</small>
-            </div>
+            @if (BannerId is null)
+            {
+                <div class="tile hero">
+                    <span>距上次 S</span>
+                    <strong id="since-top">@_data.PullsSinceTopRank</strong>
+                    <small>@(_data.TopRankPity is { } pity ? $"/ {pity.Threshold} 抽" : "抽")</small>
+                </div>
+            }
             <div class="tile"><span>總抽數</span><strong id="total-pulls">@_data.TotalPulls.ToString("N0")</strong></div>
             <div class="tile"><span>S 數量</span><strong id="top-count">@_data.TopRankCount</strong></div>
             <div class="tile"><span>S 比例</span><strong>@Percent(_data.TopRankRate)</strong></div>
             <div class="tile"><span>S 平均間隔</span><strong id="average">@(_data.AverageInterval?.ToString("0.0") ?? "—")</strong></div>
+            <div class="tile"><span>S 間隔中位數</span><strong id="median">@(_data.MedianInterval?.ToString("0.#") ?? "—")</strong></div>
+            @if (_data.TopRanksBeforeRise is { } early && RisesFrom is { } rise)
+            {
+                <div class="tile"><span>@rise 抽前出 S</span><strong id="before-rise">@early 次</strong></div>
+            }
             <div class="tile"><span>最短 / 最長</span><strong>@(_data.ShortestInterval?.ToString() ?? "—") / @(_data.LongestInterval?.ToString() ?? "—")</strong></div>
             @if (_data.LimitedCount > 0)
             {
                 <div class="tile"><span>S 限定數量</span><strong id="limited-count">@_data.LimitedCount</strong></div>
-                <div class="tile"><span>距上次限定</span><strong id="since-limited">@_data.PullsSinceLimited</strong></div>
+                @if (BannerId is null)
+                {
+                    <div class="tile"><span>距上次限定</span><strong id="since-limited">@_data.PullsSinceLimited</strong></div>
+                }
             }
         </div>
         <p class="hint">
-            S 指對應維護裡歸類為 S 角色、S 弧盤及其限定的項目；服裝、車皮與降落傘只統計，不影響間隔。範圍 @_data.FirstDate 至 @_data.LastDate。
+            S 指對應維護裡歸類為 S 角色、S 弧盤及其限定的項目；服裝、車皮與降落傘只統計，不影響間隔。
+            @(BannerId is null ? "" : "這裡的總抽數只算這一期，每次 S 花的抽數則包含從前幾期累積過來的。")
             最舊一筆 S 之前的紀錄可能超出遊戲保留範圍，因此標為「至少」且不計入平均。
         </p>
 
         <div class="chart-grid">
             <section class="chart wide">
                 <h3>每次 S 花了幾抽</h3>
+                @if (RisesFrom is { } line)
+                {
+                    <p class="hint" id="rise-legend">虛線是第 @line 抽，從這裡起出 S 的機率上升。</p>
+                }
                 @if (_data.TopRankPulls.Count == 0)
                 {
                     <p class="no-match">尚未抽到 S。</p>
                 }
                 else
                 {
-                    <ol class="interval-list" id="intervals">
+                    <ol class="interval-list" id="intervals" style="@RiseStyle">
                         @foreach (var pull in _data.TopRankPulls)
                         {
                             <li>
@@ -58,6 +82,14 @@
                     </ol>
                 }
             </section>
+
+            @if (_data.IntervalHistogram is { Count: > 0 } histogram && histogram.Any(bucket => bucket.Count > 0))
+            {
+                <section class="chart" id="interval-histogram">
+                    <h3>S 間隔分布</h3>
+                    <ColumnChart Buckets="histogram" Unit="次" />
+                </section>
+            }
 
             <FocusBreakdown Data="_data" />
 
@@ -134,12 +166,25 @@
     [Parameter]
     public Func<HistoryRow, string>? NameOf { get; set; }
 
+    [Parameter]
+    public string? BannerId { get; set; }
+
+    [Parameter]
+    public string Title { get; set; } = "";
+
+    private int? RisesFrom => History.Banner.Pity?.RisesFrom;
+
+    private string? RiseStyle => RisesFrom is { } rise
+        ? $"--rise:{(100.0 * rise / _maxInterval).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)}%"
+        : null;
+
     private string RarityText => string.Join("、", _data.RarityMix.Select(bucket => $"{bucket.Label} {bucket.Count} 抽"));
 
     protected override void OnParametersSet()
     {
-        _data = HistoryAnalyzer.Analyze(History, NameOf);
-        _maxInterval = Math.Max(1, _data.TopRankPulls.Select(pull => pull.PullsSpent).DefaultIfEmpty(1).Max());
+        _data = HistoryAnalyzer.Analyze(History, NameOf, BannerId);
+        // Bars share the guaranteed count as their scale, so a long bar reads as close to pity.
+        _maxInterval = Math.Max(History.Banner.Pity?.TopRankAt ?? 1, _data.TopRankPulls.Select(pull => pull.PullsSpent).DefaultIfEmpty(1).Max());
     }
 
     private static string Percent(double? value) => value is null ? "—" : value.Value.ToString("0.0%");
@@ -149,7 +194,8 @@
 
     private static string TierClass(string label) => label switch
     {
-        "S" => "s",
+        HistoryAnalyzer.TopRankTargets => "s",
+        HistoryAnalyzer.TopRankOthers => "s2",
         "A" => "a",
         "B" => "b",
         _ => "none",

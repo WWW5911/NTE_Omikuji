@@ -201,6 +201,11 @@ public static class ExportWriter
         {
             node["result_text"] = row.ResultText;
         }
+        // Also additive: present only when the row's event could be read.
+        if (row.BannerId is not null)
+        {
+            node["pool_id"] = row.BannerId;
+        }
         return node;
     }
 

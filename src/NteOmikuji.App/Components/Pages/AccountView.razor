@@ -1,0 +1,81 @@
+@implements IDisposable
+@inject ExporterState State
+
+<div class="page" id="account">
+    <h2 class="page-title">帳號</h2>
+    <div class="panel form-card">
+        <div class="form-row">
+            <label for="uid">使用者 UID</label>
+            <input id="uid" list="accounts" @bind="_userUid" @bind:after="() => State.SelectAccount(_userUid)" placeholder="@(string.IsNullOrEmpty(State.Account) ? "未偵測到（可留白）" : State.Account)" />
+            <datalist id="accounts">
+                @foreach (var account in State.Accounts)
+                {
+                    <option value="@account"></option>
+                }
+            </datalist>
+        </div>
+        <div class="form-row">
+            <label for="server">伺服器</label>
+            <select id="server" @bind="_serverId" @bind:after="() => State.SetServer(_serverId)">
+                <option value="">@(State.ServerId is { } detected ? $"目前：{detected}" : "未指定")</option>
+                @foreach (var (id, server) in ServerRegions.Known)
+                {
+                    <option value="@id">@server.Name（@id）</option>
+                }
+            </select>
+        </div>
+        <div class="form-row">
+            <label for="language">顯示語言</label>
+            <select id="language" value="@State.DisplayLanguage" @onchange="change => State.SetDisplayLanguage(change.Value as string ?? RewardSchema.Chinese)">
+                @foreach (var locale in State.Rewards.Locales)
+                {
+                    <option value="@locale" selected="@(locale == State.DisplayLanguage)">@LanguageLabel(locale)</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    <div class="stat-row">
+        <div class="stat"><span>目前帳號</span><strong id="current-account">@(string.IsNullOrEmpty(State.Account) ? "未偵測" : State.Account)</strong></div>
+        <div class="stat"><span>紀錄</span><strong>@State.Histories.Sum(history => history.Rows.Count).ToString("N0")</strong></div>
+        <div class="stat"><span>成就</span><strong>@State.Achievements.Count.ToString("N0")</strong></div>
+    </div>
+
+    <div class="panel form-card">
+        <h3>資料夾</h3>
+        <p class="hint">紀錄與對應表都在程式旁邊，搬動資料夾就能帶走。</p>
+        <div class="button-row">
+            <button id="folder" @onclick="() => OpenFolderAsync(State.DataFolder)">開啟 user_data</button>
+            <button id="editor-mappings-folder" @onclick="() => OpenFolderAsync(State.MappingFolder)">開啟 mappings</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string? _userUid;
+    private string _serverId = "";
+
+    protected override void OnInitialized() => State.Changed += OnStateChanged;
+
+    private void OnStateChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private static string LanguageLabel(string locale)
+    {
+        try
+        {
+            return locale == RewardSchema.Chinese ? "中文" : locale == RewardSchema.English ? "English" : System.Globalization.CultureInfo.GetCultureInfo(locale).NativeName;
+        }
+        catch (System.Globalization.CultureNotFoundException)
+        {
+            return locale;
+        }
+    }
+
+    private static async Task OpenFolderAsync(string folder)
+    {
+        Directory.CreateDirectory(folder);
+        await Launcher.Default.OpenAsync(new Uri(folder));
+    }
+
+    public void Dispose() => State.Changed -= OnStateChanged;
+}
