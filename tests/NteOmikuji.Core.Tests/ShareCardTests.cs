@@ -85,6 +85,37 @@ public class ShareCardTests
         Assert.Equal([("second", 60, false, true), ("first", 40, true, false)], rewards.Select(item => (item.Name, item.Pulls, item.AtLeast, item.Limited)));
     }
 
+    private static BannerHistory ArcHistory() => Pool(BannerInfo.ArcMiracleBox,
+        (10, RewardFocus.SLimitedArc, "舊限定"), (30, RewardFocus.SArc, "一般"), (20, RewardFocus.SArc, "一般"), (2, RewardFocus.SLimitedArc, "月的對蹠點"));
+
+    [Fact]
+    public void ArcRewardsCountBackToTheLastLimitedPastOrdinaryS()
+    {
+        var pool = Card(ArcHistory()).Pools[2];
+
+        Assert.Equal([("月的對蹠點", 52, false), ("舊限定", 10, true)], pool.Rewards.Select(item => (item.Name, item.Pulls, item.AtLeast)));
+    }
+
+    [Fact]
+    public void ArcFiguresFollowTheLimitedReward()
+    {
+        var pool = Card(ArcHistory()).Pools[2];
+
+        Assert.Equal("限定", pool.TargetLabel);
+        Assert.Equal((52.0, 52, 52), (pool.Average, pool.Shortest, pool.Longest));
+        Assert.Equal((4, 2), (pool.TopCount, pool.LimitedCount));
+    }
+
+    [Fact]
+    public void BoardsStillCountEveryS()
+    {
+        var pool = Card(Pool(BannerInfo.LimitedCharacter, (40, RewardFocus.SCharacter, "a"), (60, RewardFocus.SLimitedCharacter, "b"))).Pools[0];
+
+        Assert.Equal("S", pool.TargetLabel);
+        Assert.Equal(["b", "a"], pool.Rewards.Select(item => item.Name));
+        Assert.Equal((60.0, 90), (pool.Average, pool.Scale));
+    }
+
     [Fact]
     public void TotalsCoverEveryPool()
     {
@@ -193,7 +224,7 @@ public class ShareCardTests
         var arc = Selected(TwoEvents(BannerInfo.ArcMiracleBox), new ShareTarget(HistoryKind.ArcMiracleBox, "Lottery_New"));
 
         Assert.Equal((90, 70), (limited.Scale, limited.RisesFrom));
-        Assert.Equal((60, null), (arc.Scale, arc.RisesFrom));
+        Assert.Equal((80, null), (arc.Scale, arc.RisesFrom));
     }
 
     [Fact]

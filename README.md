@@ -137,8 +137,9 @@ most-obtained rewards. Boards also show dice rolls and result types.
   pulls, while intervals run across events because pity carries over.
 - The rarity mix counts S characters and Arcs apart from S items and cosmetics,
   since items also carry an S.
-- An Arc is limited when its event features it. The Arc page shows how many pulls
-  each limited Arc took, how many came from the 80 pull guarantee, and the limited
+- An Arc is limited when its event features it. Luck, 最近的 S, and share images count
+  an Arc pool up to the limited reward, past any ordinary S. The Arc page shows first
+  how many pulls each limited Arc took, how many came from the 80 pull guarantee, and the limited
   share among the rest, for comparing with the stated 25%.
 - Everything stays on this computer, so there is no global luck comparison.
 

@@ -133,6 +133,28 @@
         </p>
 
         <div class="chart-grid">
+            @if (LimitedAt is { } limitAt && LimitedPulls.Count > 0)
+            {
+                <section class="chart wide" id="limited-section">
+                    <h3>每次限定花了幾抽</h3>
+                    <p class="hint">長條的滿格是 @limitAt 抽。計數跨活動累積，抽到其他 S 不會歸零。</p>
+                    <ol class="interval-list" id="limited-intervals">
+                        @foreach (var pull in LimitedPulls)
+                        {
+                            <li>
+                                <span class="interval-name" title="@pull.RewardId">@pull.Name</span>
+                                <span class="interval-tag">@(pull.IsGuaranteed ? $"{limitAt} 抽保底" : "機率抽中")</span>
+                                <span class="interval-track">
+                                    <span class="interval-bar limited" style="width:@Width(pull.LimitedSpent ?? 0, limitAt)"></span>
+                                    <span class="interval-value">@(pull.IsLimitedLowerBound ? "至少 " : "")@pull.LimitedSpent</span>
+                                </span>
+                                <span class="interval-date">@pull.Timestamp[..Math.Min(10, pull.Timestamp.Length)]</span>
+                            </li>
+                        }
+                    </ol>
+                </section>
+            }
+
             <section class="chart wide">
                 <h3>每次 S 花了幾抽</h3>
                 @if (RisesFrom is { } line)
@@ -161,28 +183,6 @@
                     </ol>
                 }
             </section>
-
-            @if (LimitedAt is { } limitAt && LimitedPulls.Count > 0)
-            {
-                <section class="chart wide" id="limited-section">
-                    <h3>每次限定花了幾抽</h3>
-                    <p class="hint">長條的滿格是 @limitAt 抽。計數跨活動累積，抽到其他 S 不會歸零。</p>
-                    <ol class="interval-list" id="limited-intervals">
-                        @foreach (var pull in LimitedPulls)
-                        {
-                            <li>
-                                <span class="interval-name" title="@pull.RewardId">@pull.Name</span>
-                                <span class="interval-tag">@(pull.IsGuaranteed ? $"{limitAt} 抽保底" : "機率抽中")</span>
-                                <span class="interval-track">
-                                    <span class="interval-bar limited" style="width:@Width(pull.LimitedSpent ?? 0, limitAt)"></span>
-                                    <span class="interval-value">@(pull.IsLimitedLowerBound ? "至少 " : "")@pull.LimitedSpent</span>
-                                </span>
-                                <span class="interval-date">@pull.Timestamp[..Math.Min(10, pull.Timestamp.Length)]</span>
-                            </li>
-                        }
-                    </ol>
-                </section>
-            }
 
             @if (_data.IntervalHistogram is { Count: > 0 } histogram && histogram.Any(bucket => bucket.Count > 0))
             {

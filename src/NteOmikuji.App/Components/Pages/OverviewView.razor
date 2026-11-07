@@ -269,11 +269,17 @@
         ];
         _overall = LuckModel.Combine(_pools.Select(pool => pool.Data?.Luck));
         _recent = _pools.Where(pool => pool.Data is not null)
-            .SelectMany(pool => pool.Data!.TopRankPulls.Select(pull => (Pull: pull, pool.Label)))
+            .SelectMany(pool => pool.Data!.TopRankPulls.Select(pull => (Pull: UntilLimited(pool.Banner, pull), pool.Label)))
             .OrderByDescending(entry => entry.Pull.Timestamp, StringComparer.Ordinal)
             .Take(RecentCount)
             .ToList();
     }
+
+    /// <summary>A limited Arc is what the pool is judged on, so its cost runs back to the last limited one, past ordinary S.</summary>
+    private static TopRankPull UntilLimited(BannerInfo banner, TopRankPull pull) =>
+        banner.Pity?.LimitedAt is not null && pull.IsLimited
+            ? pull with { PullsSpent = pull.LimitedSpent ?? pull.PullsSpent, IsLowerBound = pull.IsLimitedLowerBound }
+            : pull;
 
     private Pool Build(BannerInfo banner, string label, string topLabel)
     {

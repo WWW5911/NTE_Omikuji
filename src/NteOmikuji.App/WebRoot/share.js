@@ -199,9 +199,12 @@ window.nteShare = (() => {
         while (pullsSize > 36 && width(pullsText, pullsSize, 700) + 42 > inner * 0.42) pullsSize -= 2;
         text(pullsText, x + pad, y + 130, pullsSize, theme.accent, { weight: 700 });
         text("抽", x + pad + width(pullsText, pullsSize, 700) + 8, y + 130, 26, theme.muted);
+        const average = ["平均", pool.average?.toFixed(1) ?? "—"];
         const stats = pool.limitedCount === null
-            ? [[pool.topLabel, `${pool.topCount}`], ["平均", pool.average?.toFixed(1) ?? "—"]]
-            : [[pool.topLabel, `${pool.topCount}`], ["限定", `${pool.limitedCount}`], ["平均", pool.average?.toFixed(1) ?? "—"]];
+            ? [[pool.topLabel, `${pool.topCount}`], average]
+            : pool.targetLabel === "限定"
+                ? [["限定", `${pool.limitedCount}`], [pool.topLabel, `${pool.topCount}`], average]
+                : [[pool.topLabel, `${pool.topCount}`], ["限定", `${pool.limitedCount}`], average];
         const statsX = x + pad + inner * 0.44, cell = inner * 0.56 / 3;
         stats.forEach(([label, value], index) => {
             text(label, statsX + index * cell, y + 92, 21, theme.muted);
@@ -209,19 +212,19 @@ window.nteShare = (() => {
         });
 
         let cursor = y + 178;
-        if (pool.pity) {
-            pityMeter(pool.pity, `已墊（距上次 ${pool.topLabel}）`, x + pad, cursor, inner);
-            cursor += 56;
-        }
         if (pool.limitedPity) {
             pityMeter(pool.limitedPity, "已墊（距上次限定）", x + pad, cursor, inner);
+            cursor += 56;
+        }
+        if (pool.pity) {
+            pityMeter(pool.pity, `已墊（距上次 ${pool.topLabel}）`, x + pad, cursor, inner);
             cursor += 56;
         }
 
         const exact = pool.rewards.filter(reward => !reward.atLeast);
         const stripH = 84;
         const chipsBottom = y + h - pad + 8 - (exact.length > 0 ? stripH + 12 : 0);
-        text(`${pool.topLabel} 歷程（新到舊，數字為抽數）`, x + pad, cursor + 4, 21, theme.muted, { max: inner });
+        text(`${pool.targetLabel} 歷程（新到舊，數字為抽數）`, x + pad, cursor + 4, 21, theme.muted, { max: inner });
         chips(pool.rewards, x + pad, cursor + 18, inner, chipsBottom);
         if (exact.length > 0) {
             const fastest = exact.reduce((best, reward) => reward.pulls < best.pulls ? reward : best);
@@ -412,11 +415,14 @@ window.nteShare = (() => {
             return;
         }
 
+        const countS = [pool.topLabel, `${pool.topCount}`];
+        const countLimited = ["限定", `${pool.limitedCount}`];
         const tiles = [
             ["總抽數", number(pool.totalPulls)],
-            [pool.topLabel, `${pool.topCount}`],
-            pool.limitedCount === null ? ["最短／最長", `${pool.shortest ?? "—"}／${pool.longest ?? "—"}`] : ["限定", `${pool.limitedCount}`],
-            ["平均間隔", pool.average?.toFixed(1) ?? "—"],
+            ...(pool.limitedCount === null
+                ? [countS, ["最短／最長", `${pool.shortest ?? "—"}／${pool.longest ?? "—"}`]]
+                : pool.targetLabel === "限定" ? [countLimited, countS] : [countS, countLimited]),
+            [`平均${pool.targetLabel === "限定" ? "每限定" : "間隔"}`, pool.average?.toFixed(1) ?? "—"],
         ];
         const gap = 14, tileW = (w - margin * 2 - gap * 3) / 4, tileY = 178, tileH = 122;
         tiles.forEach(([label, value], index) => {
@@ -427,12 +433,12 @@ window.nteShare = (() => {
         });
 
         let cursor = tileY + tileH + 44;
-        if (pool.pity) {
-            pityMeter(pool.pity, `已墊（距上次 ${pool.topLabel}）`, margin, cursor, w - margin * 2);
-            cursor += 58;
-        }
         if (pool.limitedPity) {
             pityMeter(pool.limitedPity, "已墊（距上次限定）", margin, cursor, w - margin * 2);
+            cursor += 58;
+        }
+        if (pool.pity) {
+            pityMeter(pool.pity, `已墊（距上次 ${pool.topLabel}）`, margin, cursor, w - margin * 2);
             cursor += 58;
         }
 
@@ -441,8 +447,8 @@ window.nteShare = (() => {
             text(`開始已墊 ${pool.carriedPulls} 抽，結束已墊 ${pool.endedPulls} 抽${target}`, margin, cursor, 27, theme.text, { weight: 600 });
             cursor += 44;
         }
-        text(`${pool.topLabel} 出貨歷程`, margin, cursor + 18, 32, theme.text, { weight: 700 });
-        const hasLimited = pool.rewards.some(reward => reward.limited);
+        text(`${pool.targetLabel} 出貨歷程`, margin, cursor + 18, 32, theme.text, { weight: 700 });
+        const hasLimited = pool.targetLabel === "S" && pool.rewards.some(reward => reward.limited);
         if (hasLimited) {
             box(w - margin - 78, cursor - 2, 22, 22, 5, GOLD);
             text("限定", w - margin, cursor + 16, 22, theme.muted, { align: "right" });
@@ -481,7 +487,7 @@ window.nteShare = (() => {
             text(`第 ${rise} 抽起機率上升`, at, y - 10, 19, theme.muted, { align: "center" });
         }
         if (clipped) {
-            text(`還有 ${pool.rewards.length - count} 個較舊的 ${pool.topLabel}`, x, chartBottom + 26, 23, theme.muted);
+            text(`還有 ${pool.rewards.length - count} 個較舊的 ${pool.targetLabel}`, x, chartBottom + 26, 23, theme.muted);
         }
     }
 

@@ -12,9 +12,11 @@ public sealed record ShareReward(string Name, int Pulls, bool AtLeast, bool Limi
 
 /// <param name="LimitedCount">Null for a pool without limited rewards.</param>
 /// <param name="LuckNote">Why there is no luck tag, when there is none.</param>
-/// <param name="Rewards">Top-rank rewards, newest first.</param>
+/// <param name="Rewards">The rewards the pool is judged on, newest first: every S on a board, and only limited ones on Arcs.</param>
+/// <param name="Average">Average pulls per reward in <paramref name="Rewards"/>, leaving out one whose start is unknown.</param>
 /// <param name="Context">The pool an event belongs to, when this covers one event.</param>
-/// <param name="Scale">Pulls at which the pool guarantees its top reward.</param>
+/// <param name="Scale">Pulls at which the pool guarantees the reward it is judged on.</param>
+/// <param name="TargetLabel">What <paramref name="Rewards"/> holds.</param>
 /// <param name="RisesFrom">The pull from which the odds improve, when the pool has such a point.</param>
 /// <param name="CarriedPulls">Pulls already made toward the next reward when an event began.</param>
 /// <param name="EndedPulls">Pulls made toward the next reward when an event ended.</param>
@@ -39,7 +41,8 @@ public sealed record SharePool(
     int? RisesFrom,
     string? Context = null,
     int CarriedPulls = 0,
-    int EndedPulls = 0);
+    int EndedPulls = 0,
+    string TargetLabel = "S");
 
 /// <summary>A pool to share, or one event within it.</summary>
 public sealed record ShareTarget(HistoryKind Kind, string? BannerId = null);
@@ -121,6 +124,8 @@ public static class ShareCardBuilder
 
         // Pity carries across events, so an event has no meter of its own to show.
         var data = HistoryAnalyzer.Analyze(history, nameOf, id, unsetBanners);
+        var rewards = Rewards(history.Banner, data);
+        var costs = Costs(rewards);
         return whole with
         {
             Label = group.Name,
@@ -128,23 +133,30 @@ public static class ShareCardBuilder
             TotalPulls = data.TotalPulls,
             TopCount = data.TopRankCount,
             LimitedCount = data.LimitedCount,
-            Average = data.AverageInterval,
-            Shortest = data.ShortestInterval,
-            Longest = data.LongestInterval,
+            Average = costs.Count == 0 ? null : costs.Average(),
+            Shortest = costs.Count == 0 ? null : costs.Min(),
+            Longest = costs.Count == 0 ? null : costs.Max(),
             FirstDate = data.FirstDate,
             LastDate = data.LastDate,
             Luck = ToShare(data.Luck),
             LuckNote = LuckNote(data),
             Pity = null,
             LimitedPity = null,
-            Rewards = Rewards(data),
+            Rewards = rewards,
             CarriedPulls = data.CarriedPulls,
             EndedPulls = data.EndedPulls,
         };
     }
 
-    private static List<ShareReward> Rewards(BannerAnalysis data) =>
-        data.TopRankPulls.Select(pull => new ShareReward(pull.Name, pull.PullsSpent, pull.IsLowerBound, pull.IsLimited)).ToList();
+    /// <summary>Arcs are judged on the limited one, so each one's cost runs back to the last limited one, past ordinary S.</summary>
+    private static List<ShareReward> Rewards(BannerInfo banner, BannerAnalysis data) =>
+        banner.Pity?.LimitedAt is null
+            ? data.TopRankPulls.Select(pull => new ShareReward(pull.Name, pull.PullsSpent, pull.IsLowerBound, pull.IsLimited)).ToList()
+            : data.TopRankPulls.Where(pull => pull.IsLimited)
+                .Select(pull => new ShareReward(pull.Name, pull.LimitedSpent ?? pull.PullsSpent, pull.IsLimitedLowerBound, true)).ToList();
+
+    private static List<int> Costs(List<ShareReward> rewards) =>
+        rewards.Where(reward => !reward.AtLeast).Select(reward => reward.Pulls).ToList();
 
     private static (SharePool Share, BannerAnalysis? Data) Pool(BannerInfo banner, BannerHistory? history, Func<HistoryRow, string>? nameOf, IReadOnlyCollection<string>? unsetBanners)
     {
@@ -153,16 +165,22 @@ public static class ShareCardBuilder
         var hasLimited = banner.Kind != HistoryKind.Permanent;
         if (history is null)
         {
-            return (new SharePool(banner.Kind.ToString(), label, topLabel, 0, 0, hasLimited ? 0 : null, null, null, null, null, null, null, "尚無紀錄", null, null, [], banner.Pity!.TopRankAt, banner.Pity.RisesFrom), null);
+            return (new SharePool(banner.Kind.ToString(), label, topLabel, 0, 0, hasLimited ? 0 : null, null, null, null, null, null, null, "尚無紀錄", null, null, [], Scale(banner), banner.Pity!.RisesFrom, TargetLabel: TargetOf(banner)), null);
         }
 
         var data = HistoryAnalyzer.Analyze(history, nameOf, unsetBanners: unsetBanners);
+        var rewards = Rewards(banner, data);
+        var costs = Costs(rewards);
         var share = new SharePool(
             banner.Kind.ToString(), label, topLabel, data.TotalPulls, data.TopRankCount, hasLimited ? data.LimitedCount : null,
-            data.AverageInterval, data.ShortestInterval, data.LongestInterval, data.FirstDate, data.LastDate,
-            ToShare(data.Luck), LuckNote(data), data.TopRankPity, data.LimitedPity, Rewards(data), banner.Pity!.TopRankAt, banner.Pity.RisesFrom);
+            costs.Count == 0 ? null : costs.Average(), costs.Count == 0 ? null : costs.Min(), costs.Count == 0 ? null : costs.Max(), data.FirstDate, data.LastDate,
+            ToShare(data.Luck), LuckNote(data), data.TopRankPity, data.LimitedPity, rewards, Scale(banner), banner.Pity!.RisesFrom, TargetLabel: TargetOf(banner));
         return (share, data);
     }
+
+    private static int Scale(BannerInfo banner) => banner.Pity!.LimitedAt ?? banner.Pity.TopRankAt;
+
+    private static string TargetOf(BannerInfo banner) => banner.Pity!.LimitedAt is null ? "S" : "限定";
 
     private static string? LuckNote(BannerAnalysis data) =>
         data.Luck is not null ? null : data.TotalPulls == 0 ? "尚無紀錄" : "無法判定";
