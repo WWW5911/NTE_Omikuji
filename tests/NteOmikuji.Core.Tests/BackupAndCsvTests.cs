@@ -180,10 +180,10 @@ public class HistoryCsvTests
         var row = Parse(Limited(Row()));
 
         Assert.Equal("限定棋盤", row.Get("卡池"));
-        Assert.Equal(("明音凜", "Lottery_A"), (row.Get("活動"), row.Get("活動ID")));
+        Assert.Equal(("明音凜", "Lottery_A"), (row.Get("活動"), row.Get("活動id")));
         Assert.Equal("2026-01-02 03:04:05", row.Get("時間"));
         Assert.Equal(("骰子", "3"), (row.Get("結果"), row.Get("骰點")));
-        Assert.Equal(("笑口常開", "fork_vine"), (row.Get("獎勵"), row.Get("獎勵ID")));
+        Assert.Equal(("笑口常開", "fork_vine"), (row.Get("獎勵"), row.Get("獎勵id")));
         Assert.Equal(("B", "arc", "1", "不關注"), (row.Get("稀有度"), row.Get("類型"), row.Get("數量"), row.Get("關注類別")));
     }
 
@@ -223,7 +223,7 @@ public class HistoryCsvTests
     {
         var row = Parse(Limited(Row(reward: reward)));
 
-        Assert.Equal("'" + reward, row.Get("獎勵ID"));
+        Assert.Equal("'" + reward, row.Get("獎勵id"));
     }
 
     [Fact]
