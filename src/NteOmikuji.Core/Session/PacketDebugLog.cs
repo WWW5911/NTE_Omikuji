@@ -53,13 +53,21 @@ public sealed class PacketDebugLog : IDisposable
         return new PacketDebugLog(new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read), captureName) { Path = path };
     }
 
-    public void Request(IpPacket packet, HistoryKind kind, int page)
+    public void Request(IpPacket packet, HistoryKind kind, int page, string? pool = null)
     {
         _lastRequest[(packet.DstIp, packet.DstPort, packet.SrcPort)] = _time.GetUtcNow();
         var entry = Entry(packet, "out", "request", packet.DstIp, packet.DstPort, packet.SrcPort);
         entry["kind"] = kind.ToString();
         entry["page"] = page;
+        entry["pool"] = pool;
         Write(entry, packet);
+    }
+
+    /// <summary>Keeps a request that resembles history but that no decoder accepted, along with whatever answers it.</summary>
+    public void UnrecognizedRequest(IpPacket packet)
+    {
+        _lastRequest[(packet.DstIp, packet.DstPort, packet.SrcPort)] = _time.GetUtcNow();
+        Write(Entry(packet, "out", "unrecognized_request", packet.DstIp, packet.DstPort, packet.SrcPort), packet);
     }
 
     public bool FollowsRequest(IpPacket packet) =>
@@ -78,6 +86,7 @@ public sealed class PacketDebugLog : IDisposable
                 ["page"] = page.Page,
                 ["slice_start"] = page.SliceStart,
                 ["slice_count"] = page.SliceCount,
+                ["pool"] = page.Pool,
             }).ToArray());
         }
         if (rows.Count > 0)
@@ -121,6 +130,7 @@ public sealed class PacketDebugLog : IDisposable
         ["result_text"] = row.ResultText,
         ["reward_id"] = row.RewardId,
         ["quantity"] = row.Quantity,
+        ["pool"] = row.BannerId,
         ["timestamp"] = row.TimestampDecoded,
         ["timestamp_raw_hex"] = row.TimestampRawHex,
         ["decoder_mode"] = row.DecoderMode,

@@ -11,7 +11,15 @@ public static class HistoryAssembly
 
     public static BannerHistory Build(HistoryKind kind, IReadOnlyList<CapturedPage> pages, RewardCatalog catalog)
     {
-        var (run, warnings) = SelectRun(pages);
+        // Each Mystery Box pool numbers its own pages from 1.
+        var run = new List<CapturedPage>();
+        var warnings = new List<CaptureWarning>();
+        foreach (var pool in pages.GroupBy(page => page.Pool ?? "", StringComparer.OrdinalIgnoreCase))
+        {
+            var (poolRun, poolWarnings) = SelectRun(pool.ToList());
+            run.AddRange(poolRun);
+            warnings.AddRange(poolWarnings);
+        }
         var banner = BannerInfo.For(kind);
         var rows = kind switch
         {

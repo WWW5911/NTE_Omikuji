@@ -87,7 +87,7 @@ public sealed class HistoryRow
 
 public sealed record CaptureWarning(string Code, string Reason, IReadOnlyList<int>? IgnoredPages = null);
 
-public sealed record CapturedPage(int Page, HistoryKind Kind, byte[] Payload, int SliceStart, int SliceCount);
+public sealed record CapturedPage(int Page, HistoryKind Kind, byte[] Payload, int SliceStart, int SliceCount, string? Pool = null);
 
 public sealed record BannerHistory(
     BannerInfo Banner,

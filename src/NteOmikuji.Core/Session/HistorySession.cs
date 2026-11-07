@@ -8,7 +8,7 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
     private const int MinResponseLength = 100;
     private const int RowsPerPage = 5;
 
-    private sealed record PendingRequest(int Page, HistoryKind Kind, string SrcIp, string DstIp, int SrcPort, int DstPort);
+    private sealed record PendingRequest(int Page, HistoryKind Kind, string SrcIp, string DstIp, int SrcPort, int DstPort, string? Pool = null);
 
     private readonly List<PendingRequest> _pending = [];
     private readonly List<CapturedPage> _pages = [];
@@ -62,10 +62,15 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
             {
                 return [];
             }
+            if (DebugLog is { } unrecognized && packet.SrcIp == LocalIp && MysteryBoxDecoder.LooksLikeRequest(packet.Payload))
+            {
+                unrecognized.UnrecognizedRequest(packet);
+                return [];
+            }
             var captured = MatchResponse(packet);
             if (DebugLog is { } log && packet.DstIp == LocalIp && log.FollowsRequest(packet))
             {
-                var (rows, error) = DecodeForLog(packet.Payload);
+                var (rows, error) = DecodeForLog(packet.Payload, captured.Any(page => page.Kind == HistoryKind.MysteryBox));
                 log.Inbound(packet, captured, rows, error);
             }
             return captured;
@@ -84,7 +89,7 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
     {
         lock (_gate)
         {
-            return _pages.Where(page => page.Kind == kind).Select(page => page.Page).Distinct().Count();
+            return _pages.Where(page => page.Kind == kind).Select(page => (page.Pool, page.Page)).Distinct().Count();
         }
     }
 
@@ -92,8 +97,11 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
     {
         lock (_gate)
         {
-            var pages = _pages.Where(page => page.Kind == kind).Select(page => page.Page).ToHashSet();
-            return pages.Count == 0 ? [] : Enumerable.Range(1, pages.Max()).Where(page => !pages.Contains(page)).ToList();
+            return _pages.Where(page => page.Kind == kind).GroupBy(page => page.Pool).SelectMany(pool =>
+            {
+                var pages = pool.Select(page => page.Page).ToHashSet();
+                return Enumerable.Range(1, pages.Max()).Where(page => !pages.Contains(page));
+            }).Distinct().Order().ToList();
         }
     }
 
@@ -121,6 +129,7 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
         var payload = packet.Payload;
         HistoryKind kind;
         int page;
+        string? pool = null;
         if (MonopolyDecoder.RequestKind(payload) is { } monopoly)
         {
             (kind, page) = (monopoly, MonopolyDecoder.RequestPage(payload));
@@ -131,28 +140,28 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
         }
         else if (MysteryBoxDecoder.IsRequest(payload))
         {
-            (kind, page) = (HistoryKind.MysteryBox, MysteryBoxDecoder.RequestPage(payload));
+            (kind, page, pool) = (HistoryKind.MysteryBox, MysteryBoxDecoder.RequestPage(payload), MysteryBoxDecoder.RequestPool(payload));
         }
         else
         {
             return false;
         }
 
-        var request = new PendingRequest(page, kind, packet.SrcIp, packet.DstIp, packet.SrcPort, packet.DstPort);
+        var request = new PendingRequest(page, kind, packet.SrcIp, packet.DstIp, packet.SrcPort, packet.DstPort, pool);
         // The game pipelines page requests. Only a repeat of the same page, or a
         // fresh scan from page 1, replaces what is already waiting on this stream.
         _pending.RemoveAll(pending =>
-            pending.Kind == kind
+            pending.Kind == kind && pending.Pool == pool
             && pending.SrcIp == request.SrcIp && pending.DstIp == request.DstIp
             && pending.SrcPort == request.SrcPort && pending.DstPort == request.DstPort
             && (page == 1 || pending.Page == page));
         _pending.Add(request);
-        DebugLog?.Request(packet, kind, page);
+        DebugLog?.Request(packet, kind, page, pool);
         return true;
     }
 
     /// <summary>Decodes again for the log's row list. This also reaches packets capture ignores, and must not stop it.</summary>
-    private (IReadOnlyList<HistoryRow> Rows, string? Error) DecodeForLog(byte[] payload)
+    private (IReadOnlyList<HistoryRow> Rows, string? Error) DecodeForLog(byte[] payload, bool isMysteryBox)
     {
         if (payload.Length < MinResponseLength)
         {
@@ -160,7 +169,7 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
         }
         try
         {
-            var rows = MonopolyDecoder.DecodeResponse(payload, Catalog);
+            var rows = isMysteryBox ? MysteryBoxDecoder.DecodeResponse(payload, Catalog) : MonopolyDecoder.DecodeResponse(payload, Catalog);
             if (rows.Count == 0)
             {
                 rows = ArcDecoder.DecodeResponse(payload, Catalog);
@@ -191,19 +200,22 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
             return [];
         }
 
-        var records = MonopolyDecoder.DecodeResponse(packet.Payload, Catalog);
+        // A Mystery Box reply names itself, so it goes first when one is awaited rather than relying on other decoders to reject it.
+        var mystery = connection.Where(request => request.Kind == HistoryKind.MysteryBox).ToList();
+        var records = mystery.Count > 0 ? MysteryBoxDecoder.DecodeResponse(packet.Payload, Catalog) : [];
         List<PendingRequest> candidates;
         if (records.Count > 0)
+        {
+            var named = mystery.Where(request => string.Equals(request.Pool, records[0].BannerId, StringComparison.OrdinalIgnoreCase)).ToList();
+            candidates = named.Count > 0 ? named : mystery;
+        }
+        else if ((records = MonopolyDecoder.DecodeResponse(packet.Payload, Catalog)).Count > 0)
         {
             candidates = connection.Where(request => request.Kind is HistoryKind.Permanent or HistoryKind.LimitedCharacter).ToList();
         }
         else if ((records = ArcDecoder.DecodeResponse(packet.Payload, Catalog)).Count > 0)
         {
             candidates = connection.Where(request => request.Kind == HistoryKind.ArcMiracleBox).ToList();
-        }
-        else if ((records = MysteryBoxDecoder.DecodeResponse(packet.Payload, Catalog)).Count > 0)
-        {
-            candidates = connection.Where(request => request.Kind == HistoryKind.MysteryBox).ToList();
         }
         else
         {
@@ -228,7 +240,7 @@ public sealed class HistorySession(string localIp, RewardCatalog catalog)
             {
                 break;
             }
-            captured.Add(new CapturedPage(selected[slice].Page, selected[slice].Kind, packet.Payload, start, count));
+            captured.Add(new CapturedPage(selected[slice].Page, selected[slice].Kind, packet.Payload, start, count, records[start].BannerId ?? selected[slice].Pool));
         }
         _pages.AddRange(captured);
         return captured;

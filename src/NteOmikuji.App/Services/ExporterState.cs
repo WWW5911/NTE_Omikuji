@@ -650,7 +650,9 @@ public sealed class ExporterState : IDisposable
         SeenRewards = Histories.SelectMany(history => history.Rows).Where(row => row.RewardId.Length > 0)
             .GroupBy(row => row.RewardId, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
-        SeenBanners = Histories.SelectMany(history => history.Rows).Where(row => !string.IsNullOrEmpty(row.BannerId))
+        // A Mystery Box pool is not an event with a featured reward to set.
+        SeenBanners = Histories.Where(history => history.Banner.Kind != HistoryKind.MysteryBox)
+            .SelectMany(history => history.Rows).Where(row => !string.IsNullOrEmpty(row.BannerId))
             .GroupBy(row => row.BannerId!, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(group => group.Key, group => new BannerUsage(group.Count(), group.Max(row => row.TimestampDecoded)), StringComparer.OrdinalIgnoreCase);
     }

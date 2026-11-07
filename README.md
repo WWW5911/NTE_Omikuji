@@ -141,7 +141,9 @@ It is off each time the app starts. Each capture writes
   including each row's `record_hex`.
 
 Only history requests over UDP, and inbound UDP on the same stream within 5 seconds
-of one, are written, so the `other` role can hold unrelated game data. TCP, which
+of one, are written, so the `other` role can hold unrelated game data. A request that
+resembles Mystery Box history but matches no known layout is written as
+`unrecognized_request`, so a new layout can still be studied. TCP, which
 carries login traffic, is left out. The file may still identify your account, so
 check it before sharing. A file stops at 64 MB, and any writing problem ends the
 log without interrupting the capture.

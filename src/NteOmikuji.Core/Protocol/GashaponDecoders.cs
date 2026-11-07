@@ -125,17 +125,62 @@ public static class ArcDecoder
 public static class MysteryBoxDecoder
 {
     private const int RequestLength = 54;
+    private const int RequestConstantAt = 26;
+    private const uint RequestConstant = 2060;
+    private const int RequestKindAt = 35;
+    private const uint LegacyRequestKind = 2110;
+    private const byte PoolRequestTag = 0x1E;
+    private const int PoolLengthAt = 40;
+    private const uint PoolRequestPageSize = 10;
+    private const int MaxPoolIdLength = 64;
     private const int MaxRecords = 100;
 
     internal static readonly byte[] Marker = "FGashaponLotteryRecordData"u8.ToArray();
+    private static readonly byte[] PoolPrefix = "MangHe"u8.ToArray();
+    private static readonly byte[] DoubledPoolPrefix = PoolPrefix.Select(value => (byte)(value * 2)).ToArray();
+
+    /// <summary>History requests share this value, whatever their layout, so a future layout can still be noticed.</summary>
+    public static bool HasRequestConstant(ReadOnlySpan<byte> content) =>
+        content.Length >= RequestLength && BinaryPrimitives.ReadUInt32LittleEndian(content[RequestConstantAt..]) == RequestConstant;
+
+    /// <summary>For the debug log, so a layout this decoder does not know yet still leaves its bytes behind.</summary>
+    public static bool LooksLikeRequest(ReadOnlySpan<byte> content) =>
+        HasRequestConstant(content) || content.IndexOf(DoubledPoolPrefix) >= 0 || content.IndexOf(PoolPrefix) >= 0;
 
     public static bool IsRequest(ReadOnlySpan<byte> content) =>
-        content.Length >= RequestLength
-        && BinaryPrimitives.ReadUInt32LittleEndian(content[26..]) == 2060
-        && BinaryPrimitives.ReadUInt32LittleEndian(content[35..]) == 2110;
+        HasRequestConstant(content)
+        && (BinaryPrimitives.ReadUInt32LittleEndian(content[RequestKindAt..]) == LegacyRequestKind || RequestPool(content) is not null);
 
     public static int RequestPage(ReadOnlySpan<byte> content) =>
         (int)(BinaryPrimitives.ReadUInt32LittleEndian(content[31..]) / 2);
+
+    /// <summary>Since version 1.4 a request names its pool, in text doubled the way Arc text is. Null for the older layout.</summary>
+    public static string? RequestPool(ReadOnlySpan<byte> content)
+    {
+        if (content.Length < RequestLength || content[RequestKindAt] != PoolRequestTag)
+        {
+            return null;
+        }
+        var doubled = BinaryPrimitives.ReadUInt32LittleEndian(content[PoolLengthAt..]);
+        if (doubled % 2 != 0 || doubled is < 2 or > MaxPoolIdLength * 2)
+        {
+            return null;
+        }
+        var length = (int)doubled / 2;
+        var trailer = PoolLengthAt + 4 + length;
+        if (trailer + 9 > content.Length || content[trailer - 1] != 0
+            || BinaryPrimitives.ReadUInt32LittleEndian(content[trailer..]) != RequestConstant
+            || BinaryPrimitives.ReadUInt32LittleEndian(content[(trailer + 5)..]) != PoolRequestPageSize)
+        {
+            return null;
+        }
+        var id = new char[length - 1];
+        for (var i = 0; i < id.Length; i++)
+        {
+            id[i] = (char)(content[PoolLengthAt + 4 + i] / 2);
+        }
+        return new string(id);
+    }
 
     public static List<HistoryRow> DecodeResponse(byte[] payload, RewardCatalog catalog)
     {
@@ -166,6 +211,7 @@ public static class MysteryBoxDecoder
         {
             return [];
         }
+        var declaredSize = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position + 4));
         var rowCount = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position + 8));
         position += 12;
         if (rowCount > MaxRecords)
@@ -173,30 +219,61 @@ public static class MysteryBoxDecoder
             return [];
         }
 
-        var rows = new List<HistoryRow>((int)rowCount);
+        // Only the newer layout's declared size covers its rows and the count, which tells the two apart.
+        var pooled = ParseRows(data, position, (int)rowCount, catalog, withPool: true, out var end);
+        return pooled is not null && end - position + 4 == declaredSize
+            ? pooled
+            : ParseRows(data, position, (int)rowCount, catalog, withPool: false, out _) ?? [];
+    }
+
+    private static List<HistoryRow>? ParseRows(byte[] data, int position, int rowCount, RewardCatalog catalog, bool withPool, out int end)
+    {
+        end = position;
+        var rows = new List<HistoryRow>(rowCount);
         for (var i = 0; i < rowCount; i++)
         {
             if (position + 4 > data.Length)
             {
-                return [];
+                return null;
             }
             var start = position;
             var length = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position));
             position += 4;
             if (length is 0 or > PackedText.MaxStringLength || position + length + 13 > data.Length)
             {
-                return [];
+                return null;
             }
             var raw = data.AsSpan(position, (int)length);
             position += (int)length;
             if (raw[^1] != 0 || PackedText.TryText(raw[..^1]) is not { } rewardId)
             {
-                return [];
+                return null;
             }
             var quantity = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position));
             position += 5; // Quantity and the record flag.
             var timestamp = data.AsSpan(position, 8);
             position += 8;
+            string? pool = null;
+            if (withPool)
+            {
+                if (position + 4 > data.Length)
+                {
+                    return null;
+                }
+                var poolLength = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(position));
+                position += 4;
+                // The pool is followed by a value whose meaning is unknown.
+                if (poolLength is 0 or > MaxPoolIdLength || position + poolLength + 4 > data.Length || data[position + (int)poolLength - 1] != 0)
+                {
+                    return null;
+                }
+                pool = PackedText.TryText(data.AsSpan(position, (int)poolLength - 1));
+                if (pool is null)
+                {
+                    return null;
+                }
+                position += (int)poolLength + 4;
+            }
 
             var row = new HistoryRow
             {
@@ -206,6 +283,7 @@ public static class MysteryBoxDecoder
                 TimestampRawHex = Convert.ToHexStringLower(timestamp),
                 RecordHex = Convert.ToHexStringLower(data.AsSpan(start, position - start)),
                 DecoderMode = "structured",
+                BannerId = pool,
             };
             MonopolyDecoder.ApplyReward(row, rewardId, catalog);
             try
@@ -214,10 +292,11 @@ public static class MysteryBoxDecoder
             }
             catch (InvalidDataException)
             {
-                return [];
+                return null;
             }
             rows.Add(row);
         }
+        end = position;
         return rows;
     }
 }

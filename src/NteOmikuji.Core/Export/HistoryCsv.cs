@@ -47,7 +47,7 @@ public static class HistoryCsv
         HistoryKind.LimitedCharacter => "限定棋盤",
         HistoryKind.Permanent => "常駐棋盤",
         HistoryKind.ArcMiracleBox => "弧盤研募",
-        HistoryKind.MysteryBox => "神秘箱",
+        HistoryKind.MysteryBox => "盲盒",
         _ => kind.ToString(),
     };
 
