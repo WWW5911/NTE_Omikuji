@@ -148,8 +148,11 @@ not a comparison with other players.
 
 Captures read the layout used since version 1.4, where each request and row names
 its pool, as well as the older one. All pools share one file, with each row's pool
-in `pool_id`, and they appear under **原始紀錄**. The layout comes from a third-party
-description and has not yet been checked against real traffic here.
+in `pool_id`, and they appear under **原始紀錄**. A real capture confirmed the layouts
+and five rows per page, with one pool that had pulls and one that had none. The game
+first asks how many pages a pool has, and requests no pages when the answer is 0, so
+a pool without pulls leaves no rows. Two pools with pulls have not been captured
+together, and the pool's size and rules are not decoded.
 
 ### Recording packets for debugging
 

@@ -7,7 +7,7 @@ using Xunit;
 
 namespace NteOmikuji.Core.Tests;
 
-/// <summary>The layouts follow a third-party description of version 1.4 traffic, not a real capture.</summary>
+/// <summary>These layouts match a real capture of one pool with pulls and one without. Two pools with pulls have not been seen together.</summary>
 public class MysteryBoxPoolTests
 {
     private const string Local = "192.0.2.1";
@@ -26,6 +26,20 @@ public class MysteryBoxPoolTests
         id.CopyTo(content, 44);
         BinaryPrimitives.WriteUInt32LittleEndian(content.AsSpan(44 + id.Length), 2060);
         BinaryPrimitives.WriteUInt32LittleEndian(content.AsSpan(44 + id.Length + 5), 10);
+        return content;
+    }
+
+    /// <summary>Asks how many pages a pool has before any page is requested. It has no cursor, so the pool name sits earlier.</summary>
+    private static byte[] PageCountRequest(string pool)
+    {
+        var id = pool.Select(letter => (byte)(letter * 2)).Append((byte)0).ToArray();
+        var content = new byte[35 + id.Length + 10];
+        content[26] = 0x1E;
+        BinaryPrimitives.WriteUInt32LittleEndian(content.AsSpan(27), (uint)id.Length * 2 + 8);
+        BinaryPrimitives.WriteUInt32LittleEndian(content.AsSpan(31), (uint)id.Length * 2);
+        id.CopyTo(content, 35);
+        BinaryPrimitives.WriteUInt32LittleEndian(content.AsSpan(35 + id.Length), 2060);
+        BinaryPrimitives.WriteUInt32LittleEndian(content.AsSpan(35 + id.Length + 5), 10);
         return content;
     }
 
@@ -91,6 +105,28 @@ public class MysteryBoxPoolTests
     {
         Assert.True(MysteryBoxDecoder.IsRequest(LegacyRequest(2)));
         Assert.Null(MysteryBoxDecoder.RequestPool(LegacyRequest(2)));
+    }
+
+    [Theory]
+    [InlineData("MangHe_bsj")]
+    [InlineData("MangHe_bsj2")]
+    public void AskingForThePageCountIsNotAHistoryPage(string pool)
+    {
+        var request = PageCountRequest(pool);
+
+        Assert.False(MysteryBoxDecoder.IsRequest(request));
+        Assert.True(MysteryBoxDecoder.LooksLikeRequest(request));
+    }
+
+    [Fact]
+    public void APoolWithoutPullsLeavesNoHistory()
+    {
+        var session = NewSession();
+
+        session.Process(Out(PageCountRequest(PoolA)));
+        session.Process(In(new byte[91]));
+
+        Assert.Empty(session.BuildHistories());
     }
 
     [Theory]
