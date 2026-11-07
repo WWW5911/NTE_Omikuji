@@ -24,6 +24,7 @@ Keep the exe in a writable folder of its own, because it creates these beside it
 | Folder | Contents |
 | --- | --- |
 | `mappings\rewards.csv`, `achievements.csv` | Editable display names and ranks. Saving applies them at once and also corrects saved history. |
+| `mappings\banners.csv` | Each event's featured rewards, which decide what is limited on it. |
 | `user_data\<uid>_<banner>.json` | Cumulative history per account, in version 1 export format. Reloaded at start. |
 | `user_data\<uid>_<banner>_partial_<time>.json` | A capture that missed page 1, kept apart from the cumulative file. |
 
@@ -32,7 +33,7 @@ and tells them apart by content. None of these need Administrator approval.
 
 ### Maintaining mappings
 
-Open **原始紀錄 > 對應維護** to edit names, rarity, and each reward's category. Each change
+Open **獎勵與卡池設定 > 獎勵** in the left list to edit names, rarity, and each reward's category. Each change
 saves at once and also corrects saved history, so no app update is needed when the
 game adds rewards:
 
@@ -66,6 +67,11 @@ file, so close it before editing in the app.
 | 車皮 | `vehicle_skin` | Counted and listed only |
 | 降落傘 | `glider` | Counted and listed only |
 | 不關注 | `none` | Ignored |
+
+Replies have no limited flag, so **獎勵與卡池設定 > 活動卡池** lists the featured reward
+of each event. A reward is limited on the event that features it and an ordinary S
+on any other, whatever its category says. New events in your history appear there
+as 未設定 until you fill them in, and until then they follow the category.
 
 A blank category follows the reward: `Fashion_Glide_` is 降落傘, `Fashion_vehicle_`
 is 車皮, any other `Fashion_` is 角色服裝, and S-rank characters and arcs are S 角色

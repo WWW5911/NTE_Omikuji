@@ -6,31 +6,16 @@
         <h2 class="page-title">原始紀錄</h2>
         <div class="view-switch" role="tablist">
             <button id="records-tab-list" role="tab" aria-selected="@(_tab == Tab.List)" class="@(_tab == Tab.List ? "active" : "")" @onclick="() => _tab = Tab.List">紀錄</button>
-            <button id="open-editor" role="tab" aria-selected="@(_tab == Tab.Mapping)" class="@(_tab == Tab.Mapping ? "active" : "")" @onclick="() => _tab = Tab.Mapping">對應維護</button>
             <button id="records-tab-import" role="tab" aria-selected="@(_tab == Tab.Import)" class="@(_tab == Tab.Import ? "active" : "")" @onclick="() => _tab = Tab.Import">匯入</button>
         </div>
     </div>
 
     @switch (_tab)
     {
-        case Tab.Mapping:
-            @if (State.MappingIssues.Count > 0)
-            {
-                <ul class="issues" id="mapping-issues">
-                    @foreach (var issue in State.MappingIssues.Take(5))
-                    {
-                        <li>@issue</li>
-                    }
-                </ul>
-            }
-            <MappingEditor />
-            break;
         case Tab.Import:
             <div class="panel form-card">
                 <label class="file" for="flows">.flows 擷取檔、匯出的 JSON，或對應表 CSV / JSON（可多選）</label>
                 <InputFile id="flows" OnChange="ImportAsync" accept=".flows,.json,.csv" multiple disabled="@(State.Status != ExporterStatus.Idle)" />
-                <p class="hint" id="mapping-status">已載入 @State.MappedRewardCount 筆獎勵@(UnmappedTotal > 0 ? $"，{UnmappedTotal} 筆未對應" : "")。</p>
-                <button id="reload-mappings" @onclick="State.ReloadMappings">重新載入對應表</button>
             </div>
             break;
         default:
@@ -119,7 +104,6 @@
     private enum Tab
     {
         List,
-        Mapping,
         Import,
     }
 
@@ -127,8 +111,6 @@
     private HistoryKind? _activeKind;
     private string _filter = "";
     private bool _unmappedOnly;
-
-    private int UnmappedTotal => State.SeenRewards.Keys.Count(id => !State.Rewards.Entries.Any(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase)));
 
     private BannerHistory? Active =>
         State.Histories.FirstOrDefault(history => history.Banner.Kind == _activeKind) ?? State.Histories.FirstOrDefault();

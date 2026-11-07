@@ -29,6 +29,14 @@
             <PoolNavItem Kind="HistoryKind.ArcMiracleBox" Label="弧盤研募" Count="PullsOf(HistoryKind.ArcMiracleBox)" Banners="BannersOf(HistoryKind.ArcMiracleBox)"
                          Active="IsActive(HistoryKind.ArcMiracleBox)" ActiveBanner="@_banner" Expanded="_expanded.Contains(HistoryKind.ArcMiracleBox)"
                          OnOpen="banner => OpenPool(HistoryKind.ArcMiracleBox, banner)" OnToggle="() => Toggle(HistoryKind.ArcMiracleBox)" />
+            <hr class="side-divider" />
+            <button id="nav-settings" class="@SideClass(_page == Page.Settings)" aria-current="@Current(_page == Page.Settings)" @onclick="() => OpenSettings(false)">
+                <span>獎勵與卡池設定</span>
+                @if (State.UnsetBanners.Count > 0)
+                {
+                    <small class="side-badge" id="unset-count" title="有活動還沒設定限定大獎">@State.UnsetBanners.Count</small>
+                }
+            </button>
         </nav>
     </aside>
 
@@ -46,8 +54,19 @@
             <div class="alert">Npcap 無法使用，已改用原始通訊端：@fallback</div>
         }
 
+        @if (State.UnsetBanners.Count > 0 && _page != Page.Settings)
+        {
+            <div class="alert" id="unset-banners" role="status">
+                @State.UnsetBanners.Count 期活動還沒設定限定大獎，這些活動的限定統計與保底可能不準。
+                <button class="link-inline" @onclick="() => OpenSettings(true)">前往設定</button>
+            </div>
+        }
+
         @switch (_page)
         {
+            case Page.Settings:
+                <SettingsView @key="_settingsVisit" StartOnBanners="_settingsOnBanners" />
+                break;
             case Page.Overview:
                 <OverviewView Histories="State.Histories" NameOf="State.DisplayName" OnOpenPool="kind => OpenPool(kind, null)" OnStartCapture="() => Show(Page.Capture)" />
                 break;
@@ -90,6 +109,7 @@
         Help,
         Records,
         Account,
+        Settings,
     }
 
     private readonly CaptureOptions _capture = new();
@@ -97,6 +117,8 @@
     private Page _page = Page.Overview;
     private HistoryKind _pool = HistoryKind.LimitedCharacter;
     private string? _banner;
+    private bool _settingsOnBanners;
+    private int _settingsVisit;
 
     private bool IsCapturing => State.Status is ExporterStatus.Capturing or ExporterStatus.Stopping;
 
@@ -120,7 +142,7 @@
         State.Histories.FirstOrDefault(history => history.Banner.Kind == kind) is { } history ? HistoryAnalyzer.Analyze(history, State.DisplayName).TotalPulls : null;
 
     private IReadOnlyList<BannerGroup> BannersOf(HistoryKind kind) =>
-        State.Histories.FirstOrDefault(history => history.Banner.Kind == kind) is { } history ? HistoryAnalyzer.Banners(history, State.DisplayName) : [];
+        State.Histories.FirstOrDefault(history => history.Banner.Kind == kind) is { } history ? HistoryAnalyzer.Banners(history, State.DisplayName, State.BannerName) : [];
 
     private string PoolTitle(BannerHistory history)
     {
@@ -131,13 +153,20 @@
             HistoryKind.ArcMiracleBox => "弧盤研募",
             _ => history.Banner.Name,
         };
-        return _banner is null ? pool : $"{pool}・{HistoryAnalyzer.Banners(history, State.DisplayName).FirstOrDefault(group => group.Id == _banner)?.Name ?? _banner}";
+        return _banner is null ? pool : $"{pool}・{HistoryAnalyzer.Banners(history, State.DisplayName, State.BannerName).FirstOrDefault(group => group.Id == _banner)?.Name ?? _banner}";
     }
 
     private void Show(Page page)
     {
         _page = page;
         _banner = null;
+    }
+
+    private void OpenSettings(bool onBanners)
+    {
+        _settingsOnBanners = onBanners;
+        _settingsVisit++;
+        Show(Page.Settings);
     }
 
     private void OpenPool(HistoryKind kind, string? banner)

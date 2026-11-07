@@ -1,0 +1,139 @@
+@implements IDisposable
+@inject ExporterState State
+
+<div class="panel results editor" id="banner-editor">
+    <div class="toolbar">
+        <div>
+            <h2 class="editor-title">活動卡池</h2>
+            <p class="hint" id="banner-summary">@State.Banners.Entries.Count 期活動，@State.UnsetBanners.Count 期紀錄中出現但未設定。限定大獎決定保底與限定統計，修改後立刻存檔。</p>
+        </div>
+        <div class="actions">
+            <button id="banner-undo" disabled="@(!State.CanUndoMapping)" @onclick="State.UndoMapping">復原</button>
+            <button id="banner-fill" title="加入內建資料有、這裡沒有的活動，並填入空白欄位。已填寫的內容不會被改動。" @onclick="State.FillMappingsFromBundled">從內建補齊</button>
+        </div>
+    </div>
+
+    <div class="toolbar new-row">
+        <input id="new-banner" placeholder="新增活動 ID，例如 ForkLottery_MingYin" aria-label="新增活動 ID" @bind="_newId" />
+        <button id="add-banner" class="primary" @onclick="AddBanner">新增活動</button>
+        @if (_message is { } message)
+        {
+            <span class="hint" id="banner-message" role="alert">@message</span>
+        }
+    </div>
+
+    <div class="table-wrap">
+        <table class="records editor-table">
+            <thead>
+                <tr>
+                    <th class="col-type">卡池</th>
+                    <th>活動 ID</th>
+                    <th title="輸入獎勵 ID。有多個時用分號隔開，第一個會當作活動名稱。">限定大獎</th>
+                    <th>名稱</th>
+                    <th class="col-count" title="這個帳號的紀錄中出現的次數">次數</th>
+                    <th class="col-action"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in Rows)
+                {
+                    var id = row.Id;
+                    var isDraft = IsDraft(id);
+                    <tr @key="@($"{id}:{State.MappingWriteFailures}")" data-banner-id="@id" class="@(isDraft ? "draft" : "")">
+                        <td class="col-type">@PoolLabel(id)</td>
+                        <td class="id-cell">
+                            <span class="id-text banner-id" title="@id">@id</span>
+                            @if (isDraft)
+                            {
+                                <span class="badge">未設定</span>
+                            }
+                        </td>
+                        <td>
+                            <input class="cell" data-col="featured" list="@ListFor(id)" aria-label="@id 限定大獎" value="@BannerEntry.JoinFeatured(row.Featured)" @onchange="change => State.SaveBanner(id, change.Value as string)" />
+                        </td>
+                        <td class="banner-names">
+                            @foreach (var reward in row.Featured)
+                            {
+                                if (State.RewardName(reward) is { } name)
+                                {
+                                    <span class="banner-reward" title="@reward">@name</span>
+                                }
+                                else
+                                {
+                                    <span class="badge" title="@reward">對應表找不到</span>
+                                }
+                            }
+                        </td>
+                        <td class="col-count num">@(State.SeenBanners.GetValueOrDefault(id)?.Rows ?? 0)</td>
+                        <td class="col-action">
+                            @if (!isDraft)
+                            {
+                                <button class="link-button" data-action="delete-banner" aria-label="刪除 @id" @onclick="() => State.DeleteBanner(id)">刪除</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <datalist id="featured-arcs">
+        @foreach (var reward in TopRanks("arc"))
+        {
+            <option value="@reward.Id">@State.RewardName(reward.Id)</option>
+        }
+    </datalist>
+    <datalist id="featured-characters">
+        @foreach (var reward in TopRanks("character"))
+        {
+            <option value="@reward.Id">@State.RewardName(reward.Id)</option>
+        }
+    </datalist>
+</div>
+
+@code {
+    private const string ArcBannerPrefix = "ForkLottery_";
+
+    private string _newId = "";
+    private string? _message;
+
+    /// <summary>Unset events come first since they need attention, then the most recently used.</summary>
+    private List<BannerEntry> Rows =>
+        State.UnsetBanners.Select(id => new BannerEntry(id, []))
+            .Concat(State.Banners.Entries.OrderByDescending(entry => State.SeenBanners.GetValueOrDefault(entry.Id)?.LastDate, StringComparer.Ordinal).ThenBy(entry => entry.Id, StringComparer.Ordinal))
+            .ToList();
+
+    private bool IsDraft(string id) => !State.Banners.Entries.Any(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsArc(string id) => id.StartsWith(ArcBannerPrefix, StringComparison.OrdinalIgnoreCase);
+
+    private static string PoolLabel(string id) => IsArc(id) ? "弧盤" : "棋盤";
+
+    private static string ListFor(string id) => IsArc(id) ? "featured-arcs" : "featured-characters";
+
+    private IEnumerable<RewardEntry> TopRanks(string type) =>
+        State.Rewards.Entries.Where(entry => entry.Type.Equals(type, StringComparison.OrdinalIgnoreCase) && entry.Rank.Equals("S", StringComparison.OrdinalIgnoreCase));
+
+    private void AddBanner()
+    {
+        var id = _newId.Trim();
+        if (id.Length == 0)
+        {
+            _message = "請先輸入活動 ID。";
+            return;
+        }
+        if (!IsDraft(id))
+        {
+            _message = $"{id} 已經存在。";
+            return;
+        }
+        State.SaveBanner(id, "");
+        _message = null;
+        _newId = "";
+    }
+
+    protected override void OnInitialized() => State.Changed += OnStateChanged;
+
+    private void OnStateChanged() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => State.Changed -= OnStateChanged;
+}

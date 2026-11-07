@@ -9,6 +9,8 @@ using NteOmikuji.Core.Session;
 
 namespace NteOmikuji.App.Services;
 
+public sealed record BannerUsage(int Rows, string? LastDate);
+
 public enum ExporterStatus
 {
     Idle,
@@ -102,6 +104,12 @@ public sealed class ExporterState : IDisposable
     public int MappedRewardCount => _catalog.RewardCount;
     public RewardTable Rewards { get; private set; } = RewardTable.Empty;
     public IReadOnlyDictionary<string, int> SeenRewards { get; private set; } = new Dictionary<string, int>();
+    public BannerTable Banners { get; private set; } = BannerTable.Empty;
+    public IReadOnlyDictionary<string, BannerUsage> SeenBanners { get; private set; } = new Dictionary<string, BannerUsage>();
+
+    /// <summary>Events in the history with no row in banners.csv, so nothing marks what is limited on them.</summary>
+    public IReadOnlyList<string> UnsetBanners =>
+        SeenBanners.Keys.Where(id => !Banners.Entries.Any(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase))).Order(StringComparer.Ordinal).ToList();
     public bool CanUndoMapping => _mappings.CanUndo;
     public int MappingWriteFailures { get; private set; }
     public string DisplayLanguage => _settings.DisplayLanguage;
@@ -265,6 +273,24 @@ public sealed class ExporterState : IDisposable
         var name = _catalog.Find(row.RewardId)?.Localized(_settings.DisplayLanguage);
         return string.IsNullOrEmpty(name) ? row.RewardId : name;
     }
+
+    /// <summary>A reward's name in the display language, or null when the mapping does not have it.</summary>
+    public string? RewardName(string id)
+    {
+        var name = _catalog.Find(id)?.Localized(_settings.DisplayLanguage);
+        return string.IsNullOrEmpty(name) ? null : name;
+    }
+
+    /// <summary>An event is named after the first reward it features.</summary>
+    public string? BannerName(string id)
+    {
+        var featured = Banners.Entries.FirstOrDefault(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase))?.Featured.FirstOrDefault();
+        return featured is null ? null : RewardName(featured) ?? featured;
+    }
+
+    public void SaveBanner(string id, string? featured) => ChangeMappings(() => _mappings.SaveBanner(id, BannerEntry.ParseFeatured(featured)));
+
+    public void DeleteBanner(string id) => ChangeMappings(() => _mappings.DeleteBanner(id));
 
     public bool IsLocaleVisible(string locale) => _settings.VisibleLocales.Contains(locale);
 
@@ -432,7 +458,7 @@ public sealed class ExporterState : IDisposable
     private void OnMappingFileChanged(object sender, FileSystemEventArgs change)
     {
         // Editors raise several events per save, so wait for them to settle.
-        if (change.Name is MappingStore.RewardsFile or MappingStore.AchievementsFile)
+        if (change.Name is MappingStore.RewardsFile or MappingStore.AchievementsFile or MappingStore.BannersFile)
         {
             _mappingTimer.Change(MappingReloadDelay, Timeout.InfiniteTimeSpan);
         }
@@ -446,6 +472,7 @@ public sealed class ExporterState : IDisposable
         {
             _catalog = catalog;
             Rewards = result.Rewards;
+            Banners = result.Banners ?? BannerTable.Empty;
             if (_session is { } session)
             {
                 session.Catalog = catalog;
@@ -599,6 +626,9 @@ public sealed class ExporterState : IDisposable
         SeenRewards = Histories.SelectMany(history => history.Rows).Where(row => row.RewardId.Length > 0)
             .GroupBy(row => row.RewardId, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
+        SeenBanners = Histories.SelectMany(history => history.Rows).Where(row => !string.IsNullOrEmpty(row.BannerId))
+            .GroupBy(row => row.BannerId!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => new BannerUsage(group.Count(), group.Max(row => row.TimestampDecoded)), StringComparer.OrdinalIgnoreCase);
     }
 
     private void BeginSession()
