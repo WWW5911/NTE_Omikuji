@@ -159,7 +159,7 @@ window.nteShare = (() => {
             tag(card.overall.label, card.overall.tier, w - margin, 42, size, { right: true });
             const tagWidth = width(card.overall.label, size, 700) + size * 1.44;
             text(signed(card.overall.sigma), w - margin - tagWidth - 24, 92, 44, theme.text, { weight: 700, align: "right" });
-            text(`${card.overall.smallSample ? "樣本少・" : ""}實際 ${card.overall.hits} 個，期望 ${card.overall.expected.toFixed(1)} ± ${card.overall.standardDeviation.toFixed(1)} 個・${card.overall.topText}`, w - margin, 138, 24, theme.muted, { align: "right" });
+            text(`實際 ${card.overall.hits} 個，期望 ${card.overall.expected.toFixed(1)} ± ${card.overall.standardDeviation.toFixed(1)} 個・${card.overall.topText}`, w - margin, 138, 24, theme.muted, { align: "right" });
         }
 
         const scaleY = 164, scaleH = 48, cell = (w - margin * 2) / 7;
@@ -185,9 +185,6 @@ window.nteShare = (() => {
         box(x, y, w, h, 18, theme.surface, theme.border);
         text(pool.label, x + pad, y + 54, 36, theme.text, { weight: 700 });
         poolTag(pool, x + w - pad, y + 22, 24);
-        if (pool.luck?.smallSample) {
-            text("樣本少", x + w - pad - width(pool.luck.label, 24, 700) - 24 * 1.44 - 12, y + 50, 20, theme.muted, { align: "right" });
-        }
         if (pool.totalPulls === 0) {
             text("尚無紀錄", x + w / 2, y + h / 2, 28, theme.muted, { align: "center" });
             return;
@@ -310,7 +307,7 @@ window.nteShare = (() => {
         const tagWidth = width(luck.label, size, 700) + size * 1.44;
         text(signed(luck.sigma), margin + tagWidth + 36, 268, 72, theme.text, { weight: 700 });
         text(`同抽數理論上${luck.topText}`, margin + tagWidth + 38, 318, 30, theme.muted);
-        text(`實際 ${luck.hits} 個，期望 ${luck.expected.toFixed(1)} ± ${luck.standardDeviation.toFixed(1)} 個${luck.smallSample ? "・樣本少，僅供參考" : ""}`, margin, 412, 32, theme.text);
+        text(`實際 ${luck.hits} 個，期望 ${luck.expected.toFixed(1)} ± ${luck.standardDeviation.toFixed(1)} 個`, margin, 412, 32, theme.text);
 
         bell(luck.sigma, luck.tier, margin, 440, w - margin * 2, 300, card.tierLabels);
 
@@ -337,7 +334,7 @@ window.nteShare = (() => {
             card.pools.forEach((item, index) => row(index, item.label, y => {
                 const score = item.luck;
                 const detail = score
-                    ? `${score.smallSample ? "樣本少・" : ""}${score.hits} 個／期望 ${score.expected.toFixed(1)}・${signed(score.sigma)}・${score.topText}`
+                    ? `${score.hits} 個／期望 ${score.expected.toFixed(1)}・${signed(score.sigma)}・${score.topText}`
                     : item.totalPulls > 0 ? `${number(item.totalPulls)} 抽` : "";
                 const tagLabel = score?.label ?? item.luckNote ?? "—";
                 const tagW = width(tagLabel, 24, 700) + 24 * 1.44;
@@ -345,7 +342,7 @@ window.nteShare = (() => {
                 poolTag(item, w - margin - 20, y + 12, 24);
             }));
         }
-        footer(card, w, h, margin, "前 N% 是理論排序，不是跟玩家比較。");
+        footer(card, w, h, margin, "前 N% 歐是理論排序，不是跟玩家比較。");
     }
 
     /** The bell of outcomes for this many pulls, shaded by tier, with the player marked. */
@@ -401,7 +398,6 @@ window.nteShare = (() => {
         else if (pool.luckNote) note(pool.luckNote, w - margin, 62, 30, { right: true });
         const facts = [pool.context, period(pool.firstDate, pool.lastDate)];
         if (pool.luck) facts.push(`${pool.luck.hits} 個／期望 ${pool.luck.expected.toFixed(1)} ± ${pool.luck.standardDeviation.toFixed(1)}（${signed(pool.luck.sigma)}，${pool.luck.topText}）`);
-        if (pool.luck?.smallSample) facts.push("樣本少");
         if (card.maskedUid) facts.push(`UID ${card.maskedUid}`);
         // A smaller line beats cutting off the end of it.
         const line = facts.filter(Boolean).join("・");

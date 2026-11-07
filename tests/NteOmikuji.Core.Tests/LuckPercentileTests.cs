@@ -90,12 +90,12 @@ public class LuckPercentileTests
     }
 
     [Theory]
-    [InlineData(0.9779, "前 2.2%")]
-    [InlineData(0.09, "前 91%")]
-    [InlineData(0.5, "前 50%")]
-    [InlineData(0.9, "前 10%")]
-    [InlineData(1, "前 0.1%")]
-    [InlineData(0, "前 99.9%")]
+    [InlineData(0.9779, "前 2.2% 歐")]
+    [InlineData(0.09, "前 91% 歐")]
+    [InlineData(0.5, "前 50% 歐")]
+    [InlineData(0.9, "前 10% 歐")]
+    [InlineData(1, "前 0.1% 歐")]
+    [InlineData(0, "前 99.9% 歐")]
     public void TheTextRoundsToSuit(double percentile, string expected)
     {
         Assert.Equal(expected, new LuckScore(1, 1, 1, 1, Percentile: percentile).TopText);
@@ -122,6 +122,6 @@ public class LuckPercentileTests
 
         var data = HistoryAnalyzer.Analyze(new BannerHistory(BannerInfo.LimitedCharacter, rows, [], []), bannerId: "Lottery_A");
 
-        Assert.Equal("前 91%", data.Luck!.TopText);
+        Assert.Equal("前 91% 歐", data.Luck!.TopText);
     }
 }

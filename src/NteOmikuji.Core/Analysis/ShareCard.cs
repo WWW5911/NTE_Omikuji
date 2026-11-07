@@ -4,8 +4,7 @@ namespace NteOmikuji.Core.Analysis;
 
 /// <param name="Tier">The tier's position from worst (0) to best (6).</param>
 /// <param name="TopText">Where this falls among the outcomes these pulls can bring, luckiest first.</param>
-/// <param name="SmallSample">True when the tier rests on too few pulls to mean much, which the image says.</param>
-public sealed record ShareLuck(int Tier, string Label, double Sigma, int Hits, int Pulls, double Expected, double StandardDeviation, string TopText, bool SmallSample);
+public sealed record ShareLuck(int Tier, string Label, double Sigma, int Hits, int Pulls, double Expected, double StandardDeviation, string TopText);
 
 /// <param name="AtLeast">True for the oldest entry, whose earlier pulls may lie before the saved history.</param>
 public sealed record ShareReward(string Name, int Pulls, bool AtLeast, bool Limited);
@@ -187,5 +186,5 @@ public static class ShareCardBuilder
 
     private static ShareLuck? ToShare(LuckScore? score) => score is null ? null : new ShareLuck(
         (int)score.Tier, score.Label, score.Sigma, score.Hits, score.Pulls, score.Expected, score.StandardDeviation,
-        score.TopText, score.IsSmallSample);
+        score.TopText);
 }

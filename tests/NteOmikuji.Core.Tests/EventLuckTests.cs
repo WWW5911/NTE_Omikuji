@@ -164,14 +164,6 @@ public class EventLuckTests
     }
 
     [Fact]
-    public void CarriedPullsCountTowardTheSample()
-    {
-        Assert.True(LuckModel.Score(Board, 0, 30)!.IsSmallSample);
-        Assert.True(LuckModel.Score(Board, 0, 30, 59)!.IsSmallSample);
-        Assert.False(LuckModel.Score(Board, 0, 30, 60)!.IsSmallSample);
-    }
-
-    [Fact]
     public void MissingOutOverFewPullsIsNotUnlucky()
     {
         var score = LuckModel.Score(Board, 0, 10)!;
@@ -200,16 +192,6 @@ public class EventLuckTests
     public void NoPullsHaveNoScore()
     {
         Assert.Null(LuckModel.Score(Board, 0, 0));
-    }
-
-    [Fact]
-    public void CombinedScoresAreSmallOnlyWhenAllAre()
-    {
-        var small = LuckModel.Score(Board, 0, 10);
-        var full = LuckModel.Score(Board, 2, 200);
-
-        Assert.True(LuckModel.Combine([small, small])!.IsSmallSample);
-        Assert.False(LuckModel.Combine([small, full])!.IsSmallSample);
     }
 
     [Theory]

@@ -15,9 +15,8 @@ public enum LuckTier
 /// <param name="Hits">Target rewards obtained.</param>
 /// <param name="Expected">Rewards this many pulls bring on average.</param>
 /// <param name="Variance">Spread of that count across players making the same pulls.</param>
-/// <param name="IsSmallSample">True under one full guarantee of pulls, where the tier leans on very few rewards.</param>
 /// <param name="Percentile">The exact share of outcomes from these pulls that are worse, counting ties as half.</param>
-public sealed record LuckScore(int Hits, int Pulls, double Expected, double Variance, bool IsSmallSample = false, double Percentile = 0.5)
+public sealed record LuckScore(int Hits, int Pulls, double Expected, double Variance, double Percentile = 0.5)
 {
     public double StandardDeviation => Math.Sqrt(Variance);
 
@@ -37,7 +36,7 @@ public sealed record LuckScore(int Hits, int Pulls, double Expected, double Vari
         get
         {
             var top = Math.Clamp((1 - Percentile) * 100, 0.1, 99.9);
-            return $"前 {top.ToString(top is < 9.95 or > 99 ? "0.0" : "0", System.Globalization.CultureInfo.InvariantCulture)}%";
+            return $"前 {top.ToString(top is < 9.95 or > 99 ? "0.0" : "0", System.Globalization.CultureInfo.InvariantCulture)}% 歐";
         }
     }
 }
@@ -98,7 +97,7 @@ public static class LuckModel
             return null;
         }
         var (mean, square) = MomentsAfter(rule, pulls, carried);
-        return new LuckScore(hits, pulls, mean, Math.Max(0, square - (mean * mean)), pulls + carried < (rule.LimitedAt ?? rule.TopRankAt), PercentileOf(rule, hits, pulls, carried, sinceLast));
+        return new LuckScore(hits, pulls, mean, Math.Max(0, square - (mean * mean)), PercentileOf(rule, hits, pulls, carried, sinceLast));
     }
 
     /// <summary>
@@ -217,7 +216,7 @@ public static class LuckModel
         var known = scores.OfType<LuckScore>().ToList();
         return known.Count == 0
             ? null
-            : new LuckScore(known.Sum(score => score.Hits), known.Sum(score => score.Pulls), known.Sum(score => score.Expected), known.Sum(score => score.Variance), known.All(score => score.IsSmallSample), CombinedPercentile(known));
+            : new LuckScore(known.Sum(score => score.Hits), known.Sum(score => score.Pulls), known.Sum(score => score.Expected), known.Sum(score => score.Variance), CombinedPercentile(known));
     }
 
     private static double CombinedPercentile(List<LuckScore> known)

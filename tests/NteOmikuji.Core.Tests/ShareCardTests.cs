@@ -137,11 +137,11 @@ public class ShareCardTests
     }
 
     [Fact]
-    public void AShortPoolIsMarkedASmallSample()
+    public void AShortPoolStillHasLuck()
     {
         var pool = Card(Pool(BannerInfo.Permanent, (30, RewardFocus.SCharacter, "b"))).Pools[1];
 
-        Assert.True(Assert.IsType<ShareLuck>(pool.Luck).SmallSample);
+        Assert.NotNull(pool.Luck);
         Assert.Null(pool.LuckNote);
     }
 
@@ -193,11 +193,11 @@ public class ShareCardTests
     }
 
     [Fact]
-    public void AShortEventIsMarkedASmallSample()
+    public void AShortEventStillHasLuck()
     {
         var selected = Selected(TwoEvents(BannerInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
 
-        Assert.True(Assert.IsType<ShareLuck>(selected.Luck).SmallSample);
+        Assert.NotNull(selected.Luck);
         Assert.Null(selected.LuckNote);
     }
 
@@ -312,7 +312,7 @@ public class ShareCardTests
         var unlucky = Card(Pool(BannerInfo.Permanent, Enumerable.Range(0, 40).Select(_ => (90, RewardFocus.SCharacter, "b")).ToArray())).Pools[1].Luck!;
         var lucky = Card(Pool(BannerInfo.Permanent, Enumerable.Range(0, 100).Select(_ => (2, RewardFocus.SCharacter, "b")).ToArray())).Pools[1].Luck!;
 
-        Assert.Equal("前 99.9%", unlucky.TopText);
-        Assert.Equal("前 0.1%", lucky.TopText);
+        Assert.Equal("前 99.9% 歐", unlucky.TopText);
+        Assert.Equal("前 0.1% 歐", lucky.TopText);
     }
 }
