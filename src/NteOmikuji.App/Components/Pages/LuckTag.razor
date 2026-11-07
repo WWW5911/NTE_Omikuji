@@ -27,7 +27,7 @@ else if (Fallback is not null)
     public string? FallbackReason { get; set; }
 
     public static string Describe(LuckScore score) =>
-        $"實際 {score.Hits} 個，依 {score.Pulls:N0} 抽的期望是 {score.Expected:0.0} ± {score.StandardDeviation:0.0} 個（{score.Sigma:+0.00;-0.00;0.00}σ）{(score.IsSmallSample ? "，抽數少，僅供參考" : "")}";
+        $"實際 {score.Hits} 個，依 {score.Pulls:N0} 抽的期望是 {score.Expected:0.0} ± {score.StandardDeviation:0.0} 個（{score.Sigma:+0.00;-0.00;0.00}σ，{score.TopText}）{(score.IsSmallSample ? "，抽數少，僅供參考" : "")}";
 
     public static string ToneOf(LuckTier tier) => tier switch
     {

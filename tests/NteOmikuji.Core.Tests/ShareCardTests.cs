@@ -272,16 +272,16 @@ public class ShareCardTests
     [InlineData(-2.16, 0.0154)]
     public void NormalCdfMatchesPublishedValues(double z, double expected)
     {
-        Assert.Equal(expected, ShareCardBuilder.NormalCdf(z), 3);
+        Assert.Equal(expected, LuckModel.NormalCdf(z), 3);
     }
 
     [Fact]
-    public void TheBeatPercentStaysInsideItsRange()
+    public void TheTopTextStaysInsideItsRange()
     {
         var unlucky = Card(Pool(BannerInfo.Permanent, Enumerable.Range(0, 40).Select(_ => (90, RewardFocus.SCharacter, "b")).ToArray())).Pools[1].Luck!;
         var lucky = Card(Pool(BannerInfo.Permanent, Enumerable.Range(0, 100).Select(_ => (2, RewardFocus.SCharacter, "b")).ToArray())).Pools[1].Luck!;
 
-        Assert.InRange(unlucky.BeatsPercent, 1, 40);
-        Assert.Equal(99, lucky.BeatsPercent);
+        Assert.Equal("前 99.9%", unlucky.TopText);
+        Assert.Equal("前 0.1%", lucky.TopText);
     }
 }

@@ -16,7 +16,8 @@ public enum LuckTier
 /// <param name="Expected">Rewards this many pulls bring on average.</param>
 /// <param name="Variance">Spread of that count across players making the same pulls.</param>
 /// <param name="IsSmallSample">True under one full guarantee of pulls, where the tier leans on very few rewards.</param>
-public sealed record LuckScore(int Hits, int Pulls, double Expected, double Variance, bool IsSmallSample = false)
+/// <param name="Percentile">The exact share of outcomes from these pulls that are worse, counting ties as half.</param>
+public sealed record LuckScore(int Hits, int Pulls, double Expected, double Variance, bool IsSmallSample = false, double Percentile = 0.5)
 {
     public double StandardDeviation => Math.Sqrt(Variance);
 
@@ -26,6 +27,16 @@ public sealed record LuckScore(int Hits, int Pulls, double Expected, double Vari
     public LuckTier Tier => LuckModel.TierOf(Sigma);
 
     public string Label => LuckModel.LabelOf(Tier);
+
+    /// <summary>Where this falls among the outcomes these pulls can bring, luckiest first. It compares against the odds, not other players.</summary>
+    public string TopText
+    {
+        get
+        {
+            var top = Math.Clamp((1 - Percentile) * 100, 0.1, 99.9);
+            return $"前 {top.ToString(top is < 9.95 or > 99 ? "0.0" : "0", System.Globalization.CultureInfo.InvariantCulture)}%";
+        }
+    }
 }
 
 /// <summary>
@@ -36,6 +47,8 @@ public sealed record LuckScore(int Hits, int Pulls, double Expected, double Vari
 public static class LuckModel
 {
     private static readonly Dictionary<PityRule, Moments> Cache = [];
+    private static readonly Dictionary<(PityRule, int, int, int, int?), double> Percentiles = [];
+    private const int MaxCachedPercentiles = 4096;
 
     private sealed class Moments(double[] pmf)
     {
@@ -74,23 +87,141 @@ public static class LuckModel
 
     /// <summary>Null only without any pulls. The exact moments hold for few pulls too, where missing out is hardly unlucky and a hit is very lucky.</summary>
     /// <param name="carried">Pulls already made toward the next reward when these began, as when an event inherits pity.</param>
-    public static LuckScore? Score(PityRule rule, int hits, int pulls, int carried = 0)
+    /// <param name="sinceLast">Pulls since the last reward, which tells apart outcomes with the same count. Without it they tie.</param>
+    public static LuckScore? Score(PityRule rule, int hits, int pulls, int carried = 0, int? sinceLast = null)
     {
         if (rule.BaseRate <= 0 || pulls <= 0)
         {
             return null;
         }
         var (mean, square) = MomentsAfter(rule, pulls, carried);
-        return new LuckScore(hits, pulls, mean, Math.Max(0, square - (mean * mean)), pulls + carried < (rule.LimitedAt ?? rule.TopRankAt));
+        return new LuckScore(hits, pulls, mean, Math.Max(0, square - (mean * mean)), pulls + carried < (rule.LimitedAt ?? rule.TopRankAt), PercentileOf(rule, hits, pulls, carried, sinceLast));
     }
 
-    /// <summary>Pools are independent, so their expected counts and variances add.</summary>
+    /// <summary>
+    /// Ranks every outcome of these pulls exactly: more rewards is better, and with the same count, the last
+    /// one landing earlier is better. This holds at any sample size, where a normal approximation of the
+    /// skewed count does not.
+    /// </summary>
+    private static double PercentileOf(PityRule rule, int hits, int pulls, int carried, int? sinceLast)
+    {
+        lock (Cache)
+        {
+            var key = (rule, hits, pulls, carried, sinceLast);
+            if (Percentiles.TryGetValue(key, out var known))
+            {
+                return known;
+            }
+            if (!Cache.TryGetValue(rule, out var moments))
+            {
+                moments = new Moments(PullDistribution(rule));
+                Cache[rule] = moments;
+            }
+            var pmf = moments.Pmf;
+            var survival = 1 - pmf.Take(carried).Sum();
+            var first = carried > 0 && carried < pmf.Length && survival > 0 ? pmf.Skip(carried).Select(chance => chance / survival).ToArray() : pmf;
+
+            double result;
+            if (hits <= 0)
+            {
+                result = (1 - first.Take(pulls).Sum()) / 2;
+            }
+            else
+            {
+                // waiting[m] is the chance that the last counted reward lands exactly on pull m.
+                var waiting = new double[pulls + 1];
+                Array.Copy(first, 0, waiting, 1, Math.Min(first.Length, pulls));
+                for (var i = 1; i < hits; i++)
+                {
+                    waiting = Convolve(waiting, pmf, pulls);
+                }
+                var below = 1 - waiting.Sum();
+                double same = 0;
+                for (var last = 1; last <= pulls; last++)
+                {
+                    var since = pulls - last;
+                    var chance = waiting[last] * Math.Max(0, 1 - pmf.Take(since).Sum());
+                    if (sinceLast is not { } actual || since == actual)
+                    {
+                        same += chance;
+                    }
+                    else if (since < actual)
+                    {
+                        below += chance;
+                    }
+                }
+                result = below + (same / 2);
+            }
+            result = Math.Clamp(result, 0, 1);
+            if (Percentiles.Count >= MaxCachedPercentiles)
+            {
+                Percentiles.Clear();
+            }
+            Percentiles[key] = result;
+            return result;
+        }
+    }
+
+    private static double[] Convolve(double[] waiting, double[] pmf, int limit)
+    {
+        var next = new double[limit + 1];
+        for (var at = 1; at <= limit; at++)
+        {
+            if (waiting[at] == 0)
+            {
+                continue;
+            }
+            for (var gap = 1; gap <= pmf.Length && at + gap <= limit; gap++)
+            {
+                next[at + gap] += waiting[at] * pmf[gap - 1];
+            }
+        }
+        return next;
+    }
+
+    /// <summary>Standard normal cumulative probability, by Abramowitz and Stegun 26.2.17.</summary>
+    internal static double NormalCdf(double z)
+    {
+        var x = Math.Abs(z);
+        var t = 1 / (1 + (0.2316419 * x));
+        var tail = Math.Exp(-x * x / 2) / Math.Sqrt(2 * Math.PI)
+            * t * (0.319381530 + (t * (-0.356563782 + (t * (1.781477937 + (t * (-1.821255978 + (t * 1.330274429))))))));
+        return z >= 0 ? 1 - tail : tail;
+    }
+
+    private static double InverseNormalCdf(double probability)
+    {
+        var target = Math.Clamp(probability, 1e-6, 1 - 1e-6);
+        double low = -6, high = 6;
+        for (var i = 0; i < 60; i++)
+        {
+            var middle = (low + high) / 2;
+            if (NormalCdf(middle) < target)
+            {
+                low = middle;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+        return (low + high) / 2;
+    }
+
+    /// <summary>Pools are independent, so their expected counts and variances add. Their ranks merge as normal scores weighted by how many rewards each should bring.</summary>
     public static LuckScore? Combine(IEnumerable<LuckScore?> scores)
     {
         var known = scores.OfType<LuckScore>().ToList();
         return known.Count == 0
             ? null
-            : new LuckScore(known.Sum(score => score.Hits), known.Sum(score => score.Pulls), known.Sum(score => score.Expected), known.Sum(score => score.Variance), known.All(score => score.IsSmallSample));
+            : new LuckScore(known.Sum(score => score.Hits), known.Sum(score => score.Pulls), known.Sum(score => score.Expected), known.Sum(score => score.Variance), known.All(score => score.IsSmallSample), CombinedPercentile(known));
+    }
+
+    private static double CombinedPercentile(List<LuckScore> known)
+    {
+        var weighted = known.Sum(score => Math.Sqrt(Math.Max(score.Expected, 0)) * InverseNormalCdf(score.Percentile));
+        var scale = Math.Sqrt(known.Sum(score => Math.Max(score.Expected, 0)));
+        return scale > 0 ? NormalCdf(weighted / scale) : 0.5;
     }
 
     private static double[] TopRankDistribution(PityRule rule)

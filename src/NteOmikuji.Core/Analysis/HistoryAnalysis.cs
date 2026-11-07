@@ -160,7 +160,7 @@ public static class HistoryAnalyzer
             && (rule?.LimitedAt is null || all.All(row => row.BannerId is not null))
             && (unsetBanners is not { Count: > 0 } || !all.Any(row => row.BannerId is { } id && unsetBanners.Contains(id, StringComparer.OrdinalIgnoreCase)));
         var luck = isJudgeable && rule is not null
-            ? LuckModel.Score(rule, rule.LimitedAt is null ? topCount : chronological.Count(row => row.Focus.IsLimited()), pulls.Count, carried ?? 0)
+            ? LuckModel.Score(rule, rule.LimitedAt is null ? topCount : chronological.Count(row => row.Focus.IsLimited()), pulls.Count, carried ?? 0, ended ?? (rule.LimitedAt is null ? sinceTopRank : sinceLimited))
             : null;
         var (overTime, unit) = BucketByTime(pulls);
         return new BannerAnalysis(

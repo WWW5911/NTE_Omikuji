@@ -118,6 +118,10 @@ most-obtained rewards. Boards also show dice rolls and result types.
   boards and 19.59% after 70 pulls, and 3% on Arcs. These reproduce the published
   averages of about 53.5 pulls per S and 59.5 per limited Arc. A misread history or an
   unset event shows no tag.
+- 前 N% follows the σ. It ranks all the outcomes that many pulls can bring, exactly:
+  more rewards is better, and with the same count, the last one landing earlier is
+  better. Pools merge as normal scores weighted by their expected counts. It compares
+  against the odds, not other players, and the tag itself still comes from the σ.
 - Under one full guarantee of pulls a tag is still worked out, and marked 樣本少. The
   formula holds there, but a single reward decides it: no S in 10 pulls is 正常, and
   an S in 10 pulls is 歐皇.
@@ -154,9 +158,7 @@ back across earlier events because pity carries over, and it has no pity meter o
 its own.
 
 Each comes in a pale 櫻 and a dark 墨 color scheme. Your UID is left out unless you
-tick the box, and then its middle is masked. The percentage on 運氣 is a normal
-approximation of how the count falls among the outcomes that many pulls can bring,
-not a comparison with other players.
+tick the box, and then its middle is masked.
 
 ### Mystery Box
 

@@ -159,7 +159,7 @@ window.nteShare = (() => {
             tag(card.overall.label, card.overall.tier, w - margin, 42, size, { right: true });
             const tagWidth = width(card.overall.label, size, 700) + size * 1.44;
             text(signed(card.overall.sigma), w - margin - tagWidth - 24, 92, 44, theme.text, { weight: 700, align: "right" });
-            text(`${card.overall.smallSample ? "樣本少・" : ""}實際 ${card.overall.hits} 個，期望 ${card.overall.expected.toFixed(1)} ± ${card.overall.standardDeviation.toFixed(1)} 個`, w - margin, 138, 24, theme.muted, { align: "right" });
+            text(`${card.overall.smallSample ? "樣本少・" : ""}實際 ${card.overall.hits} 個，期望 ${card.overall.expected.toFixed(1)} ± ${card.overall.standardDeviation.toFixed(1)} 個・${card.overall.topText}`, w - margin, 138, 24, theme.muted, { align: "right" });
         }
 
         const scaleY = 164, scaleH = 48, cell = (w - margin * 2) / 7;
@@ -177,7 +177,7 @@ window.nteShare = (() => {
         const gap = 24, top = 236, bottom = h - 66;
         const column = (w - margin * 2 - gap * 2) / 3;
         card.pools.forEach((pool, index) => poolColumn(pool, margin + index * (column + gap), top, column, bottom - top));
-        footer(card, w, h, margin, "比較實際數量與依抽數算出的期望。棋盤看 S，弧盤看限定大獎；機率取自公開資料。");
+        footer(card, w, h, margin, "比較實際數量與依抽數算出的期望。棋盤看 S，弧盤看限定大獎；機率取自公開資料；前 N% 是同抽數的理論排序，不是跟玩家比較。");
     }
 
     function poolColumn(pool, x, y, w, h) {
@@ -303,7 +303,7 @@ window.nteShare = (() => {
         tag(overall.label, overall.tier, margin, 182, size);
         const tagWidth = width(overall.label, size, 700) + size * 1.44;
         text(signed(overall.sigma), margin + tagWidth + 36, 268, 72, theme.text, { weight: 700 });
-        text(`理論上約勝過 ${overall.beatsPercent}% 的結果`, margin + tagWidth + 38, 318, 30, theme.muted);
+        text(`同抽數理論上${overall.topText}`, margin + tagWidth + 38, 318, 30, theme.muted);
         text(`實際 ${overall.hits} 個，期望 ${overall.expected.toFixed(1)} ± ${overall.standardDeviation.toFixed(1)} 個${overall.smallSample ? "・樣本少，僅供參考" : ""}`, margin, 412, 32, theme.text);
 
         bell(overall.sigma, overall.tier, margin, 440, w - margin * 2, 300, card.tierLabels);
@@ -315,14 +315,14 @@ window.nteShare = (() => {
             text(pool.label, margin + 24, y + 42, 30, theme.text, { weight: 650 });
             const luck = pool.luck;
             const detail = luck
-                ? `${luck.smallSample ? "樣本少・" : ""}${luck.hits} 個／期望 ${luck.expected.toFixed(1)}・${signed(luck.sigma)}`
+                ? `${luck.smallSample ? "樣本少・" : ""}${luck.hits} 個／期望 ${luck.expected.toFixed(1)}・${signed(luck.sigma)}・${luck.topText}`
                 : pool.totalPulls > 0 ? `${number(pool.totalPulls)} 抽` : "";
             const tagLabel = luck?.label ?? pool.luckNote ?? "—";
             const tagWidth = width(tagLabel, 24, 700) + 24 * 1.44;
             text(detail, w - margin - 20 - tagWidth - 28, y + 41, 26, theme.muted, { align: "right" });
             poolTag(pool, w - margin - 20, y + 12, 24);
         });
-        footer(card, w, h, margin, "機率取自公開資料，百分比為常態近似。");
+        footer(card, w, h, margin, "前 N% 是理論排序，不是跟玩家比較。");
     }
 
     /** The bell of outcomes for this many pulls, shaded by tier, with the player marked. */
@@ -377,10 +377,14 @@ window.nteShare = (() => {
         if (pool.luck) tag(pool.luck.label, pool.luck.tier, w - margin, 54, 40, { right: true });
         else if (pool.luckNote) note(pool.luckNote, w - margin, 62, 30, { right: true });
         const facts = [pool.context, period(pool.firstDate, pool.lastDate)];
-        if (pool.luck) facts.push(`${pool.luck.hits} 個／期望 ${pool.luck.expected.toFixed(1)} ± ${pool.luck.standardDeviation.toFixed(1)}（${signed(pool.luck.sigma)}）`);
+        if (pool.luck) facts.push(`${pool.luck.hits} 個／期望 ${pool.luck.expected.toFixed(1)} ± ${pool.luck.standardDeviation.toFixed(1)}（${signed(pool.luck.sigma)}，${pool.luck.topText}）`);
         if (pool.luck?.smallSample) facts.push("樣本少");
         if (card.maskedUid) facts.push(`UID ${card.maskedUid}`);
-        text(facts.filter(Boolean).join("・"), margin, 150, 25, theme.muted, { max: w - margin * 2 });
+        // A smaller line beats cutting off the end of it.
+        const line = facts.filter(Boolean).join("・");
+        let factsSize = 25;
+        while (factsSize > 19 && width(line, factsSize) > w - margin * 2) factsSize--;
+        text(line, margin, 150, factsSize, theme.muted, { max: w - margin * 2 });
 
         if (pool.totalPulls === 0) {
             text("尚無紀錄", w / 2, h / 2, 44, theme.muted, { align: "center" });

@@ -3,9 +3,9 @@ using NteOmikuji.Core.Export;
 namespace NteOmikuji.Core.Analysis;
 
 /// <param name="Tier">The tier's position from worst (0) to best (6).</param>
-/// <param name="BeatsPercent">Roughly how many of the outcomes this many pulls can bring are worse, from a normal approximation.</param>
+/// <param name="TopText">Where this falls among the outcomes these pulls can bring, luckiest first.</param>
 /// <param name="SmallSample">True when the tier rests on too few pulls to mean much, which the image says.</param>
-public sealed record ShareLuck(int Tier, string Label, double Sigma, int Hits, int Pulls, double Expected, double StandardDeviation, int BeatsPercent, bool SmallSample);
+public sealed record ShareLuck(int Tier, string Label, double Sigma, int Hits, int Pulls, double Expected, double StandardDeviation, string TopText, bool SmallSample);
 
 /// <param name="AtLeast">True for the oldest entry, whose earlier pulls may lie before the saved history.</param>
 public sealed record ShareReward(string Name, int Pulls, bool AtLeast, bool Limited);
@@ -104,16 +104,6 @@ public static class ShareCardBuilder
             ? null
             : uid[..VisibleUidStart] + new string('*', uid.Length - VisibleUidStart - VisibleUidEnd) + uid[^VisibleUidEnd..];
 
-    /// <summary>Standard normal cumulative probability, by Abramowitz and Stegun 26.2.17.</summary>
-    internal static double NormalCdf(double z)
-    {
-        var x = Math.Abs(z);
-        var t = 1 / (1 + (0.2316419 * x));
-        var tail = Math.Exp(-x * x / 2) / Math.Sqrt(2 * Math.PI)
-            * t * (0.319381530 + (t * (-0.356563782 + (t * (1.781477937 + (t * (-1.821255978 + (t * 1.330274429))))))));
-        return z >= 0 ? 1 - tail : tail;
-    }
-
     private static SharePool Selected(
         IReadOnlyList<SharePool> pools,
         IReadOnlyList<BannerHistory> histories,
@@ -179,5 +169,5 @@ public static class ShareCardBuilder
 
     private static ShareLuck? ToShare(LuckScore? score) => score is null ? null : new ShareLuck(
         (int)score.Tier, score.Label, score.Sigma, score.Hits, score.Pulls, score.Expected, score.StandardDeviation,
-        (int)Math.Clamp(Math.Round(NormalCdf(score.Sigma) * 100), 1, 99), score.IsSmallSample);
+        score.TopText, score.IsSmallSample);
 }
