@@ -31,8 +31,14 @@ Keep the exe in a writable folder of its own, because it creates these beside it
 | `user_data\backups` | The previous version of a history file, copied before each session first changes it. The newest 10 per file are kept. To restore one, close the app and copy it back under its original name. |
 | `exports` | CSV files from **原始紀錄** and images from **分享圖**. The CSV files leave out your UID, and cells that look like spreadsheet formulas are prefixed with `'`. |
 
-The import control takes `.flows` captures, exported JSON, and mapping CSV or JSON,
-and tells them apart by content. None of these need Administrator approval.
+The import control takes `.flows` captures, exported JSON, mapping CSV or JSON, and
+the `records.json` kept by NTE_Gacha_Exporter, and tells them apart by content. None
+of these need Administrator approval.
+
+A `records.json` only fills gaps: its rows are added at times your history has none,
+and anything this app captured stays as it was, even if the two differ. A later
+capture of such a time replaces the added rows. Its boards name no event, so added
+limited board rows count toward the pool and its pity but belong to no event's page.
 
 ### Maintaining mappings
 

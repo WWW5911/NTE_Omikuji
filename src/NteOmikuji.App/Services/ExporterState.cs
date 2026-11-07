@@ -461,6 +461,27 @@ public sealed class ExporterState : IDisposable
                     RefreshView();
                 }
                 return $"{history.Banner.Name} {history.Rows.Count} 筆";
+            case ImportKind.GachaExporterRecords:
+                var records = ExportDocuments.ReadGachaExporter(bytes);
+                lock (_dataGate)
+                {
+                    var parts = new List<string>();
+                    var skipped = 0;
+                    foreach (var (kind, rows) in records.Rows)
+                    {
+                        var (added, duplicates) = _library.Fill(_account, kind, rows, _catalog);
+                        skipped += duplicates;
+                        if (added > 0)
+                        {
+                            parts.Add($"{HistoryCsv.PoolName(kind)} {added} 筆");
+                        }
+                    }
+                    ShowImportedAccount(_account);
+                    RefreshView();
+                    var summary = parts.Count == 0 ? "沒有缺少的紀錄" : $"補上 {string.Join("、", parts)}";
+                    Notice = $"{summary}；{skipped} 筆的時間已有紀錄，保留原資料{(records.Ignored > 0 ? $"；{records.Ignored} 筆無法辨識，已略過" : "")}";
+                    return Notice;
+                }
             case ImportKind.AchievementExport:
                 var achievements = ExportDocuments.ReadAchievements(bytes);
                 lock (_dataGate)

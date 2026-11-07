@@ -102,6 +102,30 @@ public sealed class HistoryLibrary(string folder)
         }
     }
 
+    /// <summary>
+    /// Adds rows from another tool only at times saved history has none, so what this app captured stays as
+    /// it was. A later capture of such a time replaces them through <see cref="Merge(string?, HistoryKind, IReadOnlyList{HistoryRow}, string?, string?, string?, RewardCatalog, bool)"/>.
+    /// </summary>
+    public (int Added, int Skipped) Fill(string? uid, HistoryKind kind, IReadOnlyList<HistoryRow> rows, RewardCatalog catalog)
+    {
+        var account = Find(uid);
+        var existing = account.Rows.GetValueOrDefault(kind) ?? [];
+        var known = existing.Select(row => row.TimestampDecoded).ToHashSet(StringComparer.Ordinal);
+        var added = rows.Where(row => !known.Contains(row.TimestampDecoded)).ToList();
+        if (added.Count == 0)
+        {
+            return (0, rows.Count);
+        }
+        account.Rows[kind] = existing.Concat(added).OrderByDescending(row => row.TimestampDecoded, StringComparer.Ordinal).ToList();
+        foreach (var row in added)
+        {
+            Apply(row, kind, catalog);
+        }
+        account.LastChanged = DateTime.UtcNow;
+        _dirty.Add((account.Uid, BannerInfo.For(kind).FilePrefix));
+        return (added.Count, rows.Count - added.Count);
+    }
+
     public void Merge(string? uid, IReadOnlyList<AchievementRecord> records, string? serverId, string? source, string? captureSource, bool markDirty = true)
     {
         var account = Find(uid);

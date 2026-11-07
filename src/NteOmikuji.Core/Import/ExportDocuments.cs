@@ -11,6 +11,7 @@ public enum ImportKind
     AchievementExport,
     RewardMapping,
     AchievementMapping,
+    GachaExporterRecords,
 }
 
 public sealed record HistoryDocument(BannerInfo Banner, List<HistoryRow> Rows, string? UserUid, string? ServerId, string? Source, string? CaptureSource);
@@ -58,6 +59,10 @@ public static class ExportDocuments
                 var other => throw new InvalidDataException($"不支援的格式：{other}"),
             };
         }
+        if (GachaExporterRecords.Matches(root))
+        {
+            return ImportKind.GachaExporterRecords;
+        }
         if (root.TryGetProperty("pool_key", out _))
         {
             throw new InvalidDataException("這是卡池設定檔，不是獎勵對應表。");
@@ -80,6 +85,12 @@ public static class ExportDocuments
         }
         using var document = Parse(bytes);
         return MappingStore.TableFromJson(document.RootElement, isAchievements);
+    }
+
+    public static GachaExporterImport ReadGachaExporter(byte[] bytes)
+    {
+        using var document = Parse(bytes);
+        return GachaExporterRecords.Read(document.RootElement);
     }
 
     public static HistoryDocument ReadHistory(byte[] bytes)
