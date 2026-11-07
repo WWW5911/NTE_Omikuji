@@ -77,7 +77,7 @@
             case Page.Pool:
                 @if (State.Histories.FirstOrDefault(history => history.Banner.Kind == _pool) is { } poolHistory)
                 {
-                    <AnalysisView History="poolHistory" NameOf="State.DisplayName" BannerId="@_banner" Title="@PoolTitle(poolHistory)" OnShare="() => OpenShare(new ShareTarget(_pool, _banner))" UnsetBanners="State.UnsetBanners" />
+                    <AnalysisView History="poolHistory" NameOf="State.DisplayName" BannerId="@_banner" Title="@PoolTitle(poolHistory)" OnShare="() => OpenShare(new ShareTarget(_pool, _banner))" OnOpenBanner="banner => OpenPool(_pool, banner)" BannerName="State.BannerName" UnsetBanners="State.UnsetBanners" />
                 }
                 else
                 {

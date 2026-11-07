@@ -106,12 +106,12 @@ public class ShareCardTests
     }
 
     [Fact]
-    public void AShortPoolHasANoteInsteadOfLuck()
+    public void AShortPoolIsMarkedASmallSample()
     {
         var pool = Card(Pool(BannerInfo.Permanent, (30, RewardFocus.SCharacter, "b"))).Pools[1];
 
-        Assert.Null(pool.Luck);
-        Assert.Equal("樣本不足", pool.LuckNote);
+        Assert.True(Assert.IsType<ShareLuck>(pool.Luck).SmallSample);
+        Assert.Null(pool.LuckNote);
     }
 
     [Fact]
@@ -154,11 +154,35 @@ public class ShareCardTests
     }
 
     [Fact]
-    public void AnEventHasNoPityOrLuckOfItsOwn()
+    public void AnEventHasNoPityMeterOfItsOwn()
     {
         var selected = Selected(TwoEvents(BannerInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
 
-        Assert.Equal((null, null, null, null), (selected.Luck, selected.LuckNote, selected.Pity, selected.LimitedPity));
+        Assert.Equal((null, null), (selected.Pity, selected.LimitedPity));
+    }
+
+    [Fact]
+    public void AShortEventIsMarkedASmallSample()
+    {
+        var selected = Selected(TwoEvents(BannerInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
+
+        Assert.True(Assert.IsType<ShareLuck>(selected.Luck).SmallSample);
+        Assert.Null(selected.LuckNote);
+    }
+
+    [Fact]
+    public void ALongEventCarriesItsLuck()
+    {
+        var rows = Enumerable.Range(0, 200).Select(second => second % 90 == 89
+            ? Row(second, RewardFocus.SLimitedCharacter, "new", "Lottery_New")
+            : Row(second, banner: "Lottery_New")).Reverse().ToList();
+
+        var selected = Selected(new BannerHistory(BannerInfo.LimitedCharacter, rows, [], []), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
+
+        var luck = Assert.IsType<ShareLuck>(selected.Luck);
+        Assert.Equal((2, 200), (luck.Hits, luck.Pulls));
+        Assert.True(luck.Sigma < 0);
+        Assert.Null(selected.LuckNote);
     }
 
     [Fact]

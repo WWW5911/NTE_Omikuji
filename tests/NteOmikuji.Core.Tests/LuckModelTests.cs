@@ -138,19 +138,19 @@ public class LuckModelTests
     }
 
     [Theory]
-    [InlineData(89, false)]
-    [InlineData(90, true)]
-    public void BoardsNeedAFullGuaranteeOfPulls(int pulls, bool scored)
+    [InlineData(89, true)]
+    [InlineData(90, false)]
+    public void BoardsAreASmallSampleUnderAFullGuarantee(int pulls, bool small)
     {
-        Assert.Equal(scored, LuckModel.Score(Board, 1, pulls) is not null);
+        Assert.Equal(small, LuckModel.Score(Board, 1, pulls)!.IsSmallSample);
     }
 
     [Theory]
-    [InlineData(79, false)]
-    [InlineData(80, true)]
-    public void ArcsNeedAFullLimitedGuaranteeOfPulls(int pulls, bool scored)
+    [InlineData(79, true)]
+    [InlineData(80, false)]
+    public void ArcsAreASmallSampleUnderAFullLimitedGuarantee(int pulls, bool small)
     {
-        Assert.Equal(scored, LuckModel.Score(Arc, 1, pulls) is not null);
+        Assert.Equal(small, LuckModel.Score(Arc, 1, pulls)!.IsSmallSample);
     }
 
     [Fact]

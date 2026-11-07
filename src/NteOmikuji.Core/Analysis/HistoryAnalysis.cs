@@ -60,7 +60,8 @@ public sealed record BannerAnalysis(
     int? TopRanksBeforeRise = null,
     int GuaranteedLimitedCount = 0,
     double? ObservedLimitedRate = null,
-    LuckScore? Luck = null);
+    LuckScore? Luck = null,
+    int CarriedPulls = 0);
 
 /// <summary>Measures what is in the history against each pool's stated guarantees, and predicts nothing.</summary>
 public static class HistoryAnalyzer
@@ -95,8 +96,14 @@ public static class HistoryAnalyzer
         var sawLimited = false;
         var sinceSecondRank = 0;
         var sawSecondRank = false;
+        // An event inherits pity, so its luck starts from the pulls already made when it began.
+        int? carried = null;
         foreach (var row in all)
         {
+            if (bannerId is not null && carried is null && row.BannerId == bannerId)
+            {
+                carried = rule?.LimitedAt is null ? sinceTopRank : sinceLimited;
+            }
             if (IsPull(row))
             {
                 sinceTopRank++;
@@ -143,11 +150,11 @@ public static class HistoryAnalyzer
         var excessRewards = isMonopoly && chronological.Count(row => row.ResultType == PointsReward) > (pulls.Count / PullsPerPointsReward) + 1;
         // Arcs are judged on the limited one, since most S Arcs are not what a player is after.
         // Limited status needs every row's event, so an older file without them is left unscored.
-        var isJudgeable = bannerId is null && !excessRewards
+        var isJudgeable = !excessRewards
             && (rule?.LimitedAt is null || all.All(row => row.BannerId is not null))
             && (unsetBanners is not { Count: > 0 } || !all.Any(row => row.BannerId is { } id && unsetBanners.Contains(id, StringComparer.OrdinalIgnoreCase)));
         var luck = isJudgeable && rule is not null
-            ? LuckModel.Score(rule, rule.LimitedAt is null ? overallTopCount : all.Count(row => row.Focus.IsLimited()), pulls.Count)
+            ? LuckModel.Score(rule, rule.LimitedAt is null ? topCount : chronological.Count(row => row.Focus.IsLimited()), pulls.Count, carried ?? 0)
             : null;
         var (overTime, unit) = BucketByTime(pulls);
         return new BannerAnalysis(
@@ -188,7 +195,8 @@ public static class HistoryAnalyzer
             rule?.RisesFrom is { } risesFrom ? exact.Count(value => value < risesFrom) : null,
             guaranteed,
             observedLimitedRate,
-            luck);
+            luck,
+            carried ?? 0);
     }
 
     /// <summary>Events in a pool, newest first.</summary>

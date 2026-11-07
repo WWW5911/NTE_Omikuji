@@ -4,10 +4,10 @@
     <div class="toolbar">
         <div class="luck-headline">
             <h2 class="page-title" id="pool-title">@Title</h2>
-            @if (BannerId is null && _data.TotalPulls > 0)
+            @if (_data.TotalPulls > 0)
             {
-                <LuckTag Score="_data.Luck" Id="luck-pool" Fallback="@(_data.TotalPulls < LuckThreshold ? "樣本不足" : "無法判定")"
-                         FallbackReason="@(_data.TotalPulls < LuckThreshold ? $"至少要 {LuckThreshold} 抽才有標籤" : "紀錄不完整或有活動未設定，暫時無法判定")" />
+                <LuckTag Score="_data.Luck" Id="luck-pool" Fallback="無法判定"
+                         FallbackReason="紀錄不完整或有活動未設定，暫時無法判定" />
                 @if (_data.Luck is { } luck)
                 {
                     <span class="luck-detail" id="luck-pool-detail">@LuckTag.Describe(luck)</span>
@@ -31,6 +31,46 @@
         @if (_data.HasExcessPointsRewards)
         {
             <div class="alert" id="old-decoding" role="status">這份紀錄的集點贈禮比遊戲實際給的多，可能有抽數被舊版誤判，以下的抽數與間隔會不準。重新擷取一次歷史紀錄即可更正。</div>
+        }
+        @if (BannerId is not null && _data.CarriedPulls > 0)
+        {
+            <p class="hint" id="carried-note">這期開始時，距上次@(LimitedAt is null ? " S" : "限定")已累積 @_data.CarriedPulls 抽，運氣的期望已把這些算進去。</p>
+        }
+        @if (_events.Count > 0)
+        {
+            <section class="chart" id="event-luck">
+                <h3>各期運氣</h3>
+                <div class="table-scroll">
+                    <table class="summary">
+                        <thead>
+                            <tr>
+                                <th>活動</th>
+                                <th class="num">抽數</th>
+                                <th class="num">帶入</th>
+                                <th class="num">@(LimitedAt is null ? "S" : "限定")</th>
+                                <th class="num">期望</th>
+                                <th class="num">σ</th>
+                                <th>運氣</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var (group, data) in _events)
+                            {
+                                <tr data-event="@group.Id">
+                                    <th scope="row"><button class="link-inline" @onclick="() => OnOpenBanner.InvokeAsync(group.Id)">@group.Name</button></th>
+                                    <td class="num">@group.Pulls.ToString("N0")</td>
+                                    <td class="num">@data.CarriedPulls</td>
+                                    <td class="num">@(LimitedAt is null ? data.TopRankCount : data.LimitedCount)</td>
+                                    <td class="num">@(data.Luck is { } score ? $"{score.Expected:0.0} ± {score.StandardDeviation:0.0}" : "—")</td>
+                                    <td class="num">@(data.Luck?.Sigma.ToString("+0.00;-0.00;0.00") ?? "—")</td>
+                                    <td><LuckTag Score="data.Luck" Fallback="無法判定" /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <p class="hint">保底會跨期延續，所以每期的期望都從當時累積的抽數算起。各期不能相加成整體運氣，整體請看頁面上方的標籤。</p>
+            </section>
         }
         @if (BannerId is null && History.Banner.Kind != HistoryKind.Permanent && History.Rows.All(row => row.BannerId is null))
         {
@@ -228,9 +268,15 @@
     public EventCallback OnShare { get; set; }
 
     [Parameter]
-    public IReadOnlyList<string> UnsetBanners { get; set; } = [];
+    public EventCallback<string> OnOpenBanner { get; set; }
 
-    private int LuckThreshold => History.Banner.Pity?.LimitedAt ?? History.Banner.Pity?.TopRankAt ?? 0;
+    [Parameter]
+    public Func<string, string?>? BannerName { get; set; }
+
+    private List<(BannerGroup Group, BannerAnalysis Data)> _events = [];
+
+    [Parameter]
+    public IReadOnlyList<string> UnsetBanners { get; set; } = [];
 
     private int? RisesFrom => History.Banner.Pity?.RisesFrom;
 
@@ -247,6 +293,10 @@
     protected override void OnParametersSet()
     {
         _data = HistoryAnalyzer.Analyze(History, NameOf, BannerId, UnsetBanners);
+        // The standard board has one lasting event, which would only repeat the page's own figures.
+        _events = BannerId is null && History.Banner.Kind != HistoryKind.Permanent
+            ? HistoryAnalyzer.Banners(History, NameOf, BannerName).Select(group => (group, HistoryAnalyzer.Analyze(History, NameOf, group.Id, UnsetBanners))).ToList()
+            : [];
         // Bars share the guaranteed count as their scale, so a long bar reads as close to pity.
         _maxInterval = Math.Max(History.Banner.Pity?.TopRankAt ?? 1, _data.TopRankPulls.Select(pull => pull.PullsSpent).DefaultIfEmpty(1).Max());
     }

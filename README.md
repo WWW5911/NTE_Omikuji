@@ -116,8 +116,16 @@ most-obtained rewards. Boards also show dice rolls and result types.
   S on boards, the limited reward on Arcs. Tags change at ±0.5, ±1, and ±2σ. Rates
   come from published guides, since no in-game figures were available: 0.99% on
   boards and 19.59% after 70 pulls, and 3% on Arcs. These reproduce the published
-  averages of about 53.5 pulls per S and 59.5 per limited Arc. A pool under one full
-  guarantee of pulls, or with a misread history or an unset event, shows no tag.
+  averages of about 53.5 pulls per S and 59.5 per limited Arc. A misread history or an
+  unset event shows no tag.
+- Under one full guarantee of pulls a tag is still worked out, and marked 樣本少. The
+  formula holds there, but a single reward decides it: no S in 10 pulls is 正常, and
+  an S in 10 pulls is 歐皇.
+- Each event also has a luck tag, on its page and in the 各期運氣 table on its pool's
+  page. Since pity carries over, its expected count starts from the pulls already
+  made when the event began. This assumes an event's pulls run together, so it is approximate if you alternated
+  between two events. Events inherit from each other, so their tags do not add up to
+  the pool's.
 - Guarantees are built in: 90 pulls for an S on both boards with better odds from
   pull 70, and on Arcs 60 for an S and 80 for a limited one, with an A every 10 on
   all three. A board's A is the 集點贈禮 itself. An event's page counts only its own
@@ -137,12 +145,12 @@ most-obtained rewards. Boards also show dice rolls and result types.
 | --- | --- | --- |
 | 總覽 | 1920×1080 | Overall luck and all three pools with their pity and S history |
 | 運氣 | 1080×1080 | The luck tier, where it falls on the bell curve, and each pool |
-| 單池 | 1080×1350 | One pool's or event's figures and how many pulls each S took |
+| 單池 | 1080 wide, up to 1350 tall | One pool's or event's figures and how many pulls each S took |
 
 The **分享** button on a pool's or event's page opens 單池 with it selected. An event's
 image counts only that event's pulls and rewards, but each reward's pull count runs
-back across earlier events because pity carries over, and it has no luck tag or pity
-meter of its own.
+back across earlier events because pity carries over, and it has no pity meter of
+its own.
 
 Each comes in a pale 櫻 and a dark 墨 color scheme. Your UID is left out unless you
 tick the box, and then its middle is masked. The percentage on 運氣 is a normal

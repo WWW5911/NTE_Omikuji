@@ -4,7 +4,8 @@ namespace NteOmikuji.Core.Analysis;
 
 /// <param name="Tier">The tier's position from worst (0) to best (6).</param>
 /// <param name="BeatsPercent">Roughly how many of the outcomes this many pulls can bring are worse, from a normal approximation.</param>
-public sealed record ShareLuck(int Tier, string Label, double Sigma, int Hits, int Pulls, double Expected, double StandardDeviation, int BeatsPercent);
+/// <param name="SmallSample">True when the tier rests on too few pulls to mean much, which the image says.</param>
+public sealed record ShareLuck(int Tier, string Label, double Sigma, int Hits, int Pulls, double Expected, double StandardDeviation, int BeatsPercent, bool SmallSample);
 
 /// <param name="AtLeast">True for the oldest entry, whose earlier pulls may lie before the saved history.</param>
 public sealed record ShareReward(string Name, int Pulls, bool AtLeast, bool Limited);
@@ -83,7 +84,7 @@ public static class ShareCardBuilder
             data.Sum(item => item.LimitedCount),
             ToShare(LuckModel.Combine(data.Select(item => item.Luck))),
             pools.Select(pool => pool.Share).ToList(),
-            Selected(pools.Select(pool => pool.Share).ToList(), histories, nameOf, bannerName, target),
+            Selected(pools.Select(pool => pool.Share).ToList(), histories, nameOf, bannerName, unsetBanners, target),
             Enum.GetValues<LuckTier>().Select(LuckModel.LabelOf).ToList(),
             MaskUid(uid),
             $"NTE Omikuji {ExportWriter.ExporterVersion}・{today:yyyy-MM-dd}");
@@ -114,6 +115,7 @@ public static class ShareCardBuilder
         IReadOnlyList<BannerHistory> histories,
         Func<HistoryRow, string>? nameOf,
         Func<string, string?>? bannerName,
+        IReadOnlyCollection<string>? unsetBanners,
         ShareTarget? target)
     {
         var whole = pools.FirstOrDefault(pool => pool.Kind == target?.Kind.ToString()) ?? pools[0];
@@ -123,8 +125,8 @@ public static class ShareCardBuilder
             return whole;
         }
 
-        // Pity carries across events, so an event has no pity or luck of its own to show.
-        var data = HistoryAnalyzer.Analyze(history, nameOf, id);
+        // Pity carries across events, so an event has no meter of its own to show.
+        var data = HistoryAnalyzer.Analyze(history, nameOf, id, unsetBanners);
         return whole with
         {
             Label = group.Name,
@@ -137,8 +139,8 @@ public static class ShareCardBuilder
             Longest = data.LongestInterval,
             FirstDate = data.FirstDate,
             LastDate = data.LastDate,
-            Luck = null,
-            LuckNote = null,
+            Luck = ToShare(data.Luck),
+            LuckNote = LuckNote(data),
             Pity = null,
             LimitedPity = null,
             Rewards = Rewards(data),
@@ -159,16 +161,17 @@ public static class ShareCardBuilder
         }
 
         var data = HistoryAnalyzer.Analyze(history, nameOf, unsetBanners: unsetBanners);
-        var threshold = banner.Pity!.LimitedAt ?? banner.Pity.TopRankAt;
-        var note = data.Luck is not null ? null : data.TotalPulls < threshold ? "樣本不足" : "無法判定";
         var share = new SharePool(
             banner.Kind.ToString(), label, topLabel, data.TotalPulls, data.TopRankCount, hasLimited ? data.LimitedCount : null,
             data.AverageInterval, data.ShortestInterval, data.LongestInterval, data.FirstDate, data.LastDate,
-            ToShare(data.Luck), note, data.TopRankPity, data.LimitedPity, Rewards(data), banner.Pity.TopRankAt, banner.Pity.RisesFrom);
+            ToShare(data.Luck), LuckNote(data), data.TopRankPity, data.LimitedPity, Rewards(data), banner.Pity!.TopRankAt, banner.Pity.RisesFrom);
         return (share, data);
     }
 
+    private static string? LuckNote(BannerAnalysis data) =>
+        data.Luck is not null ? null : data.TotalPulls == 0 ? "尚無紀錄" : "無法判定";
+
     private static ShareLuck? ToShare(LuckScore? score) => score is null ? null : new ShareLuck(
         (int)score.Tier, score.Label, score.Sigma, score.Hits, score.Pulls, score.Expected, score.StandardDeviation,
-        (int)Math.Clamp(Math.Round(NormalCdf(score.Sigma) * 100), 1, 99));
+        (int)Math.Clamp(Math.Round(NormalCdf(score.Sigma) * 100), 1, 99), score.IsSmallSample);
 }

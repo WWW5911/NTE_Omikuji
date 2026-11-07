@@ -15,7 +15,8 @@ public enum LuckTier
 /// <param name="Hits">Target rewards obtained.</param>
 /// <param name="Expected">Rewards this many pulls bring on average.</param>
 /// <param name="Variance">Spread of that count across players making the same pulls.</param>
-public sealed record LuckScore(int Hits, int Pulls, double Expected, double Variance)
+/// <param name="IsSmallSample">True under one full guarantee of pulls, where the tier leans on very few rewards.</param>
+public sealed record LuckScore(int Hits, int Pulls, double Expected, double Variance, bool IsSmallSample = false)
 {
     public double StandardDeviation => Math.Sqrt(Variance);
 
@@ -71,15 +72,16 @@ public static class LuckModel
             ? LimitedDistribution(rule, limitedAt, chance)
             : TopRankDistribution(rule);
 
-    /// <summary>Null below one full guarantee, since so few pulls say nothing about luck.</summary>
-    public static LuckScore? Score(PityRule rule, int hits, int pulls)
+    /// <summary>Null only without any pulls. The exact moments hold for few pulls too, where missing out is hardly unlucky and a hit is very lucky.</summary>
+    /// <param name="carried">Pulls already made toward the next reward when these began, as when an event inherits pity.</param>
+    public static LuckScore? Score(PityRule rule, int hits, int pulls, int carried = 0)
     {
-        if (rule.BaseRate <= 0 || pulls < (rule.LimitedAt ?? rule.TopRankAt))
+        if (rule.BaseRate <= 0 || pulls <= 0)
         {
             return null;
         }
-        var (mean, square) = MomentsAt(rule, pulls);
-        return new LuckScore(hits, pulls, mean, Math.Max(0, square - (mean * mean)));
+        var (mean, square) = MomentsAfter(rule, pulls, carried);
+        return new LuckScore(hits, pulls, mean, Math.Max(0, square - (mean * mean)), pulls + carried < (rule.LimitedAt ?? rule.TopRankAt));
     }
 
     /// <summary>Pools are independent, so their expected counts and variances add.</summary>
@@ -88,7 +90,7 @@ public static class LuckModel
         var known = scores.OfType<LuckScore>().ToList();
         return known.Count == 0
             ? null
-            : new LuckScore(known.Sum(score => score.Hits), known.Sum(score => score.Pulls), known.Sum(score => score.Expected), known.Sum(score => score.Variance));
+            : new LuckScore(known.Sum(score => score.Hits), known.Sum(score => score.Pulls), known.Sum(score => score.Expected), known.Sum(score => score.Variance), known.All(score => score.IsSmallSample));
     }
 
     private static double[] TopRankDistribution(PityRule rule)
@@ -138,6 +140,31 @@ public static class LuckModel
             states = next;
         }
         return pmf;
+    }
+
+    /// <summary>Moments when the first reward is known to land past the carried pulls, after which pulls renew as usual.</summary>
+    private static (double Mean, double Square) MomentsAfter(PityRule rule, int pulls, int carried)
+    {
+        var (fresh, freshSquare) = MomentsAt(rule, pulls);
+        lock (Cache)
+        {
+            var moments = Cache[rule];
+            var survival = 1 - moments.Pmf.Take(carried).Sum();
+            // History past the guarantee cannot happen under the rule, so there is nothing to condition on.
+            if (carried <= 0 || carried >= moments.Pmf.Length || survival <= 0)
+            {
+                return (fresh, freshSquare);
+            }
+            double mean = 0, square = 0;
+            for (var first = 1; first <= Math.Min(pulls, moments.Pmf.Length - carried); first++)
+            {
+                var chance = moments.Pmf[carried + first - 1] / survival;
+                var restMean = moments.Mean[pulls - first];
+                mean += chance * (1 + restMean);
+                square += chance * (1 + (2 * restMean) + moments.Square[pulls - first]);
+            }
+            return (mean, square);
+        }
     }
 
     /// <summary>Exact first and second moments of the reward count, by conditioning on when the first reward lands.</summary>

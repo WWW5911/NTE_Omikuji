@@ -37,10 +37,9 @@
                     <button class="link-title" @onclick="() => OnOpenPool.InvokeAsync(kind)">@pool.Label</button>
                     @if (pool.Data is { } poolData)
                     {
-                        var threshold = pool.Banner.Pity!.LimitedAt ?? pool.Banner.Pity.TopRankAt;
                         <LuckTag Score="poolData.Luck" Id="@($"luck-{kind}")"
-                                 Fallback="@(poolData.TotalPulls < threshold ? "樣本不足" : "無法判定")"
-                                 FallbackReason="@(poolData.TotalPulls < threshold ? $"至少要 {threshold} 抽才有標籤" : "紀錄不完整或有活動未設定，暫時無法判定")" />
+                                 Fallback="無法判定"
+                                 FallbackReason="紀錄不完整或有活動未設定，暫時無法判定" />
                     }
                 </header>
                 @if (pool.Data?.TopRankPity is { } pity)

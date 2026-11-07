@@ -83,12 +83,12 @@ public class PoolOverviewTests
     }
 
     [Fact]
-    public void AnEventPageHasNoLuckScore()
+    public void AnEventPageHasALuckScore()
     {
         var pool = Pool(BannerInfo.LimitedCharacter, Pulls(100, 0, "Lottery_A"));
 
         Assert.NotNull(HistoryAnalyzer.Analyze(pool).Luck);
-        Assert.Null(HistoryAnalyzer.Analyze(pool, bannerId: "Lottery_A").Luck);
+        Assert.NotNull(HistoryAnalyzer.Analyze(pool, bannerId: "Lottery_A").Luck);
     }
 
     [Fact]
