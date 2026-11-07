@@ -58,6 +58,33 @@ public sealed class MappingUpdateTests : IDisposable
     }
 
     [Fact]
+    public void ACellClearedHereStaysCleared()
+    {
+        _store.ApplyUpdate(Files((MappingStore.EventsFile, "id,featured\nLottery_Xun,1052\n")));
+        _store.SaveEvent("Lottery_Xun", []);
+
+        Assert.Equal(0, _store.ApplyUpdate(Files((MappingStore.EventsFile, "id,featured\nLottery_Xun,1052\n"))));
+        _store.ApplyUpdate(Files((MappingStore.EventsFile, "id,featured\nLottery_Xun,9999\n")));
+
+        Assert.Equal("", Row(MappingStore.EventsFile, "Lottery_Xun")!.Get("featured"));
+    }
+
+    [Fact]
+    public void WithNoEarlierDownloadABlankCellIsFilled()
+    {
+        _store.SaveEvent("Lottery_Xun", []);
+        var baselines = Path.Combine(_folder, "upstream");
+        if (Directory.Exists(baselines))
+        {
+            Directory.Delete(baselines, recursive: true);
+        }
+
+        _store.ApplyUpdate(Files((MappingStore.EventsFile, "id,featured\nLottery_Xun,1052\n")));
+
+        Assert.Equal("1052", Row(MappingStore.EventsFile, "Lottery_Xun")!.Get("featured"));
+    }
+
+    [Fact]
     public void ARowDeletedHereDoesNotComeBack()
     {
         var update = Files((MappingStore.RewardsFile, "id,type,rank\nnew_item,item,A\n"));

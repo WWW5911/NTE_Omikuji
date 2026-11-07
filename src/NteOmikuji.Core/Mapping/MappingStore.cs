@@ -297,8 +297,9 @@ public sealed class MappingStore(string folder)
             {
                 var next = value.Trim();
                 var now = current.Get(column);
-                // A blank category follows the rank and ID, so a cleared one stays cleared.
-                var fillsBlank = now.Length == 0 && column != RewardSchema.FocusColumn;
+                // With no earlier download a blank may just be missing. After one, the player cleared it.
+                // A blank category follows the rank and ID, so a cleared one always stays cleared.
+                var fillsBlank = !baselineWasTaken && now.Length == 0 && column != RewardSchema.FocusColumn;
                 if (next != now && (now == (was?.Get(column) ?? "") || fillsBlank))
                 {
                     current.Values[column] = next;
