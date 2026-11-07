@@ -1,12 +1,14 @@
 # NTE Omikuji
 
-A Windows desktop app that decodes your own Neverness to Everness pull history
-and achievements from game traffic into JSON for trackers. Built with .NET MAUI
-Blazor Hybrid.
+櫻籤. A Windows desktop app that decodes your own Neverness to Everness pull history
+and achievements from game traffic, tells you how lucky they were, and exports JSON
+for trackers. Built with .NET MAUI Blazor Hybrid.
+
+This is an unofficial fan project, not affiliated with the game's developers.
 
 ## Using it
 
-Download `NteOmikuji.App.exe` and double-click it. There is nothing to install:
+Download `NteOmikuji.exe` and double-click it. There is nothing to install:
 no .NET, no Npcap, no Python.
 
 1. Open **開始擷取** and start it before pressing Start on the game's main menu.
@@ -226,7 +228,7 @@ dotnet run --project src\NteOmikuji.App
 dotnet publish src\NteOmikuji.App -p:PublishProfile=Portable
 ```
 
-The last command writes the single exe to `publish\NteOmikuji.App.exe`. Only
+The last command writes the single exe to `publish\NteOmikuji.exe`. Only
 that file needs distributing.
 
 ## Releasing

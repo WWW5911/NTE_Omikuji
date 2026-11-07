@@ -5,7 +5,7 @@
 
 <div class="app">
     <header class="topbar">
-        <h1 class="brand">NTE Omikuji</h1>
+        <h1 class="brand"><img class="brand-mark" src="icon.svg" alt="" />NTE Omikuji</h1>
         <nav class="topnav" aria-label="功能">
             <button id="nav-capture" class="@TopClass(Page.Capture, "capture-entry")" aria-current="@Current(_page == Page.Capture)" @onclick="() => Show(Page.Capture)">@(IsCapturing ? "擷取中" : "開始擷取")</button>
             <button id="nav-help" class="@TopClass(Page.Help)" aria-current="@Current(_page == Page.Help)" @onclick="() => Show(Page.Help)">擷取說明</button>

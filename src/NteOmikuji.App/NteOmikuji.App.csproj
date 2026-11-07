@@ -4,6 +4,7 @@
         <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
         <OutputType>WinExe</OutputType>
         <RootNamespace>NteOmikuji.App</RootNamespace>
+        <AssemblyName>NteOmikuji</AssemblyName>
         <UseMaui>true</UseMaui>
         <MauiVersion>9.0.120</MauiVersion>
         <SingleProject>true</SingleProject>
@@ -24,8 +25,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#8E354A" />
-        <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#8E354A" BaseSize="128,128" />
+        <MauiIcon Include="Resources\AppIcon\appicon.svg" />
+        <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#8B5864" BaseSize="128,128" />
         <MauiFont Include="Resources\Fonts\*" />
         <!-- Served from the assembly, so the app needs no web files on disk. -->
         <EmbeddedResource Include="WebRoot\**" LogicalName="webroot/%(Filename)%(Extension)" />

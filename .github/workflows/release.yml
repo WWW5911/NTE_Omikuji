@@ -56,7 +56,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
           $name = "NTE-Omikuji-v$env:VERSION-win-x64.exe"
-          Copy-Item publish\NteOmikuji.App.exe "dist\$name"
+          Copy-Item publish\NteOmikuji.exe "dist\$name"
           $hash = (Get-FileHash "dist\$name" -Algorithm SHA256).Hash.ToLowerInvariant()
           Set-Content -Path "dist\$name.sha256" -Value "$hash  $name" -Encoding ascii
 
