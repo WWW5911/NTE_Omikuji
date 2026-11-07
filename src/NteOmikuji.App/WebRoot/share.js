@@ -26,7 +26,8 @@ window.nteShare = (() => {
     const LIMIT_INK = "#543f32";
     const STEPS = ["−2σ", "−1σ", "−0.5σ", "+0.5σ", "+1σ", "+2σ"];
     const STEP_AT = [-2, -1, -0.5, 0.5, 1, 2];
-    const SIZES = { overview: [1920, 1080], luck: [1080, 1080], pool: [1080, 1350] };
+    const SIZES = { overview: [1920, 1080], luck: [1080, 1080] };
+    const POOL_WIDTH = 1080, POOL_MIN_HEIGHT = 760, POOL_MAX_HEIGHT = 1350, BAR_ROW = 54;
 
     let ctx, theme;
 
@@ -158,7 +159,7 @@ window.nteShare = (() => {
             tag(card.overall.label, card.overall.tier, w - margin, 42, size, { right: true });
             const tagWidth = width(card.overall.label, size, 700) + size * 1.44;
             text(signed(card.overall.sigma), w - margin - tagWidth - 24, 92, 44, theme.text, { weight: 700, align: "right" });
-            text(`實際 ${card.overall.hits} 個，期望 ${card.overall.expected.toFixed(1)} ± ${card.overall.standardDeviation.toFixed(1)} 個`, w - margin, 138, 24, theme.muted, { align: "right" });
+            text(`${card.overall.smallSample ? "樣本少・" : ""}實際 ${card.overall.hits} 個，期望 ${card.overall.expected.toFixed(1)} ± ${card.overall.standardDeviation.toFixed(1)} 個`, w - margin, 138, 24, theme.muted, { align: "right" });
         }
 
         const scaleY = 164, scaleH = 48, cell = (w - margin * 2) / 7;
@@ -184,6 +185,9 @@ window.nteShare = (() => {
         box(x, y, w, h, 18, theme.surface, theme.border);
         text(pool.label, x + pad, y + 54, 36, theme.text, { weight: 700 });
         poolTag(pool, x + w - pad, y + 22, 24);
+        if (pool.luck?.smallSample) {
+            text("樣本少", x + w - pad - width(pool.luck.label, 24, 700) - 24 * 1.44 - 12, y + 50, 20, theme.muted, { align: "right" });
+        }
         if (pool.totalPulls === 0) {
             text("尚無紀錄", x + w / 2, y + h / 2, 28, theme.muted, { align: "center" });
             return;
@@ -236,50 +240,48 @@ window.nteShare = (() => {
         text(reward.name, x + 16, y + 68, 23, theme.text, { max: w - 32 });
     }
 
-    /** Lays rewards out at a size. Returns where each goes, up to the bottom edge, plus where a note can follow. */
-    function layoutChips(rewards, x, y, w, bottom, size) {
-        const height = Math.round(size * 1.74), gap = 8;
-        const placed = [];
-        let cx = x, cy = y;
-        for (const reward of rewards) {
-            const value = `${reward.atLeast ? "≥" : ""}${reward.pulls}`;
-            const valueWidth = width(value, size, 700);
-            const nameWidth = Math.min(width(reward.name, size), w - valueWidth - 44);
-            const chip = nameWidth + valueWidth + size * 1.5;
-            if (cx + chip > x + w && cx > x) {
-                cx = x;
-                cy += height + gap;
+    /** Picks the largest size and most columns where every reward fits whole. Failing that, names shorten before rewards go missing. */
+    function chipGrid(rewards, w, room) {
+        const gap = 6;
+        const rowsFit = (rows, height) => rows * height + (rows - 1) * gap <= room;
+        for (const size of [32, 30, 28, 26, 24, 23, 22]) {
+            const height = Math.round(size * 1.74);
+            const widest = Math.max(...rewards.map(reward =>
+                width(reward.name, size) + width(`${reward.atLeast ? "≥" : ""}${reward.pulls}`, size, 700) + size * 1.5));
+            for (const columns of [3, 2]) {
+                const fit = Math.min(columns, rewards.length);
+                if (widest <= (w - gap * (fit - 1)) / fit && rowsFit(Math.ceil(rewards.length / fit), height)) {
+                    return { size, height, gap, columns: fit };
+                }
             }
-            if (cy + height > bottom) break;
-            placed.push({ reward, value, nameWidth, chip, cx, cy });
-            cx += chip + gap;
         }
-        return { placed, height, cx, cy };
+        return { size: 22, height: 38, gap, columns: Math.min(3, rewards.length) };
     }
 
-    /** Wraps rewards as name and pulls, gold when limited, as large as the space allows. */
+    /** Rewards as name and pulls in even columns, gold when limited. A short last row stays on the columns above it. */
     function chips(rewards, x, y, w, bottom) {
-        const sizes = [32, 30, 28, 26, 24, 23, 22];
-        let layout, size;
-        for (size of sizes) {
-            layout = layoutChips(rewards, x, y, w, bottom, size);
-            if (layout.placed.length === rewards.length) break;
-        }
-        // Room for the note about the rest comes out of what was placed.
-        const clipped = layout.placed.length < rewards.length;
-        if (clipped) layout.placed.splice(-1, 1);
-        for (const { reward, value, nameWidth, chip, cx, cy } of layout.placed) {
-            box(cx, cy, chip, layout.height, 10, reward.limited ? LIMIT_TINT : theme.surface2, reward.limited ? GOLD : null);
+        if (rewards.length === 0) return;
+        const { size, height, gap, columns } = chipGrid(rewards, w, bottom - y);
+        const capacity = Math.max(1, Math.floor((bottom - y + gap) / (height + gap))) * columns;
+        const clipped = rewards.length > capacity;
+        const shown = clipped ? rewards.slice(0, capacity - 1) : rewards;
+        const cell = (w - gap * (columns - 1)) / columns;
+        const place = index => ({
+            cx: x + (index % columns) * (cell + gap),
+            cy: y + Math.floor(index / columns) * (height + gap),
+        });
+        shown.forEach((reward, index) => {
+            const { cx, cy } = place(index);
+            box(cx, cy, cell, height, 10, reward.limited ? LIMIT_TINT : theme.surface2, reward.limited ? GOLD : null);
             const ink = reward.limited ? LIMIT_INK : theme.text;
-            const baseline = cy + layout.height / 2 + size * 0.36;
-            text(reward.name, cx + size * 0.5, baseline, size, ink, { max: nameWidth });
-            text(value, cx + chip - size * 0.5, baseline, size, ink, { weight: 700, align: "right" });
-        }
+            const baseline = cy + height / 2 + size * 0.36;
+            const value = `${reward.atLeast ? "≥" : ""}${reward.pulls}`;
+            text(reward.name, cx + size * 0.5, baseline, size, ink, { max: cell - size * 1.5 - width(value, size, 700) });
+            text(value, cx + cell - size * 0.5, baseline, size, ink, { weight: 700, align: "right" });
+        });
         if (clipped) {
-            const last = layout.placed[layout.placed.length - 1];
-            const noteX = last ? last.cx + last.chip + 12 : x;
-            const noteY = (last ? last.cy : y) + layout.height / 2 + 8;
-            text(`還有 ${rewards.length - layout.placed.length} 個`, noteX, noteY, 22, theme.muted);
+            const { cx, cy } = place(shown.length);
+            text(`還有 ${rewards.length - shown.length} 個`, cx + cell / 2, cy + height / 2 + 8, 22, theme.muted, { align: "center" });
         }
     }
 
@@ -302,7 +304,7 @@ window.nteShare = (() => {
         const tagWidth = width(overall.label, size, 700) + size * 1.44;
         text(signed(overall.sigma), margin + tagWidth + 36, 268, 72, theme.text, { weight: 700 });
         text(`理論上約勝過 ${overall.beatsPercent}% 的結果`, margin + tagWidth + 38, 318, 30, theme.muted);
-        text(`實際 ${overall.hits} 個，期望 ${overall.expected.toFixed(1)} ± ${overall.standardDeviation.toFixed(1)} 個`, margin, 412, 32, theme.text);
+        text(`實際 ${overall.hits} 個，期望 ${overall.expected.toFixed(1)} ± ${overall.standardDeviation.toFixed(1)} 個${overall.smallSample ? "・樣本少，僅供參考" : ""}`, margin, 412, 32, theme.text);
 
         bell(overall.sigma, overall.tier, margin, 440, w - margin * 2, 300, card.tierLabels);
 
@@ -313,7 +315,7 @@ window.nteShare = (() => {
             text(pool.label, margin + 24, y + 42, 30, theme.text, { weight: 650 });
             const luck = pool.luck;
             const detail = luck
-                ? `${luck.hits} 個／期望 ${luck.expected.toFixed(1)}・${signed(luck.sigma)}`
+                ? `${luck.smallSample ? "樣本少・" : ""}${luck.hits} 個／期望 ${luck.expected.toFixed(1)}・${signed(luck.sigma)}`
                 : pool.totalPulls > 0 ? `${number(pool.totalPulls)} 抽` : "";
             const tagLabel = luck?.label ?? pool.luckNote ?? "—";
             const tagWidth = width(tagLabel, 24, 700) + 24 * 1.44;
@@ -376,6 +378,7 @@ window.nteShare = (() => {
         else if (pool.luckNote) note(pool.luckNote, w - margin, 62, 30, { right: true });
         const facts = [pool.context, period(pool.firstDate, pool.lastDate)];
         if (pool.luck) facts.push(`${pool.luck.hits} 個／期望 ${pool.luck.expected.toFixed(1)} ± ${pool.luck.standardDeviation.toFixed(1)}（${signed(pool.luck.sigma)}）`);
+        if (pool.luck?.smallSample) facts.push("樣本少");
         if (card.maskedUid) facts.push(`UID ${card.maskedUid}`);
         text(facts.filter(Boolean).join("・"), margin, 150, 25, theme.muted, { max: w - margin * 2 });
 
@@ -416,13 +419,13 @@ window.nteShare = (() => {
             text("限定", w - margin, cursor + 16, 22, theme.muted, { align: "right" });
         }
         bars(pool, margin, cursor + 40, w - margin * 2, h - 70 - (cursor + 40));
-        footer(card, w, h, margin, pool.context ? "新到舊；抽數含前期累積，因為保底會延續。" : "新到舊；≥ 表示更早的抽數可能不在紀錄內。");
+        footer(card, w, h, margin, pool.context ? "新到舊；抽數與期望都含前期帶入的保底。" : "新到舊；≥ 表示更早的抽數可能不在紀錄內。");
     }
 
     function bars(pool, x, y, w, h) {
         const scale = pool.scale;
         const rise = pool.risesFrom;
-        const minRow = 34, maxRow = 54;
+        const minRow = 34, maxRow = BAR_ROW;
         const capacity = Math.floor((h - 8) / minRow);
         const clipped = pool.rewards.length > capacity;
         const count = clipped ? capacity - 1 : pool.rewards.length;
@@ -453,8 +456,15 @@ window.nteShare = (() => {
         }
     }
 
+    /** A pool with few rewards gets a shorter image rather than a page of empty space. */
+    function poolHeight(pool) {
+        const meters = (pool.pity ? 58 : 0) + (pool.limitedPity ? 58 : 0);
+        const needed = 344 + meters + 40 + pool.rewards.length * BAR_ROW + 78;
+        return Math.max(POOL_MIN_HEIGHT, Math.min(POOL_MAX_HEIGHT, needed));
+    }
+
     function draw(canvas, card, template, themeName) {
-        const [w, h] = SIZES[template];
+        const [w, h] = template === "pool" ? [POOL_WIDTH, poolHeight(card.selected)] : SIZES[template];
         canvas.width = w;
         canvas.height = h;
         ctx = canvas.getContext("2d");
