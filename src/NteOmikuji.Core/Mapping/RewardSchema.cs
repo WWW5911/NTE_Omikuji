@@ -51,9 +51,17 @@ public static partial class RewardSchema
         [RewardFocus.SArc] = ("s_arc", "S 弧盤"),
         [RewardFocus.SLimitedCharacter] = ("s_limited_character", "S 限定角色"),
         [RewardFocus.SLimitedArc] = ("s_limited_arc", "S 限定弧盤"),
-        [RewardFocus.Outfit] = ("outfit", "角色服裝"),
-        [RewardFocus.VehicleSkin] = ("vehicle_skin", "車皮"),
-        [RewardFocus.Glider] = ("glider", "降落傘"),
+        [RewardFocus.Outfit] = ("outfit", "時裝"),
+        [RewardFocus.VehicleSkin] = ("vehicle_skin", "載具外觀"),
+        [RewardFocus.Glider] = ("glider", "滑翔翼"),
+    };
+
+    /// <summary>Earlier names for categories, which files people edited by hand may still use.</summary>
+    private static readonly Dictionary<string, RewardFocus> FormerFocusLabels = new()
+    {
+        ["角色服裝"] = RewardFocus.Outfit,
+        ["車皮"] = RewardFocus.VehicleSkin,
+        ["降落傘"] = RewardFocus.Glider,
     };
 
     [GeneratedRegex("^[a-z]{2,3}(-[a-z0-9]{2,8})*$")]
@@ -114,6 +122,11 @@ public static partial class RewardSchema
                 value = focus;
                 return true;
             }
+        }
+        if (FormerFocusLabels.TryGetValue(wanted, out var former))
+        {
+            value = former;
+            return true;
         }
         return false;
     }

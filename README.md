@@ -1,226 +1,227 @@
-# NTE Omikuji
+<p align="center"><img src="src/NteOmikuji.App/Resources/AppIcon/appicon.svg" width="128" alt="NTE Omikuji 圖示"></p>
 
-櫻籤. A Windows desktop app that decodes your own Neverness to Everness pull history
-and achievements from game traffic, tells you how lucky they were, and exports JSON
-for trackers. Built with .NET MAUI Blazor Hybrid.
+<h1 align="center">NTE Omikuji</h1>
 
-This is an unofficial fan project, not affiliated with the game's developers.
+Windows 桌面工具。從遊戲的網路封包讀取《異環》（Neverness to Everness）的抽卡紀錄，統計保底和運氣，並可匯出 JSON、CSV 和分享圖。
 
-## Using it
+非官方粉絲專案，與遊戲開發商無關。只讀取封包，不修改遊戲，資料都留在你的電腦。
 
-Download `NteOmikuji.exe` and double-click it. There is nothing to install:
-no .NET, no Npcap, no Python.
+README 裡的畫面都使用模擬資料。
 
-1. Open **開始擷取** and start it before pressing Start on the game's main menu.
-   Windows asks for Administrator approval, because reading network packets
-   requires it.
-2. Open the in-game history and scroll down from page 1.
-3. Everything saves automatically to `user_data` beside the exe. **總覽** and each
-   pool's page update as pages arrive.
+![總覽頁](docs/images/overview.png)
 
-The top bar holds 開始擷取, 擷取說明, 原始紀錄, and 帳號. The left side lists 總覽
-and the three pools, and 限定棋盤 and 弧盤研募 expand into each event.
+## 功能
 
-Keep the exe in a writable folder of its own, because it creates these beside itself:
+- 擷取限定棋盤、常駐棋盤、弧盤研募、盲盒的抽卡紀錄和成就
+- 顯示三個卡池的保底進度和距離保底的抽數
+- 用七個等級標示整體、每個卡池、每一期的運氣
+- 把紀錄累積存檔，更新前自動備份
+- 產生分享圖
+- 在介面裡維護獎勵名稱、稀有度和每期限定大獎，遊戲更新後不用等程式更新
+- 匯出 JSON、CSV，也可匯入 NTE_Gacha_Exporter 的紀錄
 
-| Folder | Contents |
+## 使用方式
+
+需要 64 位元 Windows 10 1809 以上。不用另外安裝 .NET、Npcap 或 Python。WebView2 執行階段是 Windows 11 內建，Windows 10 通常也已安裝。
+
+1. 把 `NteOmikuji.exe` 放在一個可寫入的資料夾，再執行。檔案約 94 MB，沒有數位簽章，SmartScreen 可能會警告。
+2. 開啟 **開始擷取** 並按下按鈕。Windows 會要求系統管理員權限，因為讀取網路封包需要這個權限。如果已安裝 Npcap，就不會要求。
+3. 在遊戲主選單按下開始之前就要開始擷取。
+4. 在遊戲裡打開抽卡紀錄，從第 1 頁往下捲到底。每個卡池都要各做一次。
+5. 資料會自動存到 exe 旁邊的 `user_data`，**總覽** 和卡池頁面會即時更新。
+
+![開始擷取頁](docs/images/capture.png)
+
+## 運氣怎麼算
+
+### 等級
+
+把同樣抽數下所有可能的結果做精確排名，再換算成標準差（σ）來分級。
+
+| 等級 | 範圍 |
 | --- | --- |
-| `mappings\rewards.csv`, `achievements.csv` | Editable display names and ranks. Saving applies them at once and also corrects saved history. |
-| `mappings\banners.csv` | Each event's featured rewards, which decide what is limited on it. |
-| `mappings\schedule.csv` | Announced events and their periods, shown on 總覽 until they end. |
-| `user_data\<uid>_<banner>.json` | Cumulative history per account, in version 1 export format. Reloaded at start. |
-| `user_data\<uid>_<banner>_partial_<time>.json` | A capture that missed page 1, kept apart from the cumulative file. |
-| `user_data\backups` | The previous version of a history file, copied before each session first changes it. The newest 10 per file are kept. To restore one, close the app and copy it back under its original name. |
-| `exports` | CSV files from **原始紀錄** and images from **分享圖**. The CSV files leave out your UID, and cells that look like spreadsheet formulas are prefixed with `'`. |
+| 非酋 | −2σ 以下 |
+| 非洲 | −2σ ～ −1σ |
+| 微非 | −1σ ～ −0.5σ |
+| 正常 | ±0.5σ 內 |
+| 微歐 | +0.5σ ～ +1σ |
+| 歐洲 | +1σ ～ +2σ |
+| 歐皇 | +2σ 以上 |
 
-The import control takes `.flows` captures, exported JSON, mapping CSV or JSON, and
-the `records.json` kept by NTE_Gacha_Exporter, and tells them apart by content. None
-of these need Administrator approval.
+- 棋盤看 S，弧盤只看限定大獎，一般 S 弧盤不計入。
+- 拿到的數量越多，排名越前面。數量相同時，最後一個越早出越前面。
+- 棋盤可以單抽，所以逐抽排名。弧盤只能十連，同一次十連內的位置視為同名次。
+- 「前 N% 歐」是同抽數下所有可能結果的理論排序，不是和其他玩家比較。程式不會上傳資料，所以沒有玩家之間的比較。
+- 整體運氣是把三個卡池的結果，依各自的期望數量加權合併。
+- 顯示的 σ 由排名換算而來，不等於「實際數量和期望差幾個標準差」。抽卡數量的分布是偏斜的，直接相減在抽數少時會高估。
+- 抽數很少時也會算出等級，但結果只靠很少的獎勵決定。例如棋盤 10 抽沒出 S 是正常，10 抽內出 S 至少是歐洲。
 
-A `records.json` only fills gaps: its rows are added at times your history has none,
-and anything this app captured stays as it was, even if the two differ. A later
-capture of such a time replaces the added rows. Its boards name no event, so added
-limited board rows count toward the pool and its pity but belong to no event's page,
-except those from launch, below.
+### 規則和機率
 
-The game opened on 2026-04-29 with one limited board, and the second opened no earlier
-than 2026-05-07. A limited board row from before then with no event belongs to the
-first event.
+| 卡池 | 基礎機率 | 保底 |
+| --- | --- | --- |
+| 限定棋盤、常駐棋盤 | S 0.99%，超過 70 抽後 19.59% | 90 抽必出 S，每 10 抽有一次集點贈禮（A） |
+| 弧盤研募 | S 3%，其中 25% 是限定 | 60 抽必出 S，80 抽必出限定，每 10 抽必出 A。出限定時，S 的保底也會重置 |
 
-### Maintaining mappings
+這些機率來自公開攻略和玩家提供的資料，不是官方公告。用這些規則算出的結果和公開數字相符：
 
-Open **獎勵與卡池設定 > 獎勵** in the left list to edit names, rarity, and each reward's category. Each change
-saves at once and also corrects saved history, so no app update is needed when the
-game adds rewards:
+| 項目 | 計算結果 | 公開或玩家提供 |
+| --- | --- | --- |
+| 棋盤每個 S 平均抽數 | 53.2 | 約 53.5 |
+| 弧盤每個限定平均抽數 | 59.4 | 約 59.5 |
+| 弧盤 S 含保底的綜合機率 | 4.20% | 4.19% |
+| 弧盤限定含保底的綜合機率 | 1.68% | 1.68% |
 
-- Rewards seen in your history without a mapping appear at the top as 未對應.
-  Filling in any field creates their row.
-- **新增語言** adds a language by code, such as `pt-br`. Names fall back to English,
-  then Chinese, then any language, so a gap never hides a reward.
-- **復原** steps back through this session's changes.
-- **從內建補齊** adds rows and fills blank cells from the data bundled with the
-  exe. It never changes a filled cell.
+### 每一期的運氣
 
-`rewards.csv` can also be edited directly, and changes appear in the open app.
-Saving as either "CSV UTF-8" or plain "CSV" from Excel works, but Excel locks the
-file, so close it before editing in the app.
+卡池頁的「各期運氣」表列出每一期的結果。點活動名稱可以看該期的頁面。
 
-| Column | Meaning |
+![弧盤研募頁](docs/images/pool.png)
+
+- **開始已墊**：這期開始時，距上次 S（弧盤是距上次限定）已經抽了幾抽。保底會跨期延續，所以期望值從這個抽數算起。
+- **結束已墊**：這期結束時留給下一期的抽數。
+- 各期的結果不能相加成整體運氣。
+- 如果同一段時間交替抽兩個活動，該期結果是近似值。
+
+### 其他統計規則
+
+- 棋盤只有骰子結果算一抽，集點贈禮和沉眠地不算。
+- 最舊的一筆 S 顯示為「至少 N」，不計入平均，因為遊戲只保留約半年的紀錄，更早的抽數可能不在紀錄內。
+- 紀錄不完整或有活動還沒設定限定大獎時，標籤會顯示「無法判定」。
+- 0.3.0 以前存的檔案，把很多抽誤判成集點贈禮。檔案裡沒有原始資料可以修正，程式會提示，重新擷取一次就會更正。
+
+## 分享圖
+
+在左側選單開啟 **分享圖**，或在卡池頁、活動頁按 **分享抽卡**、**分享運氣**。可以儲存 PNG 或複製到剪貼簿，有淺色的「櫻」和深色的「墨」兩種配色。
+
+UID 預設不顯示。勾選後也只顯示遮蔽中段的版本，例如 `214*******56`。
+
+| 範本 | 尺寸 | 內容 |
+| --- | --- | --- |
+| 總覽 | 1920×1080 | 整體運氣，三個卡池的保底和出貨歷程 |
+| 運氣 | 1080×1080 | 運氣等級和在分布上的位置，可選整體、卡池或某一期 |
+| 單池 | 寬 1080，高最多 1350 | 一個卡池或一期的數字和每次出貨的抽數 |
+
+![總覽範本](docs/images/share-overview.png)
+
+<p>
+  <img src="docs/images/share-luck.png" width="49%" alt="運氣範本">
+  <img src="docs/images/share-pool.png" width="49%" alt="單池範本">
+</p>
+
+## 獎勵與卡池設定
+
+在左側選單開啟 **獎勵與卡池設定**。每次修改會立刻存檔，也會更正已存的紀錄。
+
+![獎勵與卡池設定頁](docs/images/settings.png)
+
+### 獎勵
+
+- 紀錄裡出現但還沒有對應的獎勵，會排在最上面並標示「未對應」。填入任一欄就會建立資料。
+- **新增語言**：輸入語言代碼，例如 `pt-br`。名稱缺少時依序改用英文、中文、其他語言。
+- **復原**：復原這次開啟程式後做的修改。
+- **從內建補齊**：補上內建資料裡有、但你的檔案缺少的列和空白欄位，不會改動已填的內容。
+
+也可以直接編輯 `mappings\rewards.csv`，改動會反映到開著的程式。Excel 存成「CSV UTF-8」或一般「CSV」都可以，但 Excel 會鎖住檔案，在程式裡編輯前要先關閉。
+
+| 欄位 | 說明 |
 | --- | --- |
-| `id` | The game's string for the reward. Matched case-insensitively. |
-| `type` | `character`, `arc`, `cosmetic`, `item`, or any other text. |
-| `rank` | `S`, `A`, `B`, or any other text. |
-| `focus` | The category below, as a code or its Chinese label. Blank sorts it automatically. |
-| `name.<locale>` | The name in that language. Add a column to add a language. |
+| `id` | 遊戲裡的獎勵字串，不分大小寫 |
+| `type` | `character`、`arc`、`cosmetic`、`item` 或其他文字 |
+| `rank` | `S`、`A`、`B` 或其他文字 |
+| `focus` | 關注類別，填代碼或中文名稱，空白時自動判斷 |
+| `name.<語言>` | 該語言的名稱，增加欄位就是增加語言 |
 
-| Category | `focus` code | In the analysis |
+| 關注類別 | `focus` 代碼 | 統計方式 |
 | --- | --- | --- |
-| S 角色 | `s_character` | Counts as S and resets the pull interval |
-| S 弧盤 | `s_arc` | Counts as S and resets the pull interval |
-| S 限定角色 | `s_limited_character` | Also counts toward the limited totals |
-| S 限定弧盤 | `s_limited_arc` | Also counts toward the limited totals |
-| 角色服裝 | `outfit` | Counted and listed only |
-| 車皮 | `vehicle_skin` | Counted and listed only |
-| 降落傘 | `glider` | Counted and listed only |
-| 不關注 | `none` | Ignored |
+| S 角色 | `s_character` | 算 S，重置間隔 |
+| S 弧盤 | `s_arc` | 算 S，重置間隔 |
+| S 限定角色 | `s_limited_character` | 算 S，也計入限定數量 |
+| S 限定弧盤 | `s_limited_arc` | 算 S，也計入限定數量 |
+| 時裝 | `outfit` | 只統計 |
+| 載具外觀 | `vehicle_skin` | 只統計 |
+| 滑翔翼 | `glider` | 只統計 |
+| 不關注 | `none` | 忽略 |
 
-Replies have no limited flag, so **獎勵與卡池設定 > 活動卡池** lists the featured reward
-of each event. A reward is limited on the event that features it and an ordinary S
-on any other, whatever its category says. New events in your history appear there
-as 未設定 until you fill them in, and until then they follow the category.
+舊名稱「角色服裝」、「車皮」、「降落傘」仍然可以讀取。
 
-`schedule.csv` holds global server names and dates from announcements, with
-`estimate` set where the end date is projected. It only informs the 總覽 preview.
-A new event's `banner_id` stays blank, since its real ID is unknown until a capture
-shows it, and that first capture lists it as 未設定.
+`focus` 空白時的判斷方式：`Fashion_Glide_` 開頭是滑翔翼，`Fashion_vehicle_` 開頭是載具外觀，其他 `Fashion_` 開頭是時裝，S 級角色和弧盤是 S 角色和 S 弧盤。限定無法自動判斷，要手動設定。
 
-A blank category follows the reward: `Fashion_Glide_` is 降落傘, `Fashion_vehicle_`
-is 車皮, any other `Fashion_` is 角色服裝, and S-rank characters and arcs are S 角色
-and S 弧盤. The data has no signal for limited rewards, so those are set by hand.
+### 活動卡池
 
-Exports always write the English name when there is one, because trackers expect
-it; the display language only affects this app. A file that cannot be used shows
-a warning and the previous mappings stay active. Language packs can be imported
-as CSV, or as JSON with `{"id": {"names": {"ja": "..."}, "rank": "S"}}`.
+封包裡沒有「是否限定」的資訊，所以每一期的限定大獎要記在 `mappings\banners.csv`。同一個獎勵在主打它的那期算限定，在其他期算一般 S。
 
-Upgrading an older `rewards.csv` keeps the original as `rewards.csv.v1.bak` or
-`rewards.csv.v2.bak`.
+紀錄裡出現新活動時，會標示「未設定」。填好之前，這期的獎勵依關注類別判斷，受影響的卡池會顯示「無法判定」。
 
-### Analysis
+`mappings\schedule.csv` 記錄公告的活動和期間，只用於 **總覽** 的卡池預告。日期是預估的列，`estimate` 欄不留空。新活動的 `banner_id` 要等實際擷取到才知道，先留空。
 
-**總覽** shows how close each pool is to its guarantee, a comparison table, and the
-latest S rewards. Each pool shows pulls since the last S, total pulls, S rate,
-interval average, median and spread, the rarity mix, pulls over time, and
-most-obtained rewards. Boards also show dice rolls and result types.
+## 匯入和匯出
 
-- S means the four S categories in the mapping table. Limited totals appear once
-  a reward is marked limited.
-- Only dice rows count as pulls on boards. The 集點贈禮 given every 10 pulls and
-  沉眠地 rewards do not.
-- A reward's category applies however it arrived, and anything other than a dice
-  roll is tagged with its source.
-- Files saved before 0.3.0 misread many pulls as 集點贈禮. They hold no bytes to
-  correct from, so the analysis says so when a file has more of these than the
-  game gives. Capturing the history again corrects it.
-- The oldest S is shown as "至少 N" and left out of the average, because earlier
-  pulls may predate the saved history. The game keeps about six months of records.
-- 總覽 and each pool show a luck tag, from 非酋 through 正常 to 歐皇. It ranks all the
-  outcomes that many pulls can bring, exactly: more rewards is better, and with the
-  same count, the last one landing earlier is better. Arcs only come as ten-pull draws,
-  so places inside one draw tie, though each reward's own count still uses its place. It counts S on boards and the
-  limited reward on Arcs. The rank is shown as 前 N% 歐 and as the matching standard
-  deviation, and tags change at ±0.5, ±1, and ±2σ. So the σ is not the plain distance
-  from the expected count, which overstates small samples because counts are skewed.
-  Rates
-  come from published guides, since no in-game figures were available: 0.99% on
-  boards and 19.59% after 70 pulls, and 3% on Arcs, where a limited reward also resets
-  the guarantee of an S. With guarantees this comes to 4.19% for any S and 1.68% for a
-  limited one, matching the figures players report. These reproduce the published
-  averages of about 53.5 pulls per S and 59.5 per limited Arc. A misread history or an
-  unset event shows no tag.
-- 總覽 merges pools as normal scores weighted by their expected counts. All of this
-  compares against the odds, not other players.
-- Under one full guarantee of pulls a tag is still worked out. The formula holds
-  there, but a single reward decides it: no S in 10 pulls is 正常, and
-  an S in the first 10 pulls is 歐洲 or better.
-- Each event also has a luck tag, on its page and in the 各期運氣 table on its pool's
-  page. Since pity carries over, its expected count starts from the pulls already
-  made when the event began, shown as 開始已墊, with 結束已墊 for those it leaves to the
-  next. Share images show both for an event. This assumes an event's pulls run together, so it is approximate if you alternated
-  between two events. Events inherit from each other, so their tags do not add up to
-  the pool's.
-- Guarantees are built in: 90 pulls for an S on both boards with better odds from
-  pull 70, and on Arcs 60 for an S and 80 for a limited one, with an A every 10 on
-  all three. A board's A is the 集點贈禮 itself. An event's page counts only its own
-  pulls, while intervals run across events because pity carries over.
-- The rarity mix counts S characters and Arcs apart from S items and cosmetics,
-  since items also carry an S.
-- An Arc is limited when its event features it. Luck, 最近的 S, and share images count
-  an Arc pool up to the limited reward, past any ordinary S. The Arc page shows first
-  how many pulls each limited Arc took, how many came from the 80 pull guarantee, and the limited
-  share among the rest, for comparing with the stated 25%.
-- Everything stays on this computer, so there is no global luck comparison.
+### 匯入
 
-### Share images
+在 **原始紀錄** 的匯入分頁選擇檔案，程式會依內容判斷類型，不需要系統管理員權限。
 
-**分享圖** in the left list draws an image to save as PNG or copy to the clipboard:
+| 檔案 | 說明 |
+| --- | --- |
+| `.flows` | mitmproxy 的擷取檔 |
+| 匯出的 JSON | 本程式或相容工具的抽卡和成就紀錄 |
+| CSV、JSON | 獎勵和成就對應表，或語言包 |
+| `records.json` | NTE_Gacha_Exporter 的紀錄 |
 
-| Template | Size | Shows |
-| --- | --- | --- |
-| 總覽 | 1920×1080 | Overall luck and all three pools with their pity and S history |
-| 運氣 | 1080×1080 | The luck tier and where it falls on the bell curve, overall or for one pool or event |
-| 單池 | 1080 wide, up to 1350 tall | One pool's or event's figures and how many pulls each S took |
+語言包的 JSON 格式是 `{"id": {"names": {"ja": "..."}, "rank": "S"}}`。
 
-**分享抽卡** on a pool's or event's page opens 單池 with it selected, and **分享運氣**
-opens 運氣 the same way. An event's
-image counts only that event's pulls and rewards, but each reward's pull count runs
-back across earlier events because pity carries over, and it has no pity meter of
-its own.
+匯入 `records.json` 的規則：
 
-Each comes in a pale 櫻 and a dark 墨 color scheme. Your UID is left out unless you
-tick the box, and then its middle is masked.
+- 用時間判斷是否重複。某一秒已有紀錄就不更動，只補上沒有的秒數。本程式擷取的資料優先。
+- 之後重新擷取到同一秒，會取代匯入的資料。
+- 對方的棋盤紀錄沒有記是哪一期，所以限定棋盤補上的紀錄不會歸到任何一期。例外是 2026-05-07 之前的紀錄，當時只開放一個限定棋盤，會歸到娜娜莉這期。
 
-### Mystery Box
+### 匯出
 
-Captures read the layout used since version 1.4, where each request and row names
-its pool, as well as the older one. All pools share one file, with each row's pool
-in `pool_id`, and they appear under **原始紀錄**. A real capture confirmed the layouts
-and five rows per page, with one pool that had pulls and one that had none. The game
-first asks how many pages a pool has, and requests no pages when the answer is 0, so
-a pool without pulls leaves no rows. Two pools with pulls have not been captured
-together, and the pool's size and rules are not decoded.
+- **JSON**：`user_data` 裡的檔案就是版本 1 匯出格式。獎勵名稱固定寫英文，因為追蹤網站需要英文名稱。顯示語言只影響程式內的畫面。
+- **CSV**：在 **原始紀錄** 匯出，檔案在 `exports`。內容不含 UID，看起來像試算表公式的儲存格會在前面加 `'`，避免 Excel 執行。
 
-### Recording packets for debugging
+## 資料夾
 
-Tick **記錄除錯封包** before **開始擷取** to check decoded rows against the bytes.
-It is off each time the app starts. Each capture writes
-`debug_packets\packets_<time>.jsonl` beside the exe, one JSON object per line:
+以下資料夾都建立在 exe 旁邊。搬動 exe 時，要連這些資料夾一起搬。
 
-- A header line, then one line per recorded packet.
-- `direction`, `role`, `remote`, `local_port`, `length`, and `payload_hex`.
-- Requests add `kind` and `page`. Replies add the decoded `pages` and `rows`,
-  including each row's `record_hex`.
+| 路徑 | 內容 |
+| --- | --- |
+| `user_data\<uid>_<卡池>.json` | 每個帳號累積的紀錄，啟動時讀取 |
+| `user_data\<uid>_<卡池>_partial_<時間>.json` | 沒抓到第 1 頁的擷取，和累積紀錄分開存，不計入統計 |
+| `user_data\backups` | 更新前的舊檔。每次啟動後第一次更新某份紀錄前備份，每份留最近 10 個 |
+| `mappings` | `rewards.csv`、`achievements.csv`、`banners.csv`、`schedule.csv` |
+| `exports` | 匯出的 CSV 和分享圖 |
+| `debug_packets` | 除錯封包紀錄 |
 
-Only history requests over UDP, and inbound UDP on the same stream within 5 seconds
-of one, are written, so the `other` role can hold unrelated game data. A request that
-resembles Mystery Box history but matches no known layout is written as
-`unrecognized_request`, so a new layout can still be studied. TCP, which
-carries login traffic, is left out. The file may still identify your account, so
-check it before sharing. A file stops at 64 MB, and any writing problem ends the
-log without interrupting the capture.
+要還原備份時，先關閉程式，再把備份檔複製回 `user_data`，改回原檔名。
 
-Notes:
+瀏覽器設定檔在 `%LOCALAPPDATA%\NteOmikuji`。第一次啟動時會解壓縮到 `%TEMP%\.net`。
 
-- Requires 64-bit Windows 10 1809 or later and the WebView2 runtime, which ships
-  with Windows 11 and is normally present on Windows 10.
-- The exe is about 93 MB. Its first start unpacks to `%TEMP%\.net`, and its
-  browser profile lives in `%LOCALAPPDATA%\NteOmikuji`.
-- If Npcap is already installed, the app uses it and skips the Administrator prompt.
-- The exe is unsigned, so SmartScreen may warn about it.
+## 盲盒
 
-## Building
+可以擷取，紀錄會顯示在 **原始紀錄**，也會存檔和匯出。目前沒有分析頁，規劃記在 [TODO.md](TODO.md)。
 
-Requires the .NET 9 SDK and `dotnet workload install maui-windows`.
+- 每個盲盒都是 15 抽，每期的機率和大獎不同。
+- 所有盲盒存在同一個檔案，用 `pool_id` 區分。
+- 已用真實封包驗證一個有抽和一個沒抽的盲盒。兩個都有抽的情況還沒驗證。
+
+## 除錯封包
+
+開始擷取前勾選 **記錄除錯封包**，每次啟動程式都要重新勾選。紀錄存在 `debug_packets\packets_<時間>.jsonl`，每行一個 JSON：
+
+- 第一行是標頭，之後每行是一個封包，包含 `direction`、`role`、`remote`、`local_port`、`length`、`payload_hex`。
+- 請求多了 `kind`、`page`、`pool`。回覆多了解碼後的 `pages` 和 `rows`。
+- 只記錄 UDP 的抽卡紀錄請求，以及同一連線 5 秒內收到的 UDP 封包，所以 `other` 可能含有無關的遊戲資料。
+- 長得像盲盒請求但格式不符的封包，會記為 `unrecognized_request`。
+- 不記錄 TCP，因為登入資料走 TCP。
+- 單一檔案上限 64 MB。寫入出錯時只會停止記錄，不影響擷取。
+
+**檔案裡可能有可以辨識你帳號的資料，分享前請先檢查。**
+
+## 開發
+
+需要 .NET 9 SDK，並執行 `dotnet workload install maui-windows`。
 
 ```powershell
 dotnet test tests\NteOmikuji.Core.Tests
@@ -228,66 +229,37 @@ dotnet run --project src\NteOmikuji.App
 dotnet publish src\NteOmikuji.App -p:PublishProfile=Portable
 ```
 
-The last command writes the single exe to `publish\NteOmikuji.exe`. Only
-that file needs distributing.
+最後一行會產生 `publish\NteOmikuji.exe`，發布時只需要這個檔案。
 
-## Releasing
-
-`.github/workflows/release.yml` builds and tests every push and pull request on
-Windows. To publish, raise `<Version>` in `Directory.Build.props` and push to
-`main`. If that version has no release yet, the workflow creates tag `v<version>`
-with the exe and its SHA-256, and generated notes. A version with a suffix, such
-as `0.3.0-beta.1`, becomes a prerelease. Other pushes only produce a build
-artifact.
-
-## Layout
-
-| Path | Purpose |
+| 路徑 | 內容 |
 | --- | --- |
-| `src/NteOmikuji.Core` | Decoders, session, export, flows import, capture backends, bundled mappings. No UI. |
-| `src/NteOmikuji.App` | MAUI Blazor Hybrid shell. Web files in `WebRoot` are embedded in the assembly. |
-| `tests/NteOmikuji.Core.Tests` | Parity tests against Python output, plus mapping, library, analysis, and robustness tests. |
-| `ref` | The original Python exporter, kept for reference only. Nothing builds from or depends on it. |
+| `src/NteOmikuji.Core` | 解碼、工作階段、匯出、匯入、擷取、內建對應表，不含介面 |
+| `src/NteOmikuji.App` | .NET MAUI Blazor Hybrid 介面，`WebRoot` 的檔案內嵌在組件裡 |
+| `tests/NteOmikuji.Core.Tests` | 單元測試，含和 Python 版輸出比對的測試 |
+| `ref` | 原本的 Python 版，僅供參考，建置不會用到 |
 
-`Data/python_golden.json` in the tests is output captured from the Python
-exporter. `src/NteOmikuji.Core/Mappings` holds the CSVs the app seeds on first
-run. Reward names come from [NTE_Assets](https://github.com/Waifus-Grace/NTE_Assets)
-at commit `1816e23`. They are not updated automatically; a new reward still
-exports, flagged as unmapped, until someone maintains it.
+介面的顏色定義在 `WebRoot/app.css`。
 
-The interface uses pale Morandi tones centered on dusty rose, defined in
-`WebRoot/app.css`. Luck tags use Japanese traditional colors: golds for the lucky
-tiers and brown-blacks for the unlucky ones.
+### 發布
 
-## Arbitrary result strings
+`.github/workflows/release.yml` 會在每次 push 和 pull request 時建置並測試。要發布新版時，提高 `Directory.Build.props` 的 `<Version>` 並推送到 `main`。如果這個版本還沒發布過，會建立 `v<版本>` 標籤和 Release，附上 exe 和 SHA-256。版本有後綴（例如 `0.3.0-beta.1`）時會標為預先發行。
 
-The Python decoder finds Monopoly rewards by known prefixes (`fork_`, `Dice`,
-`Fashion_`, and `10xx` character IDs) and accepts only identifier characters.
-A new reward outside those patterns exports with an empty ID. Here:
+這個流程還沒有實際跑過。
 
-- Packed text is decoded by undoing its bit shift, which accepts any UTF-8.
-- A record's reward is found from its length-prefixed string, not its prefix.
-  Known prefixes remain only as a fallback for damaged headers.
-- Structured blocks also read UTF-16 and empty Unreal `FString` values.
-- Mappings only add display names. Unmapped rewards keep the game's text and are
-  flagged in the UI.
-- When a structured row's result text differs from its reward, the JSON gains an
-  optional `result_text` field. Everything else matches format version 1.
+### 和 Python 版的差異
 
-UTF-16 handling follows the Unreal `FString` convention and is covered by
-synthetic tests only; it has not been observed in real game traffic.
 
-## Differences from the Python exporter
+- 支援任意結果字串：用長度前綴讀取獎勵，不靠已知前綴判斷。沒有對應的獎勵會保留遊戲原字串並標示。結果文字和獎勵不同時，JSON 會多一個 `result_text` 欄位。UTF-16 的處理只有合成測試，沒有在真實封包裡看過。
+- `exporter.name` 是 `nte-omikuji`。UID 的計算方式相同。`result_type` 仍用 `points_gift` 表示每 10 抽的贈禮。
+- 只支援 Windows。
+- `wpcap.dll` 只從 System32 以絕對路徑載入，剪貼簿用平台 API。
+- TCP 重組和 LZ4 輸出有大小上限，`.flows` 讀取有巢狀深度上限。
+- 沒有移植診斷檔、CSV 除錯輸出和更新檢查。
 
-- `exporter.name` is `nte-omikuji`. UIDs are unchanged.
-- Windows only, with no Linux or macOS capture backends.
-- wpcap.dll loads only from System32 by absolute path, and clipboard access uses
-  the platform API rather than `tkinter` or `clip.exe`.
-- TCP reassembly and LZ4 output have size limits, and the flows reader has a
-  nesting limit.
-- Diagnostics sidecars, CSV debug output, and the update check are not ported.
-- Board rolls and quantities come from each row's parsed fields. The Python parser
-  stops before the row's trailing `Lottery_*` banner, so its blocks fail to parse
-  and it scans for the roll instead, which labels real pulls `points_gift`
-  cannot be parsed still falls back to that scan.
-- `result_type` keeps the name `points_gift` for the reward given every 10 pulls.
+### 資料來源
+
+獎勵名稱來自 [NTE_Assets](https://github.com/Waifus-Grace/NTE_Assets) 的 commit `1816e23`，不會自動更新。新獎勵會先以「未對應」保留，等人維護。
+
+## English
+
+NTE Omikuji is an unofficial Windows app that reads your own Neverness to Everness pull history from game traffic, shows pity and luck for each pool and event, and exports JSON, CSV and share images. Download `NteOmikuji.exe` and run it; nothing else needs installing. Start the capture before pressing Start on the game's main menu, then open the in-game history and scroll down from page 1. Build instructions are under 開發 above.

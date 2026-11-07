@@ -461,7 +461,7 @@ public class AnalysisTests
         Assert.Equal(2, result.PullsSinceTopRank);
         Assert.Equal(["S 角色", "S 限定角色"], result.TopRankPulls.Select(pull => pull.FocusLabel));
         Assert.True(result.TopRankPulls[1].IsLimited);
-        Assert.Equal(["S 角色", "S 限定角色", "角色服裝", "降落傘"], result.FocusCounts.OrderBy(bucket => bucket.Label == "S 角色" ? 0 : bucket.Label == "S 限定角色" ? 1 : bucket.Label == "角色服裝" ? 2 : 3).Select(bucket => bucket.Label));
+        Assert.Equal(["S 角色", "S 限定角色", "時裝", "滑翔翼"], result.FocusCounts.OrderBy(bucket => bucket.Label == "S 角色" ? 0 : bucket.Label == "S 限定角色" ? 1 : bucket.Label == "角色服裝" ? 2 : 3).Select(bucket => bucket.Label));
         Assert.Equal(["Fashion_Glide_1", "Fashion_character_1"], result.CosmeticItems.Select(item => item.RewardId));
     }
 
