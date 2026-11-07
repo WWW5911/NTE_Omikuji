@@ -97,6 +97,38 @@ public sealed class MappingUpdateTests : IDisposable
     }
 
     [Fact]
+    public void ARowDeletedBeforeTheFirstUpdateDoesNotComeBack()
+    {
+        _store.DeleteEvent("Lottery_Xun");
+
+        Assert.Equal(0, _store.ApplyUpdate(Files((MappingStore.EventsFile, "id,featured\nLottery_Xun,1052\n"))));
+
+        Assert.Null(Row(MappingStore.EventsFile, "Lottery_Xun"));
+    }
+
+    [Fact]
+    public void AFolderFromAnOlderVersionStillGetsRowsItLacks()
+    {
+        _store.DeleteEvent("Lottery_Xun");
+        Directory.Delete(Path.Combine(_folder, "upstream"), recursive: true);
+
+        _store.ApplyUpdate(Files((MappingStore.EventsFile, "id,featured\nLottery_Xun,1052\n")));
+
+        Assert.Equal("1052", Row(MappingStore.EventsFile, "Lottery_Xun")!.Get("featured"));
+    }
+
+    [Fact]
+    public void SeedingDoesNotReplaceFilesAlreadyThere()
+    {
+        var path = Path.Combine(_folder, MappingStore.EventsFile);
+        File.WriteAllText(path, "id,featured\nMine,1\n");
+
+        _store.EnsureSeeded();
+
+        Assert.Equal("id,featured\nMine,1\n", File.ReadAllText(path));
+    }
+
+    [Fact]
     public void AnUnchangedSourceChangesNothing()
     {
         var update = Files((MappingStore.EventsFile, "id,featured\nLottery_Xun,1052\n"));

@@ -52,9 +52,14 @@ public sealed class MappingStore(string folder)
             var path = Path.Combine(Folder, name);
             if (!File.Exists(path))
             {
-                using var seed = RewardCatalog.OpenSeed(name);
-                using var file = new FileStream(path, FileMode.CreateNew, FileAccess.Write);
-                seed.CopyTo(file);
+                using (var seed = RewardCatalog.OpenSeed(name))
+                using (var file = new FileStream(path, FileMode.CreateNew, FileAccess.Write))
+                {
+                    seed.CopyTo(file);
+                }
+                // The first update compares against this, to tell a row deleted here from one never held.
+                Directory.CreateDirectory(Path.Combine(Folder, UpstreamFolder));
+                File.Copy(path, Path.Combine(Folder, UpstreamFolder, name), overwrite: true);
             }
         }
         UpgradeLegacyRewards();
