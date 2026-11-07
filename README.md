@@ -168,15 +168,15 @@ UID 預設不顯示。勾選後也只顯示遮蔽中段的版本，例如 `214**
 | `.flows` | mitmproxy 的擷取檔 |
 | 匯出的 JSON | 本程式或 nte-exporter 的抽卡和成就紀錄 |
 | CSV、JSON | 獎勵和成就對應表，或語言包 |
-| `records.json` | NTE_Gacha_Exporter 的紀錄 |
+| `records.json`、匯出的 JSON | NTE_Gacha_Exporter 的紀錄 |
 
 語言包的 JSON 格式是 `{"id": {"names": {"ja": "..."}, "rank": "S"}}`。
 
-匯入 `records.json` 的規則：
+匯入 NTE_Gacha_Exporter 紀錄的規則：
 
 - 用時間判斷是否重複。某一秒已有紀錄就不更動，只補上沒有的秒數。本程式擷取的資料優先。
 - 之後重新擷取到同一秒，會取代匯入的資料。
-- 對方的棋盤紀錄沒有記是哪一期，所以限定棋盤補上的紀錄不會歸到任何一期。例外是 2026-05-07 之前的紀錄，當時只開放一個限定棋盤，會歸到娜娜莉這期。
+- 1.2.5 版起的棋盤紀錄有 `lottery_id`，會歸到該期。更舊的紀錄沒有這個資訊，限定棋盤補上的紀錄不會歸到任何一期。例外是 2026-05-07 之前的紀錄，當時只開放一個限定棋盤，會歸到娜娜莉這期。
 
 ### 匯出
 
@@ -267,7 +267,9 @@ NTE Omikuji is an unofficial Windows app that reads your own Neverness to Everne
 可以匯入以下兩個專案匯出的紀錄：
 
 - [nte-exporter](https://github.com/Golumpa/nte-exporter) 的 JSON
-- [NTE_Gacha_Exporter](https://github.com/Anong0u0/NTE_Gacha_Exporter) 的 `records.json`
+- [NTE_Gacha_Exporter](https://github.com/Anong0u0/NTE_Gacha_Exporter) 的 `records.json` 和匯出的 JSON（不含 CSV）
+
+`records.json` 用它 1.2.4 版的真實檔案驗證過。匯出的 JSON，以及 1.2.5 版起才有的活動欄位 `lottery_id`，是照它的原始碼實作的，還沒有用真實檔案驗證。
 
 ## 修正的 bug
 

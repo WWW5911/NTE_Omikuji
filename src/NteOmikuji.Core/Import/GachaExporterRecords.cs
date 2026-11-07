@@ -10,12 +10,15 @@ namespace NteOmikuji.Core.Import;
 public sealed record GachaExporterImport(IReadOnlyDictionary<HistoryKind, List<HistoryRow>> Rows, int Ignored);
 
 /// <summary>
-/// Reads the records.json kept by NTE_Gacha_Exporter. It stores the same pulls with their own IDs and no
-/// timestamp bytes, and boards name no event, so its rows can only be matched to saved history by time.
+/// Reads the records.json kept by NTE_Gacha_Exporter, and the JSON it exports. They store the same pulls with
+/// their own IDs and no timestamp bytes, so rows can only be matched to saved history by time. Boards name
+/// their event only from its version 1.2.5.
 /// </summary>
 public static class GachaExporterRecords
 {
     private const int SupportedSchema = 1;
+    private const string PublicSchema = "nte-gacha-export";
+    private static readonly string[] SupportedPublicVersions = ["2.0", "2.1"];
     private const string TimeFormat = "yyyy-MM-dd HH:mm:ss";
     private const string PermanentEvent = "Lottery_Permanent";
     private const string PointsRewardLabel = "BPUI_LotteryResult_jidianzengli";
@@ -26,20 +29,41 @@ public static class GachaExporterRecords
 
     public static bool Matches(JsonElement root) =>
         root.ValueKind == JsonValueKind.Object
-        && root.TryGetProperty("schema_version", out _)
-        && root.TryGetProperty("records", out var records) && records.ValueKind == JsonValueKind.Array;
+        && (IsPublicExport(root)
+            || (root.TryGetProperty("schema_version", out _)
+                && root.TryGetProperty("records", out var records) && records.ValueKind == JsonValueKind.Array));
+
+    private static bool IsPublicExport(JsonElement root) =>
+        root.TryGetProperty("info", out var info) && info.ValueKind == JsonValueKind.Object && Text(info, "schema") == PublicSchema;
+
+    private static JsonElement RecordsOf(JsonElement root)
+    {
+        if (!IsPublicExport(root))
+        {
+            if (!root.GetProperty("schema_version").TryGetInt32(out var version) || version != SupportedSchema)
+            {
+                throw new InvalidDataException($"不支援的 records.json 版本：{root.GetProperty("schema_version")}");
+            }
+            return root.GetProperty("records");
+        }
+        var exported = Text(root.GetProperty("info"), "schema_version");
+        if (!SupportedPublicVersions.Contains(exported))
+        {
+            throw new InvalidDataException($"不支援的 NTE_Gacha_Exporter 匯出版本：{exported}");
+        }
+        if (!root.TryGetProperty("nte", out var nte) || !nte.TryGetProperty("list", out var list) || list.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidDataException("NTE_Gacha_Exporter 匯出檔缺少 nte.list。");
+        }
+        return list;
+    }
 
     public static GachaExporterImport Read(JsonElement root)
     {
-        if (!root.GetProperty("schema_version").TryGetInt32(out var version) || version != SupportedSchema)
-        {
-            throw new InvalidDataException($"不支援的 records.json 版本：{root.GetProperty("schema_version")}");
-        }
-
         var perPool = new Dictionary<HistoryKind, List<(long Order, HistoryRow Row)>>();
         var ignored = 0;
         var position = 0L;
-        foreach (var record in root.GetProperty("records").EnumerateArray())
+        foreach (var record in RecordsOf(root).EnumerateArray())
         {
             var order = record.TryGetProperty("source_order", out var value) && value.TryGetInt64(out var stored) ? stored : position;
             position++;
@@ -102,7 +126,9 @@ public static class GachaExporterRecords
                 return (HistoryKind.ArcMiracleBox, row);
             case "monopoly" when BoardOf(pool) is { } board && ApplyResult(record, row):
                 row.Quantity = record.TryGetProperty("count", out var count) && count.TryGetInt64(out var quantity) ? quantity : null;
-                row.EventId = board == HistoryKind.Permanent ? PermanentEvent : null;
+                row.EventId = Text(record, "lottery_id") is { } lottery && RecordBlockParser.IsEventId(lottery)
+                    ? lottery
+                    : board == HistoryKind.Permanent ? PermanentEvent : null;
                 return (board, row);
             default:
                 return null;

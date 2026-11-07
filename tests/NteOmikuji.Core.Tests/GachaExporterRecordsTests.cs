@@ -33,6 +33,18 @@ public class GachaExporterRecordsTests
     private static byte[] File(params JsonObject[] records) =>
         Encoding.UTF8.GetBytes(new JsonObject { ["schema_version"] = 1, ["records"] = new JsonArray(records.Cast<JsonNode>().ToArray()) }.ToJsonString());
 
+    private static byte[] PublicFile(string version, params JsonObject[] records) => Encoding.UTF8.GetBytes(new JsonObject
+    {
+        ["info"] = new JsonObject { ["schema"] = "nte-gacha-export", ["schema_version"] = version, ["export_app"] = "nte-gacha-exporter", ["privacy"] = "sanitized" },
+        ["nte"] = new JsonObject { ["list"] = new JsonArray(records.Cast<JsonNode>().ToArray()) },
+    }.ToJsonString());
+
+    private static JsonObject WithLottery(JsonObject record, string? lottery)
+    {
+        record["lottery_id"] = lottery;
+        return record;
+    }
+
     private static GachaExporterImport Read(params JsonObject[] records) => ImportedFiles.ReadGachaExporter(File(records));
 
     private static HistoryRow Captured(string uid, string time, string reward = "captured") => new()
@@ -53,6 +65,89 @@ public class GachaExporterRecordsTests
     public void TheFileIsRecognizedByItsContent()
     {
         Assert.Equal(ImportKind.GachaExporterRecords, ImportedFiles.Classify("records.json", File(Record(0, OldTime, "x"))));
+    }
+
+    [Fact]
+    public void TheExportedJsonIsRecognizedByItsContent()
+    {
+        Assert.Equal(ImportKind.GachaExporterRecords, ImportedFiles.Classify("export.json", PublicFile("2.1", Record(0, OldTime, "x"))));
+    }
+
+    [Fact]
+    public void AMappingWithAnEntryNamedInfoIsStillAMapping()
+    {
+        var bytes = Encoding.UTF8.GetBytes("{\"info\": {\"names\": {\"ja\": \"x\"}, \"rank\": \"S\"}}");
+
+        Assert.Equal(ImportKind.RewardMapping, ImportedFiles.Classify("mapping.json", bytes));
+    }
+
+    [Theory]
+    [InlineData("2.0")]
+    [InlineData("2.1")]
+    public void TheExportedJsonIsRead(string version)
+    {
+        var read = ImportedFiles.ReadGachaExporter(PublicFile(version, Record(0, OldTime, "old", 4), Record(1, OldTime, "fork_x", null, type: "fork", pool: "ForkLottery_Xun")));
+
+        Assert.Equal(("old", 4), (read.Rows[HistoryKind.LimitedCharacter].Single().RewardId, read.Rows[HistoryKind.LimitedCharacter].Single().Dice!.Value));
+        Assert.Equal("ForkLottery_Xun", read.Rows[HistoryKind.ArcMiracleBox].Single().EventId);
+        Assert.Equal(0, read.Ignored);
+    }
+
+    [Fact]
+    public void AnotherExportVersionIsRefused()
+    {
+        Assert.Throws<InvalidDataException>(() => ImportedFiles.ReadGachaExporter(PublicFile("3.0", Record(0, OldTime, "x"))));
+    }
+
+    [Fact]
+    public void AnExportWithoutItsListIsRefused()
+    {
+        var bytes = Encoding.UTF8.GetBytes("{\"info\": {\"schema\": \"nte-gacha-export\", \"schema_version\": \"2.1\"}}");
+
+        Assert.Throws<InvalidDataException>(() => ImportedFiles.ReadGachaExporter(bytes));
+    }
+
+    [Fact]
+    public void ABoardRowKeepsItsNamedEvent()
+    {
+        var row = ImportedFiles.ReadGachaExporter(PublicFile("2.1", WithLottery(Record(0, SharedTime, "x"), "Lottery_MingYin"))).Rows[HistoryKind.LimitedCharacter].Single();
+
+        Assert.Equal("Lottery_MingYin", row.EventId);
+    }
+
+    [Fact]
+    public void ANewerRecordsFileKeepsItsNamedEventToo()
+    {
+        var row = Read(WithLottery(Record(0, SharedTime, "x"), "Lottery_MingYin")).Rows[HistoryKind.LimitedCharacter].Single();
+
+        Assert.Equal("Lottery_MingYin", row.EventId);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("not an event")]
+    public void AMissingOrOddEventIsLeftUnset(string? lottery)
+    {
+        var limited = Read(WithLottery(Record(0, SharedTime, "x"), lottery)).Rows[HistoryKind.LimitedCharacter].Single();
+        var standard = Read(WithLottery(Record(0, SharedTime, "x", pool: "CardPool_NewRole"), lottery)).Rows[HistoryKind.Permanent].Single();
+
+        Assert.Null(limited.EventId);
+        Assert.Equal("Lottery_Permanent", standard.EventId);
+    }
+
+    [Fact]
+    public void ExportedRowsOnlyFillGapsToo()
+    {
+        var (folder, library) = WithCaptured(Captured("c1", SharedTime));
+        using var _ = folder;
+        var rows = ImportedFiles.ReadGachaExporter(PublicFile("2.1", WithLottery(Record(0, OldTime, "old"), "Lottery_Xun"), WithLottery(Record(1, SharedTime, "theirs"), "Lottery_Xun"))).Rows[HistoryKind.LimitedCharacter];
+
+        var (added, skipped) = library.Fill(Uid, HistoryKind.LimitedCharacter, rows, RewardCatalog.Empty);
+
+        Assert.Equal((1, 1), (added, skipped));
+        Assert.Equal(["captured", "old"], Limited(library).Select(row => row.RewardId));
+        Assert.Equal("Lottery_Xun", Limited(library)[1].EventId);
     }
 
     [Fact]
