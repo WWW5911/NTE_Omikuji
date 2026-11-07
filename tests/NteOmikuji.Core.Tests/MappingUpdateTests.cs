@@ -148,6 +148,81 @@ public sealed class MappingUpdateTests : IDisposable
         Assert.Null(Row(MappingStore.RewardsFile, "new_item"));
     }
 
+    private string Text(string file) => File.ReadAllText(Path.Combine(_folder, file));
+
+    [Fact]
+    public void OneUndoRevertsAnUpdateAcrossFiles()
+    {
+        var (rewards, events) = (Text(MappingStore.RewardsFile), Text(MappingStore.EventsFile));
+        _store.ApplyUpdate(Files(
+            (MappingStore.RewardsFile, "id,type,rank\nnew_item,item,A\n"),
+            (MappingStore.EventsFile, "id,featured\nLottery_New,1\n")));
+
+        Assert.True(_store.Undo());
+
+        Assert.Equal((rewards, events), (Text(MappingStore.RewardsFile), Text(MappingStore.EventsFile)));
+        Assert.False(_store.CanUndo);
+    }
+
+    [Fact]
+    public void EachEditKeepsItsOwnUndo()
+    {
+        _store.SaveEvent("Lottery_A", ["1"]);
+        _store.SaveEvent("Lottery_B", ["2"]);
+
+        _store.Undo();
+
+        Assert.NotNull(Row(MappingStore.EventsFile, "Lottery_A"));
+        Assert.Null(Row(MappingStore.EventsFile, "Lottery_B"));
+    }
+
+    [Fact]
+    public void OneUndoRevertsAFillFromBundledAcrossFiles()
+    {
+        _store.DeleteReward("1010");
+        _store.DeleteEvent("Lottery_Xun");
+
+        Assert.True(_store.FillFromBundled() > 0);
+        _store.Undo();
+
+        Assert.Null(Row(MappingStore.RewardsFile, "1010"));
+        Assert.Null(Row(MappingStore.EventsFile, "Lottery_Xun"));
+    }
+
+    [Fact]
+    public void AnUpdateStoppedByALockedFileCanStillBeUndone()
+    {
+        var rewards = Text(MappingStore.RewardsFile);
+        var update = Files((MappingStore.RewardsFile, "id,type,rank\nnew_item,item,A\n"), (MappingStore.EventsFile, "id,featured\nLottery_New,1\n"));
+        using (new FileStream(Path.Combine(_folder, MappingStore.EventsFile), FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
+        {
+            Assert.ThrowsAny<Exception>(() => _store.ApplyUpdate(update));
+        }
+
+        Assert.NotEqual(rewards, Text(MappingStore.RewardsFile));
+        _store.Undo();
+
+        Assert.Equal(rewards, Text(MappingStore.RewardsFile));
+    }
+
+    [Fact]
+    public void AnUndoStoppedByALockedFileFinishesOnTheNextTry()
+    {
+        var (rewards, events) = (Text(MappingStore.RewardsFile), Text(MappingStore.EventsFile));
+        _store.ApplyUpdate(Files(
+            (MappingStore.RewardsFile, "id,type,rank\nnew_item,item,A\n"),
+            (MappingStore.EventsFile, "id,featured\nLottery_New,1\n")));
+        using (new FileStream(Path.Combine(_folder, MappingStore.RewardsFile), FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
+        {
+            Assert.ThrowsAny<Exception>(() => _store.Undo());
+        }
+
+        Assert.True(_store.CanUndo);
+        _store.Undo();
+
+        Assert.Equal((rewards, events), (Text(MappingStore.RewardsFile), Text(MappingStore.EventsFile)));
+    }
+
     [Fact]
     public void ABadFileStopsTheWholeUpdate()
     {

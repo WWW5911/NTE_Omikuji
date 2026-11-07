@@ -30,7 +30,8 @@ public sealed class MappingStore(string folder)
 
     private static readonly string[] AchievementColumns = ["id", "name", "description", "quality", "target", "rewards"];
 
-    private readonly Stack<(string Path, byte[] Bytes)> _undo = new();
+    private readonly Stack<List<(string Path, byte[] Bytes)>> _undo = new();
+    private List<(string Path, byte[] Bytes)>? _openStep;
     private string _lastLoaded = "";
 
     public string Folder { get; } = folder;
@@ -184,7 +185,7 @@ public sealed class MappingStore(string folder)
     }
 
     /// <summary>Adds rows and fills blank cells from the bundled data, leaving every filled cell alone.</summary>
-    public int FillFromBundled()
+    public int FillFromBundled() => AsOneUndoStep(() =>
     {
         var table = ReadRewards();
         var changed = MergeBlanks(table, ReadSeedRewards());
@@ -205,7 +206,7 @@ public sealed class MappingStore(string folder)
             Write(ScheduleFile, schedule);
         }
         return changed + changedEvents + changedSchedule;
-    }
+    });
 
     /// <summary>
     /// Takes what changed upstream since the last update, so a corrected date or rank arrives while anything edited
@@ -214,27 +215,48 @@ public sealed class MappingStore(string folder)
     public int ApplyUpdate(IReadOnlyDictionary<string, byte[]> downloads)
     {
         var incoming = downloads.ToDictionary(file => file.Key, file => ParseDownload(file.Key, file.Value));
-        var changed = 0;
-        foreach (var (name, upstream) in incoming)
+        return AsOneUndoStep(() =>
         {
-            var table = ReadUpdatable(name);
-            var lastTaken = ReadLastTaken(name);
-            var baseline = lastTaken ?? ReadSeed(name);
-            if (name == RewardsFile)
+            var changed = 0;
+            foreach (var (name, upstream) in incoming)
             {
-                RewardSchema.Normalize(upstream);
-                RewardSchema.Normalize(baseline);
+                var table = ReadUpdatable(name);
+                var lastTaken = ReadLastTaken(name);
+                var baseline = lastTaken ?? ReadSeed(name);
+                if (name == RewardsFile)
+                {
+                    RewardSchema.Normalize(upstream);
+                    RewardSchema.Normalize(baseline);
+                }
+                var cells = MergeUpstream(table, upstream, baseline, lastTaken is not null);
+                if (cells > 0)
+                {
+                    Write(name, table);
+                    changed += cells;
+                }
+                Directory.CreateDirectory(Path.Combine(Folder, UpstreamFolder));
+                AtomicFile.WriteAllText(Path.Combine(Folder, UpstreamFolder, name), upstream.ToText(), withBom: true);
             }
-            var cells = MergeUpstream(table, upstream, baseline, lastTaken is not null);
-            if (cells > 0)
-            {
-                Write(name, table);
-                changed += cells;
-            }
-            Directory.CreateDirectory(Path.Combine(Folder, UpstreamFolder));
-            AtomicFile.WriteAllText(Path.Combine(Folder, UpstreamFolder, name), upstream.ToText(), withBom: true);
+            return changed;
+        });
+    }
+
+    /// <summary>Everything this writes comes back with one undo, even if it stops partway through.</summary>
+    private int AsOneUndoStep(Func<int> change)
+    {
+        _openStep = [];
+        try
+        {
+            return change();
         }
-        return changed;
+        finally
+        {
+            if (_openStep.Count > 0)
+            {
+                PushUndo(_openStep);
+            }
+            _openStep = null;
+        }
     }
 
     private static CsvTable ParseDownload(string name, byte[] bytes)
@@ -321,22 +343,34 @@ public sealed class MappingStore(string folder)
         {
             return false;
         }
-        var temporary = $"{step.Path}.{Guid.NewGuid():N}.tmp";
+        for (var index = step.Count - 1; index >= 0; index--)
+        {
+            try
+            {
+                Restore(step[index].Path, step[index].Bytes);
+            }
+            catch
+            {
+                // What was already restored stays so, and pressing undo again finishes the rest.
+                _undo.Push(step.Take(index + 1).ToList());
+                throw;
+            }
+        }
+        return true;
+    }
+
+    private static void Restore(string path, byte[] bytes)
+    {
+        var temporary = $"{path}.{Guid.NewGuid():N}.tmp";
         try
         {
-            File.WriteAllBytes(temporary, step.Bytes);
-            File.Move(temporary, step.Path, overwrite: true);
-        }
-        catch
-        {
-            _undo.Push(step);
-            throw;
+            File.WriteAllBytes(temporary, bytes);
+            File.Move(temporary, path, overwrite: true);
         }
         finally
         {
             File.Delete(temporary);
         }
-        return true;
     }
 
     /// <summary>Adds or updates rows from a CSV or JSON mapping file, keeping every other row and column.</summary>
@@ -553,7 +587,19 @@ public sealed class MappingStore(string folder)
         var path = Path.Combine(Folder, name);
         var before = ReadShared(path);
         AtomicFile.WriteAllText(path, table.ToText(), withBom: true);
-        _undo.Push((path, before));
+        if (_openStep is { } open)
+        {
+            open.Add((path, before));
+        }
+        else
+        {
+            PushUndo([(path, before)]);
+        }
+    }
+
+    private void PushUndo(List<(string Path, byte[] Bytes)> step)
+    {
+        _undo.Push(step);
         if (_undo.Count > MaxUndoSteps)
         {
             var kept = _undo.Take(MaxUndoSteps).Reverse().ToList();
