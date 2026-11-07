@@ -123,7 +123,8 @@ most-obtained rewards. Boards also show dice rolls and result types.
   an S in 10 pulls is 歐皇.
 - Each event also has a luck tag, on its page and in the 各期運氣 table on its pool's
   page. Since pity carries over, its expected count starts from the pulls already
-  made when the event began. This assumes an event's pulls run together, so it is approximate if you alternated
+  made when the event began, shown as 開始已墊, with 結束已墊 for those it leaves to the
+  next. Share images show both for an event. This assumes an event's pulls run together, so it is approximate if you alternated
   between two events. Events inherit from each other, so their tags do not add up to
   the pool's.
 - Guarantees are built in: 90 pulls for an S on both boards with better odds from

@@ -16,6 +16,8 @@ public sealed record ShareReward(string Name, int Pulls, bool AtLeast, bool Limi
 /// <param name="Context">The pool an event belongs to, when this covers one event.</param>
 /// <param name="Scale">Pulls at which the pool guarantees its top reward.</param>
 /// <param name="RisesFrom">The pull from which the odds improve, when the pool has such a point.</param>
+/// <param name="CarriedPulls">Pulls already made toward the next reward when an event began.</param>
+/// <param name="EndedPulls">Pulls made toward the next reward when an event ended.</param>
 public sealed record SharePool(
     string Kind,
     string Label,
@@ -35,7 +37,9 @@ public sealed record SharePool(
     IReadOnlyList<ShareReward> Rewards,
     int Scale,
     int? RisesFrom,
-    string? Context = null);
+    string? Context = null,
+    int CarriedPulls = 0,
+    int EndedPulls = 0);
 
 /// <summary>A pool to share, or one event within it.</summary>
 public sealed record ShareTarget(HistoryKind Kind, string? BannerId = null);
@@ -144,6 +148,8 @@ public static class ShareCardBuilder
             Pity = null,
             LimitedPity = null,
             Rewards = Rewards(data),
+            CarriedPulls = data.CarriedPulls,
+            EndedPulls = data.EndedPulls,
         };
     }
 

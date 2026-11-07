@@ -210,11 +210,11 @@ window.nteShare = (() => {
 
         let cursor = y + 178;
         if (pool.pity) {
-            pityMeter(pool.pity, `距上次 ${pool.topLabel}`, x + pad, cursor, inner);
+            pityMeter(pool.pity, `已墊（距上次 ${pool.topLabel}）`, x + pad, cursor, inner);
             cursor += 56;
         }
         if (pool.limitedPity) {
-            pityMeter(pool.limitedPity, "距上次限定", x + pad, cursor, inner);
+            pityMeter(pool.limitedPity, "已墊（距上次限定）", x + pad, cursor, inner);
             cursor += 56;
         }
 
@@ -404,14 +404,19 @@ window.nteShare = (() => {
 
         let cursor = tileY + tileH + 44;
         if (pool.pity) {
-            pityMeter(pool.pity, `距上次 ${pool.topLabel}`, margin, cursor, w - margin * 2);
+            pityMeter(pool.pity, `已墊（距上次 ${pool.topLabel}）`, margin, cursor, w - margin * 2);
             cursor += 58;
         }
         if (pool.limitedPity) {
-            pityMeter(pool.limitedPity, "距上次限定", margin, cursor, w - margin * 2);
+            pityMeter(pool.limitedPity, "已墊（距上次限定）", margin, cursor, w - margin * 2);
             cursor += 58;
         }
 
+        if (pool.context) {
+            const target = pool.kind === "ArcMiracleBox" ? "（距上次限定）" : "（距上次 S）";
+            text(`開始已墊 ${pool.carriedPulls} 抽，結束已墊 ${pool.endedPulls} 抽${target}`, margin, cursor, 27, theme.text, { weight: 600 });
+            cursor += 44;
+        }
         text(`${pool.topLabel} 出貨歷程`, margin, cursor + 18, 32, theme.text, { weight: 700 });
         const hasLimited = pool.rewards.some(reward => reward.limited);
         if (hasLimited) {
@@ -419,7 +424,7 @@ window.nteShare = (() => {
             text("限定", w - margin, cursor + 16, 22, theme.muted, { align: "right" });
         }
         bars(pool, margin, cursor + 40, w - margin * 2, h - 70 - (cursor + 40));
-        footer(card, w, h, margin, pool.context ? "新到舊；抽數與期望都含前期帶入的保底。" : "新到舊；≥ 表示更早的抽數可能不在紀錄內。");
+        footer(card, w, h, margin, pool.context ? "新到舊；抽數與期望都含開始已墊的抽數。" : "新到舊；≥ 表示更早的抽數可能不在紀錄內。");
     }
 
     function bars(pool, x, y, w, h) {
@@ -458,7 +463,7 @@ window.nteShare = (() => {
 
     /** A pool with few rewards gets a shorter image rather than a page of empty space. */
     function poolHeight(pool) {
-        const meters = (pool.pity ? 58 : 0) + (pool.limitedPity ? 58 : 0);
+        const meters = (pool.pity ? 58 : 0) + (pool.limitedPity ? 58 : 0) + (pool.context ? 44 : 0);
         const needed = 344 + meters + 40 + pool.rewards.length * BAR_ROW + 78;
         return Math.max(POOL_MIN_HEIGHT, Math.min(POOL_MAX_HEIGHT, needed));
     }

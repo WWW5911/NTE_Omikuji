@@ -183,6 +183,7 @@ public class ShareCardTests
         Assert.Equal((2, 200), (luck.Hits, luck.Pulls));
         Assert.True(luck.Sigma < 0);
         Assert.Null(selected.LuckNote);
+        Assert.Equal((0, 20), (selected.CarriedPulls, selected.EndedPulls));
     }
 
     [Fact]

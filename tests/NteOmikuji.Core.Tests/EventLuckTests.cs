@@ -274,6 +274,45 @@ public class EventLuckTests
     }
 
     [Fact]
+    public void AnEventEndsWithThePullsSinceItsLastHit()
+    {
+        var data = HistoryAnalyzer.Analyze(History(BannerInfo.LimitedCharacter, 60, 40, hitsAt: 10), bannerId: "Lottery_New");
+
+        Assert.Equal(30, data.EndedPulls);
+    }
+
+    [Fact]
+    public void AnEventWithoutAHitEndsWithEverythingItInherited()
+    {
+        var history = History(BannerInfo.LimitedCharacter, 60, 20);
+
+        Assert.Equal(80, HistoryAnalyzer.Analyze(history, bannerId: "Lottery_New").EndedPulls);
+    }
+
+    [Fact]
+    public void AnOlderEventEndsBeforeLaterPullsCount()
+    {
+        var data = HistoryAnalyzer.Analyze(History(BannerInfo.LimitedCharacter, 60, 40, hitsAt: 10), bannerId: "Lottery_Old");
+
+        Assert.Equal(60, data.EndedPulls);
+    }
+
+    [Fact]
+    public void AnArcEventEndsCountingTowardTheLimitedReward()
+    {
+        var limited = HistoryAnalyzer.Analyze(History(BannerInfo.ArcMiracleBox, 30, 80, RewardFocus.SLimitedArc, 40), bannerId: "Lottery_New");
+        var ordinary = HistoryAnalyzer.Analyze(History(BannerInfo.ArcMiracleBox, 30, 80, RewardFocus.SArc, 40), bannerId: "Lottery_New");
+
+        Assert.Equal((40, 110), (limited.EndedPulls, ordinary.EndedPulls));
+    }
+
+    [Fact]
+    public void AWholePoolEndsAtItsCurrentCount()
+    {
+        Assert.Equal(30, HistoryAnalyzer.Analyze(History(BannerInfo.LimitedCharacter, 60, 40, hitsAt: 10)).EndedPulls);
+    }
+
+    [Fact]
     public void AWholePoolStillStartsFromNothing()
     {
         var data = HistoryAnalyzer.Analyze(History(BannerInfo.LimitedCharacter, 60, 40, hitsAt: 10));

@@ -34,7 +34,11 @@
         }
         @if (BannerId is not null && _data.CarriedPulls > 0)
         {
-            <p class="hint" id="carried-note">這期開始時，距上次@(LimitedAt is null ? " S" : "限定")已累積 @_data.CarriedPulls 抽，運氣的期望已把這些算進去。</p>
+            <p class="hint" id="carried-note">這期開始時已墊 @_data.CarriedPulls 抽（距上次@(LimitedAt is null ? " S" : "限定")），運氣的期望已把這些算進去。</p>
+        }
+        @if (BannerId is not null)
+        {
+            <p class="hint" id="ended-note">這期結束時已墊 @_data.EndedPulls 抽（距上次@(LimitedAt is null ? " S" : "限定")）。</p>
         }
         @if (_events.Count > 0)
         {
@@ -46,7 +50,8 @@
                             <tr>
                                 <th>活動</th>
                                 <th class="num">抽數</th>
-                                <th class="num">帶入</th>
+                                <th class="num">開始已墊</th>
+                                <th class="num">結束已墊</th>
                                 <th class="num">@(LimitedAt is null ? "S" : "限定")</th>
                                 <th class="num">期望</th>
                                 <th class="num">σ</th>
@@ -60,6 +65,7 @@
                                     <th scope="row"><button class="link-inline" @onclick="() => OnOpenBanner.InvokeAsync(group.Id)">@group.Name</button></th>
                                     <td class="num">@group.Pulls.ToString("N0")</td>
                                     <td class="num">@data.CarriedPulls</td>
+                                    <td class="num">@data.EndedPulls</td>
                                     <td class="num">@(LimitedAt is null ? data.TopRankCount : data.LimitedCount)</td>
                                     <td class="num">@(data.Luck is { } score ? $"{score.Expected:0.0} ± {score.StandardDeviation:0.0}" : "—")</td>
                                     <td class="num">@(data.Luck?.Sigma.ToString("+0.00;-0.00;0.00") ?? "—")</td>
@@ -69,7 +75,7 @@
                         </tbody>
                     </table>
                 </div>
-                <p class="hint">保底會跨期延續，所以每期的期望都從當時累積的抽數算起。各期不能相加成整體運氣，整體請看頁面上方的標籤。</p>
+                <p class="hint">已墊是距上次@(LimitedAt is null ? " S" : "限定")的抽數。保底會跨期延續，所以每期的期望都從開始已墊的抽數算起。各期不能相加成整體運氣，整體請看頁面上方的標籤。</p>
             </section>
         }
         @if (BannerId is null && History.Banner.Kind != HistoryKind.Permanent && History.Rows.All(row => row.BannerId is null))

@@ -61,7 +61,8 @@ public sealed record BannerAnalysis(
     int GuaranteedLimitedCount = 0,
     double? ObservedLimitedRate = null,
     LuckScore? Luck = null,
-    int CarriedPulls = 0);
+    int CarriedPulls = 0,
+    int EndedPulls = 0);
 
 /// <summary>Measures what is in the history against each pool's stated guarantees, and predicts nothing.</summary>
 public static class HistoryAnalyzer
@@ -98,6 +99,7 @@ public static class HistoryAnalyzer
         var sawSecondRank = false;
         // An event inherits pity, so its luck starts from the pulls already made when it began.
         int? carried = null;
+        int? ended = null;
         foreach (var row in all)
         {
             if (bannerId is not null && carried is null && row.BannerId == bannerId)
@@ -130,6 +132,10 @@ public static class HistoryAnalyzer
             {
                 sawLimited = true;
                 sinceLimited = 0;
+            }
+            if (bannerId is not null && row.BannerId == bannerId)
+            {
+                ended = rule?.LimitedAt is null ? sinceTopRank : sinceLimited;
             }
         }
 
@@ -196,7 +202,8 @@ public static class HistoryAnalyzer
             guaranteed,
             observedLimitedRate,
             luck,
-            carried ?? 0);
+            carried ?? 0,
+            ended ?? (rule?.LimitedAt is null ? sinceTopRank : sinceLimited));
     }
 
     /// <summary>Events in a pool, newest first.</summary>
