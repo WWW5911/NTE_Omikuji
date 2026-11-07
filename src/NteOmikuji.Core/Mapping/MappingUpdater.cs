@@ -7,8 +7,11 @@ namespace NteOmikuji.Core.Mapping;
 public sealed record MappingDownload(IReadOnlyDictionary<string, byte[]> Files, IReadOnlyList<string> Missing);
 
 /// <summary>Downloads the mapping tables from this project's repository. It only reads, and sends nothing about the player.</summary>
-public sealed class MappingUpdater(HttpClient http, string baseUrl = MappingUpdater.DefaultBaseUrl)
+/// <param name="timeLimit">How long the whole download may take.</param>
+public sealed class MappingUpdater(HttpClient http, string baseUrl = MappingUpdater.DefaultBaseUrl, TimeSpan? timeLimit = null)
 {
+    private static readonly TimeSpan DefaultTimeLimit = TimeSpan.FromSeconds(60);
+
     public const string DefaultBaseUrl = "https://raw.githubusercontent.com/WWW5911/NTE_Omikuji/main/src/NteOmikuji.Core/Mappings/";
 
     private const int MaxFileBytes = 8 * 1024 * 1024;
@@ -29,6 +32,21 @@ public sealed class MappingUpdater(HttpClient http, string baseUrl = MappingUpda
 
     /// <summary>A failed download throws, so an update never applies part of a set because of a bad connection.</summary>
     public async Task<MappingDownload> DownloadAsync(CancellationToken token = default)
+    {
+        // HttpClient's own timeout stops at the headers, so a stalled body needs this one.
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(token);
+        limit.CancelAfter(timeLimit ?? DefaultTimeLimit);
+        try
+        {
+            return await DownloadFilesAsync(limit.Token);
+        }
+        catch (OperationCanceledException exception) when (!token.IsCancellationRequested)
+        {
+            throw new HttpRequestException("下載逾時。", exception);
+        }
+    }
+
+    private async Task<MappingDownload> DownloadFilesAsync(CancellationToken token)
     {
         var files = new Dictionary<string, byte[]>();
         var missing = new List<string>();

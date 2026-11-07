@@ -159,6 +159,35 @@ public sealed class MappingUpdateTests : IDisposable
         Assert.Contains(MappingStore.RewardsFile, failure.Message);
     }
 
+    private sealed class StalledStream : MemoryStream
+    {
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default)
+        {
+            await Task.Delay(Timeout.Infinite, token);
+            return 0;
+        }
+    }
+
+    [Fact]
+    public async Task AStalledDownloadStopsAtTheTimeLimit()
+    {
+        var http = new HttpClient(new FakeHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(new StalledStream()) }));
+        var download = new MappingUpdater(http, "https://example.test/", TimeSpan.FromMilliseconds(100)).DownloadAsync();
+
+        Assert.Same(download, await Task.WhenAny(download, Task.Delay(TimeSpan.FromSeconds(10))));
+        await Assert.ThrowsAsync<HttpRequestException>(() => download);
+    }
+
+    [Fact]
+    public async Task CancellingADownloadIsNotReportedAsATimeout()
+    {
+        using var cancelled = new CancellationTokenSource();
+        cancelled.Cancel();
+        var http = new HttpClient(new FakeHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(new StalledStream()) }));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => new MappingUpdater(http, "https://example.test/").DownloadAsync(cancelled.Token));
+    }
+
     [Fact]
     public async Task AServerErrorFailsTheDownload()
     {
