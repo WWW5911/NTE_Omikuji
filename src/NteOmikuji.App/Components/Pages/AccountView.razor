@@ -1,3 +1,4 @@
+@using NteOmikuji.Core.Export
 @implements IDisposable
 @inject ExporterState State
 
@@ -47,7 +48,9 @@
         <div class="button-row">
             <button id="folder" @onclick="() => OpenFolderAsync(State.DataFolder)">開啟 user_data</button>
             <button id="editor-mappings-folder" @onclick="() => OpenFolderAsync(State.MappingFolder)">開啟 mappings</button>
+            <button id="open-backups" @onclick="() => OpenFolderAsync(State.BackupFolder)">開啟備份</button>
         </div>
+        <p class="hint">每次啟動後第一次更新某份紀錄前，會先把舊檔備份到 user_data\backups，每份保留最近 @HistoryLibrary.BackupsPerFile 個。要還原時，先關閉程式，再把備份檔複製回 user_data 並改回原檔名。</p>
     </div>
 </div>
 

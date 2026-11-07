@@ -266,7 +266,7 @@ public static class HistoryAnalyzer
             .ToList();
     }
 
-    private static string ResultLabel(HistoryRow row) => row.ResultType switch
+    public static string ResultLabel(HistoryRow row) => row.ResultType switch
     {
         "dice" => "骰子",
         PointsReward => "集點贈禮",

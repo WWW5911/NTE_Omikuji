@@ -28,6 +28,8 @@ Keep the exe in a writable folder of its own, because it creates these beside it
 | `mappings\schedule.csv` | Announced events and their periods, shown on 總覽 until they end. |
 | `user_data\<uid>_<banner>.json` | Cumulative history per account, in version 1 export format. Reloaded at start. |
 | `user_data\<uid>_<banner>_partial_<time>.json` | A capture that missed page 1, kept apart from the cumulative file. |
+| `user_data\backups` | The previous version of a history file, copied before each session first changes it. The newest 10 per file are kept. To restore one, close the app and copy it back under its original name. |
+| `exports` | CSV files from **原始紀錄**. They leave out your UID, and cells that look like spreadsheet formulas are prefixed with `'`. |
 
 The import control takes `.flows` captures, exported JSON, and mapping CSV or JSON,
 and tells them apart by content. None of these need Administrator approval.

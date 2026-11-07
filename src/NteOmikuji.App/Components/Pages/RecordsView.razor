@@ -44,8 +44,17 @@
                             <input id="filter" class="filter" placeholder="搜尋獎勵或結果…" aria-label="搜尋" @bind="_filter" @bind:event="oninput" />
                             <label class="check"><input id="unmapped" type="checkbox" @bind="_unmappedOnly" /> 只看未對應（@UnmappedCount）</label>
                             <button id="copy" @onclick="CopyAsync">複製 JSON</button>
+                            <button id="export-csv" @onclick="ExportCurrent">匯出 CSV</button>
+                            <button id="export-all" @onclick="ExportAll">全部匯出</button>
                         </div>
                     </div>
+                    @if (_exported is { } exported)
+                    {
+                        <p class="hint" id="export-message" role="status">
+                            已匯出 @exported
+                            <button class="link-inline" id="open-exports" @onclick="OpenExportsAsync">開啟資料夾</button>
+                        </p>
+                    }
 
                     @if (Active is { } active)
                     {
@@ -111,6 +120,7 @@
     private HistoryKind? _activeKind;
     private string _filter = "";
     private bool _unmappedOnly;
+    private string? _exported;
 
     private BannerHistory? Active =>
         State.Histories.FirstOrDefault(history => history.Banner.Kind == _activeKind) ?? State.Histories.FirstOrDefault();
@@ -179,6 +189,24 @@
         }
         await State.ImportAsync(files);
         _activeKind = null;
+    }
+
+    private void ExportCurrent()
+    {
+        if (Active is { } active)
+        {
+            Remember(State.ExportCsv([active], active.Banner.FilePrefix));
+        }
+    }
+
+    private void ExportAll() => Remember(State.ExportCsv(State.Histories, "All"));
+
+    private void Remember(string? path) => _exported = path is null ? null : Path.GetFileName(path);
+
+    private async Task OpenExportsAsync()
+    {
+        Directory.CreateDirectory(State.ExportsFolder);
+        await Launcher.Default.OpenAsync(new Uri(State.ExportsFolder));
     }
 
     private async Task CopyAsync()

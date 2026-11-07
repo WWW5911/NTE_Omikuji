@@ -29,8 +29,13 @@ public sealed class HistoryLibrary(string folder)
     private readonly Dictionary<string, string> _writtenText = [];
     private readonly HashSet<string> _unreadable = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<(string Uid, string Label)> _dirty = [];
+    private readonly HashSet<string> _backedUp = new(StringComparer.OrdinalIgnoreCase);
+
+    public const int BackupsPerFile = 10;
 
     public string Folder { get; } = folder;
+
+    public string BackupFolder => Path.Combine(Folder, "backups");
 
     public IReadOnlyList<string> Accounts =>
         _accounts.Values.OrderByDescending(account => account.LastChanged).Select(account => account.Uid).ToList();
@@ -178,7 +183,7 @@ public sealed class HistoryLibrary(string folder)
                 : ExportWriter.BuildHistory(
                     Histories(uid).Single(history => history.Banner.FilePrefix == label),
                     ContextFor(uid));
-            if (WriteIfChanged(Path.Combine(Folder, ExportWriter.LibraryFileName(uid, label)), ExportWriter.ToJson(document)))
+            if (WriteIfChanged(Path.Combine(Folder, ExportWriter.LibraryFileName(uid, label)), ExportWriter.ToJson(document), backUp: true))
             {
                 written++;
             }
@@ -199,11 +204,40 @@ public sealed class HistoryLibrary(string folder)
         return path;
     }
 
-    private bool WriteIfChanged(string path, string text)
+    /// <summary>
+    /// Copies a file aside before this session first changes it, so one bad capture or
+    /// mapping edit can be undone. A failed copy stops the save rather than risking the only copy.
+    /// </summary>
+    private void BackUp(string path)
+    {
+        if (!_backedUp.Add(path) || !File.Exists(path))
+        {
+            return;
+        }
+        Directory.CreateDirectory(BackupFolder);
+        var name = Path.GetFileNameWithoutExtension(path);
+        File.Copy(path, Path.Combine(BackupFolder, $"{name}.{DateTime.Now:yyyyMMdd-HHmmss}.json"), overwrite: true);
+        foreach (var old in Directory.EnumerateFiles(BackupFolder, $"{name}.*.json").Order(StringComparer.Ordinal).SkipLast(BackupsPerFile))
+        {
+            File.Delete(old);
+        }
+    }
+
+    private bool WriteIfChanged(string path, string text, bool backUp = false)
     {
         if (_writtenText.GetValueOrDefault(path) == text)
         {
             return false;
+        }
+        if (backUp && !_unreadable.Contains(path))
+        {
+            // Loading can re-save a file unchanged, which needs neither a write nor a backup.
+            if (File.Exists(path) && File.ReadAllText(path) == text)
+            {
+                _writtenText[path] = text;
+                return false;
+            }
+            BackUp(path);
         }
         if (_unreadable.Remove(path) && File.Exists(path))
         {

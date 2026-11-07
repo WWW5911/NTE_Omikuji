@@ -120,6 +120,8 @@ public sealed class ExporterState : IDisposable
     public long OutboundCount => _session?.OutboundCount ?? 0;
     public string DataFolder => _library.Folder;
     public string MappingFolder => _mappings.Folder;
+    public string BackupFolder => _library.BackupFolder;
+    public string ExportsFolder => Path.Combine(_baseFolder, "exports");
     public string? Account => _account;
     public IReadOnlyList<string> Accounts => _library.Accounts.Where(uid => uid.Length > 0).ToList();
     public string? ServerId => _session?.ServerId ?? _library.ServerOf(_account);
@@ -267,6 +269,26 @@ public sealed class ExporterState : IDisposable
         ApplyMappings();
         Log($"已重新載入對應檔：{_catalog.RewardCount} 筆獎勵。");
         NotifyChanged();
+    }
+
+    /// <summary>Writes history for spreadsheets. Returns the file, or null when it could not be written.</summary>
+    public string? ExportCsv(IReadOnlyList<BannerHistory> histories, string label)
+    {
+        try
+        {
+            Directory.CreateDirectory(ExportsFolder);
+            var path = Path.Combine(ExportsFolder, $"NTE_{label}_{DateTime.Now:yyyyMMdd-HHmmss}.csv");
+            AtomicFile.WriteAllText(path, HistoryCsv.ToText(histories, DisplayName, BannerName), withBom: true);
+            Log($"已匯出 CSV：{path}");
+            NotifyChanged();
+            return path;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Error = $"無法匯出 CSV：{exception.Message}";
+            NotifyChanged();
+            return null;
+        }
     }
 
     public string DisplayName(HistoryRow row)
