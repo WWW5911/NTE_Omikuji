@@ -29,7 +29,7 @@ Keep the exe in a writable folder of its own, because it creates these beside it
 | `user_data\<uid>_<banner>.json` | Cumulative history per account, in version 1 export format. Reloaded at start. |
 | `user_data\<uid>_<banner>_partial_<time>.json` | A capture that missed page 1, kept apart from the cumulative file. |
 | `user_data\backups` | The previous version of a history file, copied before each session first changes it. The newest 10 per file are kept. To restore one, close the app and copy it back under its original name. |
-| `exports` | CSV files from **原始紀錄**. They leave out your UID, and cells that look like spreadsheet formulas are prefixed with `'`. |
+| `exports` | CSV files from **原始紀錄** and images from **分享圖**. The CSV files leave out your UID, and cells that look like spreadsheet formulas are prefixed with `'`. |
 
 The import control takes `.flows` captures, exported JSON, and mapping CSV or JSON,
 and tells them apart by content. None of these need Administrator approval.
@@ -128,6 +128,28 @@ most-obtained rewards. Boards also show dice rolls and result types.
   each limited Arc took, how many came from the 80 pull guarantee, and the limited
   share among the rest, for comparing with the stated 25%.
 - Everything stays on this computer, so there is no global luck comparison.
+
+### Share images
+
+**分享圖** in the left list draws an image to save as PNG or copy to the clipboard:
+
+| Template | Size | Shows |
+| --- | --- | --- |
+| 總覽 | 1920×1080 | Overall luck and all three pools with their pity and S history |
+| 運氣 | 1080×1080 | The luck tier, where it falls on the bell curve, and each pool |
+| 單池 | 1080×1350 | One pool's figures and how many pulls each S took |
+
+Each comes in a pale 櫻 and a dark 墨 color scheme. Your UID is left out unless you
+tick the box, and then its middle is masked. The percentage on 運氣 is a normal
+approximation of how the count falls among the outcomes that many pulls can bring,
+not a comparison with other players.
+
+### Mystery Box
+
+Captures read the layout used since version 1.4, where each request and row names
+its pool, as well as the older one. All pools share one file, with each row's pool
+in `pool_id`, and they appear under **原始紀錄**. The layout comes from a third-party
+description and has not yet been checked against real traffic here.
 
 ### Recording packets for debugging
 

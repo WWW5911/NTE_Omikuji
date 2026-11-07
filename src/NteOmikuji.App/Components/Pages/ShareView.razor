@@ -1,0 +1,133 @@
+@using NteOmikuji.Core.Analysis
+@using System.Runtime.InteropServices.WindowsRuntime
+@implements IDisposable
+@inject ExporterState State
+@inject IJSRuntime JS
+
+<div class="page" id="share">
+    <h2 class="page-title">分享圖</h2>
+    <div class="panel share-controls">
+        <div class="tabs" role="group" aria-label="範本">
+            @foreach (var (id, label) in Templates)
+            {
+                <button id="share-template-@id" class="@(_template == id ? "tab active" : "tab")" aria-pressed="@(_template == id)" @onclick="() => _template = id">@label</button>
+            }
+        </div>
+        @if (_template == "pool")
+        {
+            <select id="share-pool" aria-label="卡池" @bind="_poolIndex">
+                @for (var index = 0; index < (_card?.Pools.Count ?? 0); index++)
+                {
+                    <option value="@index">@_card!.Pools[index].Label</option>
+                }
+            </select>
+        }
+        <div class="tabs" role="group" aria-label="配色">
+            @foreach (var (id, label) in Themes)
+            {
+                <button id="share-theme-@id" class="@(_theme == id ? "tab active" : "tab")" aria-pressed="@(_theme == id)" @onclick="() => _theme = id">@label</button>
+            }
+        </div>
+        @if (ShareCardBuilder.MaskUid(State.Account) is { } masked)
+        {
+            <label class="check" title="中段會遮蔽">
+                <input id="share-uid" type="checkbox" @bind="_showUid" />
+                顯示 UID（@masked）
+            </label>
+        }
+        <div class="actions share-actions">
+            <button id="share-save" class="primary" disabled="@_busy" @onclick="SaveAsync">儲存 PNG</button>
+            <button id="share-copy" disabled="@_busy" @onclick="CopyAsync">複製圖片</button>
+        </div>
+    </div>
+    @if (_message is { } message)
+    {
+        <p class="hint" id="share-message" role="status">
+            @message
+            @if (_savedFile)
+            {
+                <button class="link-inline" id="share-open" @onclick="OpenFolderAsync">開啟資料夾</button>
+            }
+        </p>
+    }
+    <div class="share-stage">
+        <canvas id="share-canvas" class="share-preview" @ref="_canvas" role="img" aria-label="分享圖預覽"></canvas>
+    </div>
+</div>
+
+@code {
+    private static readonly (string Id, string Label)[] Templates = [("overview", "總覽"), ("luck", "運氣"), ("pool", "單池")];
+    private static readonly (string Id, string Label)[] Themes = [("sakura", "櫻"), ("sumi", "墨")];
+
+    private ElementReference _canvas;
+    private ShareCard? _card;
+    private string _template = "overview";
+    private string _theme = "sakura";
+    private int _poolIndex;
+    private bool _showUid;
+    private bool _busy;
+    private bool _savedFile;
+    private string? _message;
+
+    protected override void OnInitialized() => State.Changed += OnStateChanged;
+
+    private void OnStateChanged() => _ = InvokeAsync(StateHasChanged);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        _card = ShareCardBuilder.Build(State.Histories, State.DisplayName, State.UnsetBanners, DateOnly.FromDateTime(DateTime.Now), _showUid ? State.Account : null);
+        await JS.InvokeVoidAsync("nteShare.draw", _canvas, _card, _template, _theme, _poolIndex);
+        if (firstRender)
+        {
+            // The pool list reads the card, which exists only after this first pass.
+            StateHasChanged();
+        }
+    }
+
+    private async Task<byte[]> ImageAsync() => Convert.FromBase64String(await JS.InvokeAsync<string>("nteShare.png", _canvas));
+
+    private string FileLabel => _template == "pool" && _card is { } card ? card.Pools[_poolIndex].Kind : _template;
+
+    private async Task SaveAsync()
+    {
+        _busy = true;
+        var path = State.SaveShareImage(await ImageAsync(), FileLabel);
+        _busy = false;
+        _savedFile = path is not null;
+        _message = path is null ? "無法儲存圖片，請看上方的錯誤訊息。" : $"已儲存 {Path.GetFileName(path)}";
+    }
+
+    private async Task CopyAsync()
+    {
+        _busy = true;
+        _savedFile = false;
+        var image = await ImageAsync();
+        try
+        {
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                var stream = new global::Windows.Storage.Streams.InMemoryRandomAccessStream();
+                await stream.WriteAsync(image.AsBuffer());
+                stream.Seek(0);
+                var package = new global::Windows.ApplicationModel.DataTransfer.DataPackage();
+                package.SetBitmap(global::Windows.Storage.Streams.RandomAccessStreamReference.CreateFromStream(stream));
+                global::Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(package);
+                global::Windows.ApplicationModel.DataTransfer.Clipboard.Flush();
+            });
+            _message = "已複製，可以直接貼到聊天或社群。";
+        }
+        catch (Exception exception) when (exception is System.Runtime.InteropServices.COMException or UnauthorizedAccessException)
+        {
+            _message = $"無法複製圖片（{exception.Message}），請改用儲存 PNG。";
+        }
+        _busy = false;
+    }
+
+    private async Task OpenFolderAsync()
+    {
+        Directory.CreateDirectory(State.ExportsFolder);
+        await Launcher.Default.OpenAsync(new Uri(State.ExportsFolder));
+    }
+
+    public void Dispose() => State.Changed -= OnStateChanged;
+}

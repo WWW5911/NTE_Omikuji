@@ -30,6 +30,7 @@
                          Active="IsActive(HistoryKind.ArcMiracleBox)" ActiveBanner="@_banner" Expanded="_expanded.Contains(HistoryKind.ArcMiracleBox)"
                          OnOpen="banner => OpenPool(HistoryKind.ArcMiracleBox, banner)" OnToggle="() => Toggle(HistoryKind.ArcMiracleBox)" />
             <hr class="side-divider" />
+            <button id="nav-share" class="@SideClass(_page == Page.Share)" aria-current="@Current(_page == Page.Share)" @onclick="() => Show(Page.Share)">分享圖</button>
             <button id="nav-settings" class="@SideClass(_page == Page.Settings)" aria-current="@Current(_page == Page.Settings)" @onclick="() => OpenSettings(false)">
                 <span>獎勵與卡池設定</span>
                 @if (State.UnsetBanners.Count > 0)
@@ -64,6 +65,9 @@
 
         @switch (_page)
         {
+            case Page.Share:
+                <ShareView />
+                break;
             case Page.Settings:
                 <SettingsView @key="_settingsVisit" StartOnBanners="_settingsOnBanners" />
                 break;
@@ -110,6 +114,7 @@
         Records,
         Account,
         Settings,
+        Share,
     }
 
     private readonly CaptureOptions _capture = new();

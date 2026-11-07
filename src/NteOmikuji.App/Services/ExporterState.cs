@@ -291,6 +291,26 @@ public sealed class ExporterState : IDisposable
         }
     }
 
+    /// <summary>Saves a share image. Returns the file, or null when it could not be written.</summary>
+    public string? SaveShareImage(byte[] image, string label)
+    {
+        try
+        {
+            Directory.CreateDirectory(ExportsFolder);
+            var path = Path.Combine(ExportsFolder, $"NTE_share_{label}_{DateTime.Now:yyyyMMdd-HHmmss}.png");
+            File.WriteAllBytes(path, image);
+            Log($"已儲存分享圖：{path}");
+            NotifyChanged();
+            return path;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Error = $"無法儲存分享圖：{exception.Message}";
+            NotifyChanged();
+            return null;
+        }
+    }
+
     public string DisplayName(HistoryRow row)
     {
         var name = _catalog.Find(row.RewardId)?.Localized(_settings.DisplayLanguage);

@@ -1,0 +1,116 @@
+using NteOmikuji.Core.Export;
+
+namespace NteOmikuji.Core.Analysis;
+
+/// <param name="Tier">The tier's position from worst (0) to best (6).</param>
+/// <param name="BeatsPercent">Roughly how many of the outcomes this many pulls can bring are worse, from a normal approximation.</param>
+public sealed record ShareLuck(int Tier, string Label, double Sigma, int Hits, int Pulls, double Expected, double StandardDeviation, int BeatsPercent);
+
+/// <param name="AtLeast">True for the oldest entry, whose earlier pulls may lie before the saved history.</param>
+public sealed record ShareReward(string Name, int Pulls, bool AtLeast, bool Limited);
+
+/// <param name="LimitedCount">Null for a pool without limited rewards.</param>
+/// <param name="LuckNote">Why there is no luck tag, when there is none.</param>
+/// <param name="Rewards">Top-rank rewards, newest first.</param>
+public sealed record SharePool(
+    string Kind,
+    string Label,
+    string TopLabel,
+    int TotalPulls,
+    int TopCount,
+    int? LimitedCount,
+    double? Average,
+    int? Shortest,
+    int? Longest,
+    string? FirstDate,
+    string? LastDate,
+    ShareLuck? Luck,
+    string? LuckNote,
+    PityStatus? Pity,
+    PityStatus? LimitedPity,
+    IReadOnlyList<ShareReward> Rewards);
+
+/// <summary>What a share image shows. It carries only what is drawn, and the account only when asked and masked.</summary>
+public sealed record ShareCard(
+    string? FirstDate,
+    string? LastDate,
+    int TotalPulls,
+    int TotalTop,
+    int TotalLimited,
+    ShareLuck? Overall,
+    IReadOnlyList<SharePool> Pools,
+    IReadOnlyList<string> TierLabels,
+    string? MaskedUid,
+    string Footer);
+
+public static class ShareCardBuilder
+{
+    private const int VisibleUidStart = 3;
+    private const int VisibleUidEnd = 2;
+
+    /// <param name="uid">Shown masked when given.</param>
+    public static ShareCard Build(
+        IReadOnlyList<BannerHistory> histories,
+        Func<HistoryRow, string>? nameOf,
+        IReadOnlyCollection<string>? unsetBanners,
+        DateOnly today,
+        string? uid = null)
+    {
+        var pools = new[] { BannerInfo.LimitedCharacter, BannerInfo.Permanent, BannerInfo.ArcMiracleBox }
+            .Select(banner => Pool(banner, histories.FirstOrDefault(history => history.Banner.Kind == banner.Kind), nameOf, unsetBanners))
+            .ToList();
+        var data = pools.Where(pool => pool.Data is not null).Select(pool => pool.Data!).ToList();
+        return new ShareCard(
+            data.Select(item => item.FirstDate).Where(date => date is not null).Order(StringComparer.Ordinal).FirstOrDefault(),
+            data.Select(item => item.LastDate).Where(date => date is not null).Order(StringComparer.Ordinal).LastOrDefault(),
+            data.Sum(item => item.TotalPulls),
+            data.Sum(item => item.TopRankCount),
+            data.Sum(item => item.LimitedCount),
+            ToShare(LuckModel.Combine(data.Select(item => item.Luck))),
+            pools.Select(pool => pool.Share).ToList(),
+            Enum.GetValues<LuckTier>().Select(LuckModel.LabelOf).ToList(),
+            MaskUid(uid),
+            $"NTE Omikuji {ExportWriter.ExporterVersion}・{today:yyyy-MM-dd}");
+    }
+
+    /// <summary>Hides the middle of an account ID. Too short an ID to mask is not shown at all.</summary>
+    public static string? MaskUid(string? uid) =>
+        uid is null || uid.Length <= VisibleUidStart + VisibleUidEnd
+            ? null
+            : uid[..VisibleUidStart] + new string('*', uid.Length - VisibleUidStart - VisibleUidEnd) + uid[^VisibleUidEnd..];
+
+    /// <summary>Standard normal cumulative probability, by Abramowitz and Stegun 26.2.17.</summary>
+    internal static double NormalCdf(double z)
+    {
+        var x = Math.Abs(z);
+        var t = 1 / (1 + (0.2316419 * x));
+        var tail = Math.Exp(-x * x / 2) / Math.Sqrt(2 * Math.PI)
+            * t * (0.319381530 + (t * (-0.356563782 + (t * (1.781477937 + (t * (-1.821255978 + (t * 1.330274429))))))));
+        return z >= 0 ? 1 - tail : tail;
+    }
+
+    private static (SharePool Share, BannerAnalysis? Data) Pool(BannerInfo banner, BannerHistory? history, Func<HistoryRow, string>? nameOf, IReadOnlyCollection<string>? unsetBanners)
+    {
+        var label = HistoryCsv.PoolName(banner.Kind);
+        var topLabel = banner.Kind == HistoryKind.ArcMiracleBox ? "S 弧盤" : "S";
+        var hasLimited = banner.Kind != HistoryKind.Permanent;
+        if (history is null)
+        {
+            return (new SharePool(banner.Kind.ToString(), label, topLabel, 0, 0, hasLimited ? 0 : null, null, null, null, null, null, null, "尚無紀錄", null, null, []), null);
+        }
+
+        var data = HistoryAnalyzer.Analyze(history, nameOf, unsetBanners: unsetBanners);
+        var threshold = banner.Pity!.LimitedAt ?? banner.Pity.TopRankAt;
+        var note = data.Luck is not null ? null : data.TotalPulls < threshold ? "樣本不足" : "無法判定";
+        var share = new SharePool(
+            banner.Kind.ToString(), label, topLabel, data.TotalPulls, data.TopRankCount, hasLimited ? data.LimitedCount : null,
+            data.AverageInterval, data.ShortestInterval, data.LongestInterval, data.FirstDate, data.LastDate,
+            ToShare(data.Luck), note, data.TopRankPity, data.LimitedPity,
+            data.TopRankPulls.Select(pull => new ShareReward(pull.Name, pull.PullsSpent, pull.IsLowerBound, pull.IsLimited)).ToList());
+        return (share, data);
+    }
+
+    private static ShareLuck? ToShare(LuckScore? score) => score is null ? null : new ShareLuck(
+        (int)score.Tier, score.Label, score.Sigma, score.Hits, score.Pulls, score.Expected, score.StandardDeviation,
+        (int)Math.Clamp(Math.Round(NormalCdf(score.Sigma) * 100), 1, 99));
+}
