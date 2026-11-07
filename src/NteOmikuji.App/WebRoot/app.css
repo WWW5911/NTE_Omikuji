@@ -71,6 +71,12 @@ body {
     font: 14px/1.5 "Segoe UI", "Microsoft JhengHei UI", "Noto Sans TC", sans-serif;
 }
 
+/* A transparent border keeps the thumb clear of the edge, since it can only be inset through its clip. */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--series); background-clip: padding-box; border: 2px solid transparent; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover, ::-webkit-scrollbar-thumb:active { background: var(--accent); background-clip: padding-box; border: 2px solid transparent; }
+
 h1, h2, h3, p { margin: 0; }
 h1 { font-size: 18px; font-weight: 650; color: var(--accent-ink); }
 h1:focus { outline: none; }
