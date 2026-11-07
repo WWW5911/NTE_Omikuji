@@ -89,16 +89,16 @@
                             <span>每個 S 弧盤有 @(pool.Banner.Pity!.LimitedChance!.Value.ToString("0%")) 是限定。</span>
                         </p>
                     }
-                    @if (pool.Data.SecondRankPity is { } second)
+                    @if (kind != HistoryKind.ArcMiracleBox && pool.Data.SecondRankPity is { } second)
                     {
-                        <PityMeter Status="second" Label="@(kind == HistoryKind.ArcMiracleBox ? "距上次 A" : "距上次集點贈禮（A）")" Id="@($"pity-a-{kind}")" />
+                        <PityMeter Status="second" Label="距上次集點贈禮（A）" Id="@($"pity-a-{kind}")" />
                         @if (second.Exceeded)
                         {
                             <p class="pity-note warn" id="a-note-@kind">超過 @second.Threshold 抽還沒有 A，紀錄可能缺頁，或這些項目的稀有度沒有設定。</p>
                         }
                         else
                         {
-                            <p class="pity-note" id="a-note-@kind">再 @second.Remaining 抽內必出 A@(kind == HistoryKind.ArcMiracleBox ? "" : "：集點贈禮固定每 10 抽給一次")</p>
+                            <p class="pity-note" id="a-note-@kind">再 @second.Remaining 抽內必出 A：集點贈禮固定每 10 抽給一次</p>
                         }
                     }
                 }
