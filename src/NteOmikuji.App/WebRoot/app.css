@@ -19,6 +19,10 @@
     --error-text: #8c4a50;
     --series: #b4838d;
     --track: #f1e4e2;
+    --cool-soft: #eef1f2;
+    --cool-bg: #dfe5e8;
+    --cool-ink: #4f5d67;
+    --cool-strong: #606f79;
     --tier-s: #8b5864;
     --tier-s2: #a57783;
     --tier-a: #c7a0a8;
@@ -45,6 +49,10 @@
         --error-text: #f3d6d4;
         --series: #cf9fa8;
         --track: #4a4142;
+        --cool-soft: #393e41;
+        --cool-bg: #454c51;
+        --cool-ink: #d3dce1;
+        --cool-strong: #b3bfc7;
         --tier-s: #eecdd1;
         --tier-s2: #d7aeb6;
         --tier-a: #b78b94;
@@ -135,6 +143,25 @@ h3 { font-size: 13px; font-weight: 600; }
 .summary .num { text-align: right; font-variant-numeric: tabular-nums; }
 .summary tr:last-child th, .summary tr:last-child td { border-bottom: 0; }
 .help-card .summary td { white-space: normal; }
+.luck-tag { display: inline-block; font-size: 12px; font-weight: 650; padding: 1px 10px; border-radius: 999px; white-space: nowrap; }
+.luck-normal { background: var(--surface-2); color: var(--text); }
+.luck-none { background: transparent; color: var(--muted); font-weight: 500; border: 1px solid var(--border); }
+.luck-good-1 { background: var(--accent-soft); color: var(--accent-ink); }
+.luck-good-2 { background: var(--tier-a); color: #2f2526; }
+.luck-good-3 { background: var(--accent); color: var(--accent-text); }
+.luck-bad-1 { background: var(--cool-soft); color: var(--cool-ink); }
+.luck-bad-2 { background: var(--cool-bg); color: var(--cool-ink); }
+.luck-bad-3 { background: var(--cool-strong); color: var(--accent-text); }
+.luck-headline { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.luck-detail { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.luck-scale { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.luck-step { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 2px; background: var(--surface-2); color: var(--muted); text-align: center; min-width: 0; }
+.luck-step:first-child { border-radius: 6px 0 0 6px; }
+.luck-step:last-child { border-radius: 0 6px 6px 0; }
+.luck-step b { font-size: 13px; font-weight: 600; }
+.luck-step small { font-size: 11px; white-space: nowrap; }
+.luck-step.active small { color: inherit; }
+.pity-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .schedule-active { color: var(--accent-ink); font-weight: 600; }
 .schedule-dates { font-variant-numeric: tabular-nums; }
 .recent-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
@@ -324,4 +351,6 @@ input[type=checkbox] { min-height: 0; vertical-align: -2px; accent-color: var(--
     .topbar-status { margin-left: 0; }
     .recent-list li { grid-template-columns: 80px minmax(0, 1fr) 64px; }
     .recent-list .interval-tag { display: none; }
+    .luck-scale { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .luck-step, .luck-step:first-child, .luck-step:last-child { border-radius: 6px; }
 }

@@ -68,12 +68,12 @@
                 <SettingsView @key="_settingsVisit" StartOnBanners="_settingsOnBanners" />
                 break;
             case Page.Overview:
-                <OverviewView Histories="State.Histories" NameOf="State.DisplayName" Schedule="State.Schedule" Language="@State.DisplayLanguage" OnOpenPool="kind => OpenPool(kind, null)" OnStartCapture="() => Show(Page.Capture)" />
+                <OverviewView Histories="State.Histories" NameOf="State.DisplayName" Schedule="State.Schedule" Language="@State.DisplayLanguage" UnsetBanners="State.UnsetBanners" OnOpenPool="kind => OpenPool(kind, null)" OnStartCapture="() => Show(Page.Capture)" />
                 break;
             case Page.Pool:
                 @if (State.Histories.FirstOrDefault(history => history.Banner.Kind == _pool) is { } poolHistory)
                 {
-                    <AnalysisView History="poolHistory" NameOf="State.DisplayName" BannerId="@_banner" Title="@PoolTitle(poolHistory)" />
+                    <AnalysisView History="poolHistory" NameOf="State.DisplayName" BannerId="@_banner" Title="@PoolTitle(poolHistory)" UnsetBanners="State.UnsetBanners" />
                 }
                 else
                 {

@@ -1,0 +1,38 @@
+@using NteOmikuji.Core.Analysis
+
+@if (Score is { } score)
+{
+    <span class="@($"luck-tag {ToneOf(score.Tier)}")" id="@Id" data-tier="@score.Tier" title="@Describe(score)">@score.Label</span>
+}
+else if (Fallback is not null)
+{
+    <span class="luck-tag luck-none" id="@Id" title="@FallbackReason">@Fallback</span>
+}
+
+@code {
+    [Parameter]
+    public LuckScore? Score { get; set; }
+
+    [Parameter]
+    public string? Id { get; set; }
+
+    [Parameter]
+    public string? Fallback { get; set; }
+
+    [Parameter]
+    public string? FallbackReason { get; set; }
+
+    public static string Describe(LuckScore score) =>
+        $"實際 {score.Hits} 個，依 {score.Pulls:N0} 抽的期望是 {score.Expected:0.0} ± {score.StandardDeviation:0.0} 個（{score.Sigma:+0.00;-0.00;0.00}σ）";
+
+    public static string ToneOf(LuckTier tier) => tier switch
+    {
+        LuckTier.VeryUnlucky => "luck-bad-3",
+        LuckTier.Unlucky => "luck-bad-2",
+        LuckTier.SlightlyUnlucky => "luck-bad-1",
+        LuckTier.SlightlyLucky => "luck-good-1",
+        LuckTier.Lucky => "luck-good-2",
+        LuckTier.VeryLucky => "luck-good-3",
+        _ => "luck-normal",
+    };
+}

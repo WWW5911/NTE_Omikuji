@@ -2,7 +2,18 @@
 
 <div class="page analysis" id="analysis">
     <div class="toolbar">
-        <h2 class="page-title" id="pool-title">@Title</h2>
+        <div class="luck-headline">
+            <h2 class="page-title" id="pool-title">@Title</h2>
+            @if (BannerId is null && _data.TotalPulls > 0)
+            {
+                <LuckTag Score="_data.Luck" Id="luck-pool" Fallback="@(_data.TotalPulls < LuckThreshold ? "樣本不足" : "無法判定")"
+                         FallbackReason="@(_data.TotalPulls < LuckThreshold ? $"至少要 {LuckThreshold} 抽才有標籤" : "紀錄不完整或有活動未設定，暫時無法判定")" />
+                @if (_data.Luck is { } luck)
+                {
+                    <span class="luck-detail" id="luck-pool-detail">@LuckTag.Describe(luck)</span>
+                }
+            }
+        </div>
         <span class="hint">範圍 @_data.FirstDate 至 @_data.LastDate</span>
     </div>
     @if (_data.TotalPulls == 0)
@@ -207,6 +218,11 @@
     [Parameter]
     public string Title { get; set; } = "";
 
+    [Parameter]
+    public IReadOnlyList<string> UnsetBanners { get; set; } = [];
+
+    private int LuckThreshold => History.Banner.Pity?.LimitedAt ?? History.Banner.Pity?.TopRankAt ?? 0;
+
     private int? RisesFrom => History.Banner.Pity?.RisesFrom;
 
     private int? LimitedAt => History.Banner.Pity?.LimitedAt;
@@ -221,7 +237,7 @@
 
     protected override void OnParametersSet()
     {
-        _data = HistoryAnalyzer.Analyze(History, NameOf, BannerId);
+        _data = HistoryAnalyzer.Analyze(History, NameOf, BannerId, UnsetBanners);
         // Bars share the guaranteed count as their scale, so a long bar reads as close to pity.
         _maxInterval = Math.Max(History.Banner.Pity?.TopRankAt ?? 1, _data.TopRankPulls.Select(pull => pull.PullsSpent).DefaultIfEmpty(1).Max());
     }

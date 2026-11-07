@@ -6,14 +6,42 @@
         <div class="alert" id="old-decoding" role="status">有卡池的集點贈禮比遊戲實際給的多，可能有抽數被舊版誤判，下面的數字會不準。重新擷取一次歷史紀錄即可更正。</div>
     }
 
+    @if (_overall is { } overall)
+    {
+        <section class="chart luck-summary" id="luck-overall">
+            <div class="luck-headline">
+                <h3>整體運氣</h3>
+                <LuckTag Score="overall" Id="luck-tag-overall" />
+                <span class="luck-detail" id="luck-overall-detail">@LuckTag.Describe(overall)</span>
+            </div>
+            <ol class="luck-scale" aria-label="運氣等級，由差到好">
+                @foreach (var tier in Enum.GetValues<LuckTier>())
+                {
+                    <li class="@(tier == overall.Tier ? $"luck-step active {LuckTag.ToneOf(tier)}" : "luck-step")" aria-current="@(tier == overall.Tier ? "true" : null)">
+                        <b>@LuckModel.LabelOf(tier)</b>
+                        <small>@RangeOf(tier)</small>
+                    </li>
+                }
+            </ol>
+            <p class="hint">比較實際拿到的數量和依抽數算出的期望，差幾個標準差（σ）就落在哪一級。限定和常駐棋盤看 S，弧盤看限定大獎；機率取自公開資料，只代表運氣，不預測下一抽。</p>
+        </section>
+    }
+
     <h2 class="page-title">保底狀態</h2>
     <section class="pity-grid">
         @foreach (var pool in _pools)
         {
             var kind = pool.Banner.Kind;
             <article class="pity-card" data-pool="@kind">
-                <header>
+                <header class="pity-card-head">
                     <button class="link-title" @onclick="() => OnOpenPool.InvokeAsync(kind)">@pool.Label</button>
+                    @if (pool.Data is { } poolData)
+                    {
+                        var threshold = pool.Banner.Pity!.LimitedAt ?? pool.Banner.Pity.TopRankAt;
+                        <LuckTag Score="poolData.Luck" Id="@($"luck-{kind}")"
+                                 Fallback="@(poolData.TotalPulls < threshold ? "樣本不足" : "無法判定")"
+                                 FallbackReason="@(poolData.TotalPulls < threshold ? $"至少要 {threshold} 抽才有標籤" : "紀錄不完整或有活動未設定，暫時無法判定")" />
+                    }
                 </header>
                 @if (pool.Data?.TopRankPity is { } pity)
                 {
@@ -192,6 +220,21 @@
     private List<(TopRankPull Pull, string Label)> _recent = [];
     private IReadOnlyList<ScheduledBanner> _upcoming = [];
     private DateOnly _today;
+    private LuckScore? _overall;
+
+    [Parameter]
+    public IReadOnlyList<string> UnsetBanners { get; set; } = [];
+
+    private static string RangeOf(LuckTier tier) => tier switch
+    {
+        LuckTier.VeryUnlucky => "−2σ 以下",
+        LuckTier.Unlucky => "−2 ～ −1σ",
+        LuckTier.SlightlyUnlucky => "−1 ～ −0.5σ",
+        LuckTier.SlightlyLucky => "+0.5 ～ +1σ",
+        LuckTier.Lucky => "+1 ～ +2σ",
+        LuckTier.VeryLucky => "+2σ 以上",
+        _ => "±0.5σ 內",
+    };
 
     [Parameter]
     public IReadOnlyList<ScheduledBanner> Schedule { get; set; } = [];
@@ -225,6 +268,7 @@
             Build(BannerInfo.Permanent, "常駐棋盤", "S"),
             Build(BannerInfo.ArcMiracleBox, "弧盤研募", "S 弧盤"),
         ];
+        _overall = LuckModel.Combine(_pools.Select(pool => pool.Data?.Luck));
         _recent = _pools.Where(pool => pool.Data is not null)
             .SelectMany(pool => pool.Data!.TopRankPulls.Select(pull => (Pull: pull, pool.Label)))
             .OrderByDescending(entry => entry.Pull.Timestamp, StringComparer.Ordinal)
@@ -235,6 +279,6 @@
     private Pool Build(BannerInfo banner, string label, string topLabel)
     {
         var history = Histories.FirstOrDefault(item => item.Banner.Kind == banner.Kind);
-        return new Pool(banner, label, topLabel, history is null ? null : HistoryAnalyzer.Analyze(history, NameOf));
+        return new Pool(banner, label, topLabel, history is null ? null : HistoryAnalyzer.Analyze(history, NameOf, unsetBanners: UnsetBanners));
     }
 }

@@ -28,12 +28,67 @@ public class PoolOverviewTests
         Enumerable.Range(startSecond, count).Select(second => Row(second, banner: banner)).ToArray();
 
     [Theory]
-    [InlineData(HistoryKind.LimitedCharacter, 90, null, null, 70)]
-    [InlineData(HistoryKind.Permanent, 90, null, null, 70)]
-    [InlineData(HistoryKind.ArcMiracleBox, 60, 80, 0.25, null)]
-    public void EachPoolHasItsGuarantee(HistoryKind kind, int topRank, int? limited, double? chance, int? rises)
+    [InlineData(HistoryKind.LimitedCharacter, 90, null, null, 70, 0.0099, 0.1959)]
+    [InlineData(HistoryKind.Permanent, 90, null, null, 70, 0.0099, 0.1959)]
+    [InlineData(HistoryKind.ArcMiracleBox, 60, 80, 0.25, null, 0.03, null)]
+    public void EachPoolHasItsGuarantee(HistoryKind kind, int topRank, int? limited, double? chance, int? rises, double rate, double? raised)
     {
-        Assert.Equal(new PityRule(topRank, limited, chance, rises, 10), BannerInfo.For(kind).Pity);
+        Assert.Equal(new PityRule(topRank, limited, chance, rises, 10, rate, raised), BannerInfo.For(kind).Pity);
+    }
+
+    [Fact]
+    public void ABoardIsJudgedOnItsS()
+    {
+        var luck = HistoryAnalyzer.Analyze(Pool(BannerInfo.Permanent, [.. Pulls(99), Row(99, "s", RewardFocus.SCharacter)])).Luck!;
+
+        Assert.Equal((1, 100), (luck.Hits, luck.Pulls));
+    }
+
+    [Fact]
+    public void AnArcPoolIsJudgedOnLimitedRewards()
+    {
+        var luck = HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox,
+        [
+            .. Pulls(40, 0, "ForkLottery_A"),
+            Row(40, "off", RewardFocus.SArc, banner: "ForkLottery_A"),
+            .. Pulls(40, 41, "ForkLottery_A"),
+            Row(81, "limited", RewardFocus.SLimitedArc, banner: "ForkLottery_A"),
+        ])).Luck!;
+
+        Assert.Equal((1, 82), (luck.Hits, luck.Pulls));
+    }
+
+    [Fact]
+    public void AnArcFileWithoutEventsIsNotJudged()
+    {
+        Assert.Null(HistoryAnalyzer.Analyze(Pool(BannerInfo.ArcMiracleBox, Pulls(100))).Luck);
+    }
+
+    [Fact]
+    public void AnEventWithoutAFeaturedListStopsTheJudgement()
+    {
+        var pool = Pool(BannerInfo.ArcMiracleBox, Pulls(100, 0, "ForkLottery_New"));
+
+        Assert.NotNull(HistoryAnalyzer.Analyze(pool).Luck);
+        Assert.Null(HistoryAnalyzer.Analyze(pool, unsetBanners: ["forklottery_new"]).Luck);
+        Assert.NotNull(HistoryAnalyzer.Analyze(pool, unsetBanners: ["ForkLottery_Other"]).Luck);
+    }
+
+    [Fact]
+    public void MisreadHistoryIsNotJudged()
+    {
+        HistoryRow[] rows = [.. Pulls(100), .. Enumerable.Range(100, 40).Select(second => Row(second, "gift", result: "points_gift"))];
+
+        Assert.Null(HistoryAnalyzer.Analyze(Pool(BannerInfo.LimitedCharacter, rows)).Luck);
+    }
+
+    [Fact]
+    public void AnEventPageHasNoLuckScore()
+    {
+        var pool = Pool(BannerInfo.LimitedCharacter, Pulls(100, 0, "Lottery_A"));
+
+        Assert.NotNull(HistoryAnalyzer.Analyze(pool).Luck);
+        Assert.Null(HistoryAnalyzer.Analyze(pool, bannerId: "Lottery_A").Luck);
     }
 
     [Fact]

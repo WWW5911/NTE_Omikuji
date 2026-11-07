@@ -35,13 +35,15 @@ public enum HistoryKind
 /// <param name="LimitedChance">How often a top-rank reward is the limited one, when that is not always so.</param>
 /// <param name="RisesFrom">The pull from which a top-rank reward becomes more likely.</param>
 /// <param name="SecondRankAt">How many pulls guarantee an A. On boards this is the reward given every 10 pulls.</param>
-public sealed record PityRule(int TopRankAt, int? LimitedAt = null, double? LimitedChance = null, int? RisesFrom = null, int? SecondRankAt = null);
+/// <param name="BaseRate">The published chance of an S on each pull.</param>
+/// <param name="RaisedRate">The published chance after <paramref name="RisesFrom"/> pulls without an S.</param>
+public sealed record PityRule(int TopRankAt, int? LimitedAt = null, double? LimitedChance = null, int? RisesFrom = null, int? SecondRankAt = null, double BaseRate = 0, double? RaisedRate = null);
 
 public sealed record BannerInfo(HistoryKind Kind, string Id, string Name, string System, bool SharedPity, string FilePrefix, PityRule? Pity = null)
 {
-    public static readonly BannerInfo Permanent = new(HistoryKind.Permanent, "Lottery_Permanent", "Standard Board", "Monopoly", false, "Permanent", new PityRule(90, RisesFrom: 70, SecondRankAt: 10));
-    public static readonly BannerInfo LimitedCharacter = new(HistoryKind.LimitedCharacter, "Lottery_LimitedCharacter", "Limited Character Board", "Monopoly", true, "Limited", new PityRule(90, RisesFrom: 70, SecondRankAt: 10));
-    public static readonly BannerInfo ArcMiracleBox = new(HistoryKind.ArcMiracleBox, "Arc_MiracleBox", "Arc Miracle Box", "Gashapon", true, "Arc", new PityRule(60, 80, 0.25, SecondRankAt: 10));
+    public static readonly BannerInfo Permanent = new(HistoryKind.Permanent, "Lottery_Permanent", "Standard Board", "Monopoly", false, "Permanent", new PityRule(90, RisesFrom: 70, SecondRankAt: 10, BaseRate: 0.0099, RaisedRate: 0.1959));
+    public static readonly BannerInfo LimitedCharacter = new(HistoryKind.LimitedCharacter, "Lottery_LimitedCharacter", "Limited Character Board", "Monopoly", true, "Limited", new PityRule(90, RisesFrom: 70, SecondRankAt: 10, BaseRate: 0.0099, RaisedRate: 0.1959));
+    public static readonly BannerInfo ArcMiracleBox = new(HistoryKind.ArcMiracleBox, "Arc_MiracleBox", "Arc Miracle Box", "Gashapon", true, "Arc", new PityRule(60, 80, 0.25, SecondRankAt: 10, BaseRate: 0.03));
     public static readonly BannerInfo MysteryBox = new(HistoryKind.MysteryBox, "Gashapon_MysteryBox", "Mystery Box", "Gashapon", false, "MysteryBox");
 
     public static BannerInfo For(HistoryKind kind) => kind switch

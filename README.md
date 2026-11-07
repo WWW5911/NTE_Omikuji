@@ -109,6 +109,13 @@ most-obtained rewards. Boards also show dice rolls and result types.
   game gives. Capturing the history again corrects it.
 - The oldest S is shown as "至少 N" and left out of the average, because earlier
   pulls may predate the saved history.
+- 總覽 and each pool show a luck tag, from 非酋 through 正常 to 歐皇. It compares the
+  rewards obtained with the exact mean and standard deviation for that many pulls:
+  S on boards, the limited reward on Arcs. Tags change at ±0.5, ±1, and ±2σ. Rates
+  come from published guides, since no in-game figures were available: 0.99% on
+  boards and 19.59% after 70 pulls, and 3% on Arcs. These reproduce the published
+  averages of about 53.5 pulls per S and 59.5 per limited Arc. A pool under one full
+  guarantee of pulls, or with a misread history or an unset event, shows no tag.
 - Guarantees are built in: 90 pulls for an S on both boards with better odds from
   pull 70, and on Arcs 60 for an S and 80 for a limited one, with an A every 10 on
   all three. A board's A is the 集點贈禮 itself. An event's page counts only its own
