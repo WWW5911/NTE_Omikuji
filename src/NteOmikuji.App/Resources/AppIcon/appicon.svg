@@ -32,24 +32,18 @@
   </g>
   <rect x="75" y="15" width="306" height="426" rx="23" fill="none" stroke="#b98592" stroke-width="5"/>
 
-  <!-- A fine double ring, drawn rather than brushed. -->
+  <!-- A fine double ring. -->
   <circle cx="228" cy="228" r="116" fill="#fffaf7"/>
-  <circle cx="228" cy="228" r="116" fill="none" stroke="#8e354a" stroke-width="6"/>
-  <circle cx="228" cy="228" r="104" fill="none" stroke="#8e354a" stroke-width="2.5"/>
+  <circle cx="228" cy="228" r="116" fill="none" stroke="#8e354a" stroke-width="4.5"/>
+  <circle cx="228" cy="228" r="106" fill="none" stroke="#8e354a" stroke-width="1.8"/>
 
-  <!-- 吉, drawn in the Mincho manner: hairline horizontals with a triangular finish, full verticals. -->
-  <g fill="#8e354a" transform="translate(228 228) scale(0.84) translate(-231 -241)">
-    <!-- 士: long stroke -->
-    <path d="M160 190 L268 190 L279 178 C283 175 287 175 291 179 L301 189 C304 193 302 197 297 197 L160 197 Z"/>
-    <!-- 士: downstroke -->
-    <path d="M216 152 L240 160 C243 161 243 164 240 166 L238 168 L238 238 L218 238 L218 168 Z"/>
-    <!-- 士: short stroke -->
-    <path d="M180 232 L256 232 L265 222 C268 220 272 220 275 223 L283 231 C285 235 283 238 279 238 L180 238 Z"/>
-    <!-- 口: left side -->
-    <path d="M187 256 L206 264 L206 322 C206 326 197 331 192 329 C188 328 187 326 187 322 Z"/>
-    <!-- 口: top, turning down the right side -->
-    <path d="M206 263 L250 263 L259 253 C262 251 266 252 269 255 L278 264 C280 267 279 269 276 271 L272 274 L272 321 C272 326 263 331 258 329 C255 328 254 326 254 322 L254 270 L206 270 Z"/>
-    <!-- 口: closing stroke -->
-    <path d="M206 310 L254 310 L254 317 L206 317 Z"/>
+  <!-- 吉, drawn by hand in the manner of a slender Song typeface. -->
+  <g fill="#8e354a" transform="translate(228 228) scale(0.96) translate(-231 -232)">
+    <path d="M162 184 L280 184 L286 175.5 C287.5 174 289.5 174 291 175.5 L299 184 C300.5 186 300 188.5 297 188.5 L162 188.5 Z"/>
+    <path d="M222.5 146 L236 151.5 C238 152.5 238 154.5 236 156 L234 157.5 L234 230 L222.5 230 Z"/>
+    <path d="M186 230 L264 230 L269 223 C270.5 221.5 272.5 221.5 274 223 L280.5 230 C282 232 281.5 234 279 234 L186 234 Z"/>
+    <path d="M188 251 L200 256.5 L199.5 258 L199.5 312 C199.5 315 194 318 191 317 C189 316.5 188 315 188 312 Z"/>
+    <path d="M199.5 256 L254 256 L259 249.5 C260.5 248 263 248 264.5 249.5 L272 257 C273.5 259 273 261 270.5 262.5 L268 264 L268 312 C268 315 262.5 318 259.5 317 C257.5 316.5 256.5 315 256.5 312 L256.5 260 L199.5 260 Z"/>
+    <path d="M199.5 304 L256.5 304 L256.5 308 L199.5 308 Z"/>
   </g>
 </svg>
