@@ -49,11 +49,11 @@
                         <p class="pity-note">
                             @if (limited.IsLowerBound)
                             {
-                                <span>還沒有標記限定弧盤。到原始紀錄的對應維護把限定項目設為「S 限定弧盤」，這裡才會準。</span>
+                                <span>紀錄裡還沒有限定弧盤，更早的抽數不在紀錄內。如果其實抽過，請到獎勵與卡池設定確認該期的限定大獎。</span>
                             }
                             else if (limited.Exceeded)
                             {
-                                <span class="warn">超過 @limited.Threshold 抽還沒有限定，請檢查限定弧盤的標記。</span>
+                                <span class="warn">超過 @limited.Threshold 抽還沒有限定，請到獎勵與卡池設定確認各期的限定大獎。</span>
                             }
                             else
                             {
@@ -93,6 +93,7 @@
                         <th>卡池</th>
                         <th class="num">總抽數</th>
                         <th class="num">S 數量</th>
+                        <th class="num">其中限定</th>
                         <th class="num">S 比例</th>
                         <th class="num">平均間隔</th>
                         <th class="num">中位數</th>
@@ -108,6 +109,7 @@
                             {
                                 <td class="num">@data.TotalPulls.ToString("N0")</td>
                                 <td class="num">@data.TopRankCount</td>
+                                <td class="num">@(pool.Banner.Kind == HistoryKind.Permanent ? "—" : data.LimitedCount.ToString())</td>
                                 <td class="num">@(data.TopRankRate?.ToString("0.0%") ?? "—")</td>
                                 <td class="num">@(data.AverageInterval?.ToString("0.0") ?? "—")</td>
                                 <td class="num">@(data.MedianInterval?.ToString("0.#") ?? "—")</td>
@@ -115,7 +117,7 @@
                             }
                             else
                             {
-                                <td class="num" colspan="6">尚無紀錄</td>
+                                <td class="num" colspan="7">尚無紀錄</td>
                             }
                         </tr>
                     }
