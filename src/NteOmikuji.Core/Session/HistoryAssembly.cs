@@ -38,7 +38,7 @@ public static class HistoryAssembly
             row.PoolGroupId = poolInfo.Id;
             row.Focus = catalog.FocusOf(row.RewardId, row.EventId);
             // A Mystery Box has only one way to read its rows, so there is nothing for it to fall back from.
-            row.Unverified = kind != HistoryKind.MysteryBox && row.DecoderMode is not ("scan_checked" or "block_fallback");
+            row.Unverified = kind != HistoryKind.MysteryBox && row.DecoderMode != DecoderModes.Structured;
         });
         if (rows.Any(row => row.Unverified))
         {
@@ -132,7 +132,7 @@ public static class HistoryAssembly
                 rows.Add(row);
             }
         }
-        if (structuredType is null || fromStructured is null || rows.Any(row => row.DecoderMode != "block_fallback"))
+        if (structuredType is null || fromStructured is null || rows.Any(row => row.DecoderMode != DecoderModes.Structured))
         {
             return rows;
         }

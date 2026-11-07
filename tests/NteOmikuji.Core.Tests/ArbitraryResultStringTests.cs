@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using System.Numerics;
 using System.Text;
 using NteOmikuji.Core.Export;
 using NteOmikuji.Core.Import;
@@ -39,66 +38,39 @@ public class ArbitraryResultStringTests
         return [.. U32(unchecked((uint)-(value.Length + 1))), .. raw];
     }
 
-    private static byte[] Pack(ReadOnlySpan<byte> plain, int bits)
-    {
-        var packed = new BigInteger(plain, isUnsigned: true) << bits;
-        var output = new byte[plain.Length + 1];
-        packed.TryWriteBytes(output, out _, isUnsigned: true);
-        return output;
-    }
-
     private static byte[] StructuredBlock(params byte[] row) =>
         [.. RecordBlockParser.MonopolyMarker, 0, .. U32(0), .. U32((uint)row.Length), .. U32(1), .. row];
 
     private static byte[] MonopolyRow(byte[] item, string result) =>
         [.. U32(2), .. item, .. U32(0), .. U32(0), .. FString(""), .. FString(result), .. FString("CardPool_Character"), .. U64(Ticks)];
 
-    /// <summary>Builds a bit-packed heuristic response holding one record with a reward of any text.</summary>
-    private static byte[] HeuristicResponse(string rewardId)
+    /// <summary>A row ending in a field this app does not know, so the block parser gives up and the pool name has to find it.</summary>
+    private static byte[] DriftedBlock(string rewardId)
     {
-        byte[] rowBody = [.. U32(5 * 4), .. U32(1), .. FString(rewardId)];
-        var packedBody = Pack(rowBody, 2);
-        // The final packed byte holds only the carry, which is the terminator's slot.
-        var chunk = packedBody[..^1];
-        return [.. new byte[0x50], .. chunk, .. MonopolyDecoder.PermanentMarker, .. U64(Ticks * 4), .. new byte[20]];
+        byte[] Row(uint roll) => [.. U32(roll), .. FString(rewardId), .. U32(0), .. U32(1), .. FString(rewardId), .. FString("CardPool_Character"), .. U64(Ticks), .. U32(7)];
+        return StructuredBlock([.. Row(3), .. Row(4)]) is var block ? [.. block[..(RecordBlockParser.MonopolyMarker.Length + 9)], .. U32(2), .. block[(RecordBlockParser.MonopolyMarker.Length + 13)..]] : [];
     }
-
-    [Theory]
-    [InlineData("fork_vine")]
-    [InlineData("Brand-New Reward 2.0")]
-    [InlineData("限定獎勵_星辰")]
-    [InlineData("Émile's prize (x)")]
-    public void DecodesRewardKeysOfAnyText(string text)
-    {
-        byte[] plain = [.. Encoding.UTF8.GetBytes(text), 0];
-        Assert.Equal(text, MonopolyDecoder.DecodeRewardKey(Pack(plain, 2)));
-        Assert.Equal(text, ArcDecoder.DecodeKey(Pack(plain, 1)));
-    }
-
-    [Theory]
-    [InlineData("98bdc9ad7dd9a5b99501", "fork_vine")]
-    [InlineData("10a58d9539bdc9b585b101", "DiceNormal")]
-    [InlineData("c4c0cccc00", "1033")]
-    public void KeepsDocumentedKeyExamples(string hex, string expected) =>
-        Assert.Equal(expected, MonopolyDecoder.DecodeRewardKey(Convert.FromHexString(hex)));
 
     [Theory]
     [InlineData("Brand-New Reward 2.0")]
     [InlineData("限定獎勵_星辰")]
     [InlineData("event:summer/2026")]
-    public void HeuristicDecoderKeepsRewardsWithUnknownPrefixes(string rewardId)
+    public void RewardsWithUnknownNamesAreKept(string rewardId)
     {
-        var row = Assert.Single(MonopolyDecoder.DecodeResponse(HeuristicResponse(rewardId), RewardCatalog.Empty));
-        Assert.Equal(rewardId, row.RewardId);
-        Assert.Equal("item", row.RewardType);
-        Assert.False(row.IsMappedReward);
-        Assert.Equal(1, row.Quantity);
+        foreach (var payload in new[] { StructuredBlock(MonopolyRow(FString(rewardId), rewardId)), DriftedBlock(rewardId) })
+        {
+            var row = MonopolyDecoder.DecodeResponse(payload, RewardCatalog.Empty)[0];
+            Assert.Equal(rewardId, row.RewardId);
+            Assert.Equal("item", row.RewardType);
+            Assert.False(row.IsMappedReward);
+            Assert.Equal(1, row.Quantity);
+        }
     }
 
     [Fact]
     public void MappedRewardStillGetsCanonicalIdAndName()
     {
-        var row = Assert.Single(MonopolyDecoder.DecodeResponse(HeuristicResponse("FORK_NONOS"), RewardCatalog.Bundled.Value));
+        var row = Assert.Single(MonopolyDecoder.DecodeResponse(StructuredBlock(MonopolyRow(FString("FORK_NONOS"), "FORK_NONOS")), RewardCatalog.Bundled.Value));
         Assert.Equal("fork_nonos", row.RewardId);
         Assert.True(row.IsMappedReward);
         Assert.NotEqual("", row.RewardName);

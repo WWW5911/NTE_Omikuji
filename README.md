@@ -12,12 +12,12 @@ README 裡的畫面都使用模擬資料。
 
 ## 功能
 
+- **沒有人維護也能繼續用**：遊戲更新後，獎勵名稱、稀有度和每期限定大獎都能在介面裡自己補上，不用等程式更新，詳見[下方說明](#沒有人維護也能繼續用)
 - 擷取限定棋盤、常駐棋盤、弧盤研募、盲盒的抽卡紀錄和成就
 - 顯示三個卡池的保底進度和距離保底的抽數
 - 用七個等級標示整體、每個卡池、每一期的運氣
 - 把紀錄累積存檔，更新前自動備份
 - 產生分享圖
-- 在介面裡維護獎勵名稱、稀有度和每期限定大獎，遊戲更新後不用等程式更新
 - 匯出 JSON、CSV，也可匯入 NTE_Gacha_Exporter 的紀錄
 
 ## 使用方式
@@ -40,6 +40,43 @@ README 裡的畫面都使用模擬資料。
 - 支援限定棋盤、常駐棋盤和弧盤研募，遊戲視窗比例建議用 16:9。程式不會辨識畫面，所以請先確認遊戲停在正確的紀錄頁。
 
 ![開始擷取頁](docs/images/capture.png)
+
+## 沒有人維護也能繼續用
+
+這是本程式最重要的設計目標：**就算維護者不再更新，你也能自己把資料維護下去。** 程式不需要任何伺服器，所有資料都是你電腦上可以直接編輯的檔案。
+
+遊戲更新後，大多數情況只要改資料，不用改程式：
+
+| 遊戲更新了什麼 | 程式會怎樣 | 你要做什麼 |
+| --- | --- | --- |
+| 新獎勵 | 保留遊戲原字串，排在最上面並標示「未對應」 | 在 **獎勵與卡池設定** 填名稱、稀有度和關注類別 |
+| 新活動、新限定大獎 | 標示「未設定」，受影響的卡池顯示「無法判定」 | 在 **活動卡池** 填這期的限定大獎 |
+| 新語言 | 名稱依序改用英文、中文、其他語言 | 按 **新增語言**，再填名稱 |
+| 新的卡池預告 | 總覽不會顯示 | 編輯 `mappings\schedule.csv` |
+
+改動會立刻存檔，也會更正已存的紀錄。更多欄位說明見[獎勵與卡池設定](#獎勵與卡池設定)。
+
+### 把維護成果分享給別人
+
+- `mappings` 資料夾裡的四個 CSV 就是全部的對應資料，複製給別人放到同一個資料夾就能用，Excel 也能開。
+- 獎勵和成就對應也可以在 **原始紀錄** 的匯入分頁匯入，只會新增或更新檔案裡有的項目。
+- 想接手維護的話，可以 fork 本專案並更新 `src/NteOmikuji.Core/Mappings` 裡的檔案。使用者在 `user_data\settings.json` 把 `MappingSource` 設成那個資料夾的 HTTPS 網址，**從 GitHub 更新** 就會改從那裡下載，例如：
+
+```json
+{ "MappingSource": "https://raw.githubusercontent.com/你的帳號/NTE_Omikuji/main/src/NteOmikuji.Core/Mappings/" }
+```
+
+更新來源不見時，只會顯示更新失敗，程式和你的資料都不受影響。
+
+### 什麼情況一定要改程式
+
+| 情況 | 影響 | 在等到新版之前 |
+| --- | --- | --- |
+| 封包格式大改 | 新紀錄可能抓不到，或標為未驗證 | 已存紀錄不會被蓋掉，仍可查看和匯出 |
+| 機率或保底規則改變 | 運氣和保底計算可能不準 | 紀錄本身不受影響 |
+| 紀錄頁按鈕位置改變 | 自動翻頁點不到 | 手動翻頁仍可擷取 |
+
+這些規則都寫在原始碼裡，`src/NteOmikuji.Core` 可以自行修改和建置，建置方式見[開發](#開發)。
 
 ## 運氣怎麼算
 
@@ -271,7 +308,8 @@ dotnet publish src\NteOmikuji.App -p:PublishProfile=Portable
 
 ### 解碼方式
 
-- 棋盤的骰點和數量從每筆紀錄的欄位解析。解析不了的紀錄會改用掃描。
+- 紀錄照欄位順序逐一解析，骰點不在合理範圍就視為解析失敗。
+- 遊戲改版導致解析失敗時，會先找到卡池名稱，再往前找能完整讀到它的紀錄起點和活動。這些紀錄一律標為未驗證，不會蓋掉已存資料；整頁看起來不合理時（集點贈禮過多、時間順序錯誤、列數不符）就不讀取。
 - 支援任意結果字串：用長度前綴讀取獎勵，不靠已知前綴判斷。沒有對應的獎勵會保留遊戲原字串並標示。結果文字和獎勵不同時，JSON 會多一個 `result_text` 欄位。UTF-16 的處理只有合成測試，沒有在真實封包裡看過。
 - `result_type` 用 `points_gift` 表示每 10 抽的贈禮。
 - `wpcap.dll` 只從 System32 以絕對路徑載入。
@@ -283,7 +321,7 @@ dotnet publish src\NteOmikuji.App -p:PublishProfile=Portable
 
 ## English
 
-NTE Omikuji is an unofficial Windows app that reads your own Neverness to Everness pull history from game traffic, shows pity and luck for each pool and event, and exports JSON, CSV and share images. Download `NteOmikuji.exe` and run it; nothing else needs installing. Start the capture before pressing Start on the game's main menu, then open the in-game history and scroll down from page 1. Build instructions are under 開發 above.
+NTE Omikuji is an unofficial Windows app that reads your own Neverness to Everness pull history from game traffic, shows pity and luck for each pool and event, and exports JSON, CSV and share images. Download `NteOmikuji.exe` and run it; nothing else needs installing. Start the capture before pressing Start on the game's main menu, then open the in-game history and scroll down from page 1. Build instructions are under 開發 above. The app needs no server: if this project stops being updated, you can keep maintaining reward names, ranks and event data yourself from the settings page, or point `MappingSource` in `user_data\settings.json` at someone else's HTTPS copy of the mapping files.
 
 ## 支援的匯出檔
 
@@ -293,11 +331,3 @@ NTE Omikuji is an unofficial Windows app that reads your own Neverness to Everne
 - [NTE_Gacha_Exporter](https://github.com/Anong0u0/NTE_Gacha_Exporter) 的 `records.json` 和匯出的 JSON（不含 CSV）
 
 `records.json` 用它 1.2.4 版的真實檔案驗證過。匯出的 JSON，以及 1.2.5 版起才有的活動欄位 `lottery_id`，是照它的原始碼實作的，還沒有用真實檔案驗證。
-
-## 修正的 bug
-
-以下是 nte-exporter v0.3.0 有、這裡已修正的問題：
-
-- **抽數被誤判成集點贈禮**：解析棋盤紀錄時停在結尾的 `Lottery_*` 之前，區塊解析失敗後改用掃描，把真實的抽數標成 `points_gift`（[issue #17](https://github.com/Golumpa/nte-exporter/issues/17)）。這裡改為讀取每筆紀錄的欄位。從 nte-exporter 匯入的舊檔如果已有誤判，無法自動更正，要重新擷取。
-- **抓不到新版盲盒**：只認得舊的請求格式。這裡支援遊戲 1.4 起的新格式，並分開處理各盲盒的頁碼。
-- **新獎勵的 ID 變成空白**：靠已知前綴尋找獎勵，新獎勵不符合時 ID 會是空的。這裡改用長度前綴讀取，保留遊戲原字串。

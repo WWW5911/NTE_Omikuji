@@ -14,6 +14,9 @@ public sealed class AppSettings
 
     public bool AutoUpdateMappings { get; set; } = true;
 
+    /// <summary>An HTTPS folder holding the mapping files, for when someone else takes over maintaining them.</summary>
+    public string? MappingSource { get; set; }
+
     public static AppSettings Load(string folder)
     {
         try

@@ -133,6 +133,17 @@ public sealed class MappingUpdateTests : IDisposable
         Assert.Equal(MappingStore.RewardsFile, Encoding.UTF8.GetString(download.Files[MappingStore.RewardsFile]));
     }
 
+    [Theory]
+    [InlineData(null, MappingUpdater.DefaultBaseUrl)]
+    [InlineData("  ", MappingUpdater.DefaultBaseUrl)]
+    [InlineData("http://example.test/maps/", MappingUpdater.DefaultBaseUrl)]
+    [InlineData("file:///C:/maps/", MappingUpdater.DefaultBaseUrl)]
+    [InlineData("not a url", MappingUpdater.DefaultBaseUrl)]
+    [InlineData("https://example.test/maps/", "https://example.test/maps/")]
+    [InlineData("https://example.test/maps", "https://example.test/maps/")]
+    public void OnlyAnHttpsSourceReplacesTheDefault(string? configured, string expected) =>
+        Assert.Equal(expected, MappingUpdater.SourceOrDefault(configured));
+
     [Fact]
     public async Task AServerErrorFailsTheDownload()
     {

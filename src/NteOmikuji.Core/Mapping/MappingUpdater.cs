@@ -13,6 +13,20 @@ public sealed class MappingUpdater(HttpClient http, string baseUrl = MappingUpda
 
     private const int MaxFileBytes = 8 * 1024 * 1024;
 
+    /// <summary>
+    /// Where to download from, so the community can take over if this project stops being updated. Only HTTPS is
+    /// accepted, and anything else falls back to this project's repository.
+    /// </summary>
+    public static string SourceOrDefault(string? configured)
+    {
+        var source = configured?.Trim();
+        if (string.IsNullOrEmpty(source) || !Uri.TryCreate(source, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
+        {
+            return DefaultBaseUrl;
+        }
+        return source.EndsWith('/') ? source : source + "/";
+    }
+
     /// <summary>A failed download throws, so an update never applies part of a set because of a bad connection.</summary>
     public async Task<MappingDownload> DownloadAsync(CancellationToken token = default)
     {

@@ -148,6 +148,6 @@ public class MonopolyFieldDecodingTests
         var row = Decode(Single(4, "fork_vine", "fork_vine"), Single(1, "fork_nonos", "fork_nonos"))[0];
 
         Assert.Equal(Convert.ToHexStringLower(BitConverter.GetBytes(Ticks * 4)), row.TimestampRawHex);
-        Assert.Equal("scan_checked", row.DecoderMode);
+        Assert.Equal(DecoderModes.Structured, row.DecoderMode);
     }
 }

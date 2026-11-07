@@ -7,9 +7,6 @@ public static class ArcDecoder
     private const int RequestConstant = 2060;
     private const int RequestLength = 34;
     private const int CursorOffset = 29;
-    private const int FirstRecordOffset = 0x4C;
-    private const int TicksScale = 2;
-    private const int TextShiftBits = 1;
     private const string UnknownName = "UNKNOWN";
 
     public static bool IsRequest(ReadOnlySpan<byte> content) =>
@@ -18,28 +15,18 @@ public static class ArcDecoder
     public static int RequestPage(ReadOnlySpan<byte> content) =>
         (int)(BinaryPrimitives.ReadUInt32LittleEndian(content[CursorOffset..]) / 2);
 
-    public static string DecodeKey(ReadOnlySpan<byte> raw) =>
-        PackedText.Decode(raw, TextShiftBits) ?? Convert.ToHexStringLower(raw);
-
     public static List<HistoryRow> DecodeResponse(byte[] response, RewardCatalog catalog)
     {
         var structured = RecordBlockParser.ParseRecords(response, RecordBlockType.Fork);
-        var rows = ParseLegacy(response, catalog);
-        if (rows.Count == 0)
-        {
-            return RowsFromStructured(structured, catalog);
-        }
-        var compatible = rows.Count == structured.Count && rows.Zip(structured).All(pair =>
-            pair.First.RewardId.Equals(pair.Second.ItemId, StringComparison.OrdinalIgnoreCase)
-            && (pair.First.TimestampTicks == pair.Second.Ticks || pair.First.TimestampTicks == pair.Second.Ticks * TicksScale));
-        if (compatible)
-        {
-            rows.ForEach(row => row.DecoderMode = "scan_checked");
-        }
-        return rows;
+        return structured.Count > 0
+            ? RowsFromStructured(structured, catalog)
+            : ToRows(AnchoredRows.Arc(response), catalog, DecoderModes.Anchored);
     }
 
     public static List<HistoryRow> RowsFromStructured(IEnumerable<BlockRecord> records, RewardCatalog catalog) =>
+        ToRows(records, catalog, DecoderModes.Structured);
+
+    private static List<HistoryRow> ToRows(IEnumerable<BlockRecord> records, RewardCatalog catalog, string mode) =>
         records.Select(record =>
         {
             var row = NewRow(record.ItemId, catalog);
@@ -47,7 +34,7 @@ public static class ArcDecoder
             row.TimestampTicks = record.Ticks;
             row.TimestampDecoded = record.TimestampDecoded;
             row.RecordHex = record.RecordHex;
-            row.DecoderMode = "block_fallback";
+            row.DecoderMode = mode;
             row.EventId = RecordBlockParser.IsEventId(record.PoolId) ? record.PoolId : null;
             return row;
         }).ToList();
@@ -66,59 +53,6 @@ public static class ArcDecoder
             SourceType = "miracle_box",
             ResultType = "",
         };
-    }
-
-    private static List<HistoryRow> ParseLegacy(byte[] response, RewardCatalog catalog)
-    {
-        var rows = new List<HistoryRow>();
-        var position = FirstRecordOffset;
-        while (position + 4 <= response.Length)
-        {
-            var start = position;
-            if (!TryReadPackedField(response, ref position, 4, out var name) || !TryReadPackedField(response, ref position, 8, out var pool))
-            {
-                break;
-            }
-            var timestamp = response.AsSpan(position, 8);
-            position += 8;
-            var row = NewRow(DecodeKey(name.Span), catalog);
-            var eventId = DecodeKey(pool.Span);
-            row.EventId = RecordBlockParser.IsEventId(eventId) ? eventId : null;
-            try
-            {
-                (row.TimestampTicks, row.TimestampDecoded) = MonopolyDecoder.DecodeTimestamp(timestamp, TicksScale);
-            }
-            catch (InvalidDataException)
-            {
-                return [];
-            }
-            row.TimestampRawHex = Convert.ToHexStringLower(timestamp);
-            row.RecordHex = Convert.ToHexStringLower(response.AsSpan(start, position - start));
-            rows.Add(row);
-        }
-        return rows;
-    }
-
-    private static bool TryReadPackedField(byte[] response, ref int position, int trailingBytes, out ReadOnlyMemory<byte> field)
-    {
-        field = default;
-        if (position + 4 > response.Length)
-        {
-            return false;
-        }
-        var doubled = BinaryPrimitives.ReadUInt32LittleEndian(response.AsSpan(position));
-        if (doubled is 0 or > 200 || doubled % 2 != 0)
-        {
-            return false;
-        }
-        var length = (int)doubled / 2;
-        if (position + 4 + length + trailingBytes > response.Length)
-        {
-            return false;
-        }
-        field = response.AsMemory(position + 4, length);
-        position += 4 + length;
-        return true;
     }
 }
 

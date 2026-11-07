@@ -136,6 +136,11 @@ public static class RecordBlockParser
     {
         var start = reader.Position;
         var rollPoints = reader.U32();
+        // A layout change can put any number here, and it would otherwise read as a real roll.
+        if (!AnchoredRows.IsRoll(rollPoints))
+        {
+            throw new InvalidDataException("roll is out of range");
+        }
         var itemSpec = reader.String();
         reader.U32();
         var secondaryCount = reader.U32();

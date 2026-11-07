@@ -471,7 +471,7 @@ public sealed class AppState : IDisposable
         NotifyChanged();
         try
         {
-            var download = await new MappingUpdater(UpdateClient).DownloadAsync();
+            var download = await new MappingUpdater(UpdateClient, MappingUpdater.SourceOrDefault(_settings.MappingSource)).DownloadAsync();
             if (download.Files.Count == 0)
             {
                 throw new InvalidDataException("來源沒有對應檔。");

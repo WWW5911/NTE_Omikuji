@@ -82,6 +82,17 @@ public sealed class RescanInOneSessionTests : IDisposable
     internal static byte[] BoardReply(IReadOnlyList<byte[]> rows, int page) =>
         Block(RecordBlockParser.MonopolyMarker, Envelope((26, 0x03000000), (22, 0x80000000), (18, (uint)page), (14, 527), (10, 1), (6, 1_774_080)), rows);
 
+    /// <summary>One reply can carry two pages, each in its own block.</summary>
+    internal static byte[] TwoBoardPages(IReadOnlyList<byte[]> first, IReadOnlyList<byte[]> second)
+    {
+        byte[] Plain(IReadOnlyList<byte[]> rows, uint page)
+        {
+            var body = rows.SelectMany(row => row).ToArray();
+            return [.. Envelope((26, 0x03000000), (22, 0x80000000), (18, page), (14, 527), (10, 1), (6, 1_774_080)), .. RecordBlockParser.MonopolyMarker, 0, .. U32(0), .. U32((uint)body.Length), .. U32((uint)rows.Count), .. body];
+        }
+        return ToWire([.. Plain(first, 0), .. Plain(second, 1)]);
+    }
+
     internal static byte[] ArcReply(IReadOnlyList<byte[]> rows, int page) =>
         Block(RecordBlockParser.ForkMarker, Envelope((17, 0x03000000), (13, 0x80000000), (9, (uint)page), (5, 5906)), rows);
 

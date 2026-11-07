@@ -57,6 +57,16 @@ public sealed record PoolInfo(HistoryKind Kind, string Id, string Name, string S
     };
 }
 
+/// <summary>How a row was read.</summary>
+public static class DecoderModes
+{
+    /// <summary>Parsed field by field from its block.</summary>
+    public const string Structured = "structured";
+
+    /// <summary>Found from its pool name when the block could not be parsed.</summary>
+    public const string Anchored = "anchored";
+}
+
 /// <summary>One decoded pull. Reward and result fields hold whatever text the game sent.</summary>
 public sealed class HistoryRow
 {
@@ -81,9 +91,9 @@ public sealed class HistoryRow
     public ulong TimestampTicks { get; set; }
     public string TimestampDecoded { get; set; } = "";
     public string RecordHex { get; set; } = "";
-    public string DecoderMode { get; set; } = "scan";
+    public string DecoderMode { get; set; } = DecoderModes.Anchored;
 
-    /// <summary>Only the fallback scan read this row, so nothing confirmed its fields. Such a row never replaces a saved one.</summary>
+    /// <summary>The row could not be parsed field by field, so nothing confirmed it. Such a row never replaces a saved one.</summary>
     public bool Unverified { get; set; }
     public int GroupOrdinal { get; set; }
     public string Uid { get; set; } = "";
