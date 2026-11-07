@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
+        <OutputType>WinExe</OutputType>
+        <RootNamespace>NteOmikuji.App</RootNamespace>
+        <UseMaui>true</UseMaui>
+        <MauiVersion>9.0.120</MauiVersion>
+        <SingleProject>true</SingleProject>
+        <EnableDefaultCssItems>false</EnableDefaultCssItems>
+
+        <ApplicationTitle>NTE Omikuji</ApplicationTitle>
+        <ApplicationId>net.nteomikuji.app</ApplicationId>
+        <ApplicationDisplayVersion>$(Version)</ApplicationDisplayVersion>
+        <ApplicationVersion>1</ApplicationVersion>
+
+        <!-- Unpackaged and self-contained, so no MSIX certificate or separate runtime install is needed. -->
+        <WindowsPackageType>None</WindowsPackageType>
+        <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+        <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+        <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#8E354A" />
+        <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#8E354A" BaseSize="128,128" />
+        <MauiFont Include="Resources\Fonts\*" />
+        <!-- Served from the assembly, so the app needs no web files on disk. -->
+        <EmbeddedResource Include="WebRoot\**" LogicalName="webroot/%(Filename)%(Extension)" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.9" />    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\NteOmikuji.Core\NteOmikuji.Core.csproj" />
+    </ItemGroup>
+
+</Project>

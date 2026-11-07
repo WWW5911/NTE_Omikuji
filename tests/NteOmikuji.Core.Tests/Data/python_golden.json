@@ -1,0 +1,1108 @@
+{
+ "permanent": [
+  {
+   "uid": "bdf0395ad3fb21f89b62ca92aaef7e36",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 0,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "a03879b3091bca21241e31de085320b3",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 1,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "1b4c80dd18dc21abfdcd6a2faf074e43",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 2,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "725511ac685a77ef2c8a0f851e7b54d6",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 3,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "bd93eab0d153b7b6e40865dac89996ea",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 4,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "c37299ccb5d60101635d00e028d7d039",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 5,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "573e593aa6cec9a99040e4eb17a9d86d",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 6,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "3e690ca8c045c6432e013275647c52e2",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 7,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "0194077dd045663860efe4152516a9de",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 8,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "4da133d1029f551728f9e2cd2ae63d10",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 9,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "84d7fee8aa3e9b46e0dd693bce2a91b1",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 10,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "7a4f842c6713ef4ed926a4875bb0b568",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 11,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "4f7a358b3822d8b302ac0fa5f24c6a3d",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 12,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "cbadb464673130f41268340afb50b515",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 13,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "fee37261638299019af48df2f5fae8bb",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 14,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "9001330a615602dba5d5dbf3a6f99a7e",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 15,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "483c0b59a7f6a9fd3014f0e00ec6f66b",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 16,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "02ace2527e5cf38f5473d8eb00dcbc11",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 17,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "e959d20956be34121d05c11b50eaf59f",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 18,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "917da90dbb6eeb06d0952b7f5093292f",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 19,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "3d00ee6affa41b1dc5bc91aaa8fbac81",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 20,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "82257dd4f27e623780f7f56ab983d5bd",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 21,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "ca2a2f47104a62a6f449de72cd53d25e",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 22,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "77819634cc6f1ea3d7b7e123c83a9198",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 23,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  },
+  {
+   "uid": "04873e149ea555676da2882b09fd7ac3",
+   "pool_group_id": "Lottery_Permanent",
+   "timestamp": "2030-01-01 00:00:00",
+   "timestamp_group_ordinal": 24,
+   "roll_result": 4,
+   "result_type": "dice",
+   "reward_type": "item",
+   "reward_id": "Dice_ticket_02",
+   "reward_name": "Lost Piece",
+   "reward_rank": "A",
+   "quantity": 50
+  }
+ ],
+ "arc": [
+  {
+   "uid": "221b6accc3de16a145293b8804761c7c",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 0,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "87892c9c9aae09bfdf71bd579e471544",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 1,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "f3b9c6ce5b6a3a73b85b85e27bba72b6",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 2,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "0364421ac604b4fe660d07238248dbf4",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 3,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "851249c15b6a870da0d191b66a4cc64d",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 4,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "2a2e9fcf841ca00a1abe89d75bb1ea0e",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 5,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "a3218dd92ca6f23d7f51855afb2589cc",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 6,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "a109017f33d1279ad190a6d589a1177f",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 7,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "c8fc2ea45158649efb448c3cf0979d6d",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 8,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "43ba7e5487bbaf209bfa728e1f7622a9",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 9,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "68db9f792b41b6cb038ff0859797093e",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 10,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "e5cfaed0247544e54ae9e8b78a519f52",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 11,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "7566663c4a9c193a66977bb95876e4e8",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 12,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "089ec8c10b82b5c040dd27f3a300749c",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 13,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "363c7ce3651dba8fec085ae9b9576e53",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 14,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "251a343fda80916d57e7d14319c2560f",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 15,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "2a2cc938278391510a81ef159ea25997",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 16,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "717696bc744e839ecf0245ead6e9ca34",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 17,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "9ad87114a6e2024ab2e6eb844ffae46e",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 18,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "4341ff00d4760fcd5d0cdd10f639a23e",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 19,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "c1b2ab8248edd357c6785aa64607d648",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 20,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "66146b23d475751a9d2d105d58177fd6",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 21,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "3e20f3e985f651dc930b97ac5ac106e9",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 22,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "abdf39f82d8b7036625a93a91550edaa",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 23,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  },
+  {
+   "uid": "c2bded94f026a3244b2a2fa2b0365c19",
+   "pool_group_id": "Arc_MiracleBox",
+   "timestamp": "2030-01-02 00:00:00",
+   "timestamp_group_ordinal": 24,
+   "reward_type": "arc",
+   "reward_id": "fork_nonos",
+   "reward_name": "First Step to Success",
+   "reward_rank": "B",
+   "source_type": "miracle_box"
+  }
+ ],
+ "samples": {
+  "limited-points-gift-1": [
+   {
+    "reward_id": "1020",
+    "reward_type": "character",
+    "reward_name": "Haniel",
+    "reward_rank": "A",
+    "result_type": "points_gift",
+    "dice": 0,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   }
+  ],
+  "limited-chase-reward": [
+   {
+    "reward_id": "Dice_ticket_01",
+    "reward_type": "item",
+    "reward_name": "Warp Piece",
+    "reward_rank": "S",
+    "result_type": "chase_reward",
+    "dice": -4,
+    "quantity": 30,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   }
+  ],
+  "limited-batched-pages": [
+   {
+    "reward_id": "fork_nonos",
+    "reward_type": "arc",
+    "reward_name": "First Step to Success",
+    "reward_rank": "B",
+    "result_type": "dice",
+    "dice": 5,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "1020",
+    "reward_type": "character",
+    "reward_name": "Haniel",
+    "reward_rank": "A",
+    "result_type": "dice",
+    "dice": 1,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "fork_nonos",
+    "reward_type": "arc",
+    "reward_name": "First Step to Success",
+    "reward_rank": "B",
+    "result_type": "dice",
+    "dice": 4,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "fork_vine",
+    "reward_type": "arc",
+    "reward_name": "Be Happy",
+    "reward_rank": "B",
+    "result_type": "dice",
+    "dice": 1,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "fork_dustbin",
+    "reward_type": "arc",
+    "reward_name": "Dangerous Game",
+    "reward_rank": "B",
+    "result_type": "dice",
+    "dice": 1,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "fork_yaodao",
+    "reward_type": "arc",
+    "reward_name": "Drawn Blade",
+    "reward_rank": "A",
+    "result_type": "dice",
+    "dice": 4,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "1052",
+    "reward_type": "character",
+    "reward_name": "Hotori",
+    "reward_rank": "S",
+    "result_type": "dice",
+    "dice": 3,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "Dice_ticket_02",
+    "reward_type": "item",
+    "reward_name": "Lost Piece",
+    "reward_rank": "A",
+    "result_type": "dice",
+    "dice": 5,
+    "quantity": 50,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "1008",
+    "reward_type": "character",
+    "reward_name": "Skia",
+    "reward_rank": "A",
+    "result_type": "dice",
+    "dice": 6,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "fork_Prokaryon",
+    "reward_type": "arc",
+    "reward_name": "Us.",
+    "reward_rank": "B",
+    "result_type": "dice",
+    "dice": 4,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   }
+  ],
+  "limited-bitpacked-source": [
+   {
+    "reward_id": "fork_Prokaryon",
+    "reward_type": "arc",
+    "reward_name": "Us.",
+    "reward_rank": "B",
+    "result_type": "dice",
+    "dice": 6,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "1019",
+    "reward_type": "character",
+    "reward_name": "Mint",
+    "reward_rank": "A",
+    "result_type": "points_gift",
+    "dice": 0,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "fork_dustbin",
+    "reward_type": "arc",
+    "reward_name": "Dangerous Game",
+    "reward_rank": "B",
+    "result_type": "dice",
+    "dice": 1,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "fork_appliance",
+    "reward_type": "arc",
+    "reward_name": "\"Real Music\"",
+    "reward_rank": "B",
+    "result_type": "dice",
+    "dice": 4,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "1033",
+    "reward_type": "character",
+    "reward_name": "Adler",
+    "reward_rank": "A",
+    "result_type": "dice",
+    "dice": 4,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "fork_wuhuakuang",
+    "reward_type": "arc",
+    "reward_name": "The Forgotten",
+    "reward_rank": "A",
+    "result_type": "dice",
+    "dice": 2,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "Dicelimite",
+    "reward_type": "item",
+    "reward_name": "Solid Dice",
+    "reward_rank": "S",
+    "result_type": "dice",
+    "dice": 3,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "fork_dustbin",
+    "reward_type": "arc",
+    "reward_name": "Dangerous Game",
+    "reward_rank": "B",
+    "result_type": "dice",
+    "dice": 1,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "Dice_ticket_02",
+    "reward_type": "item",
+    "reward_name": "Lost Piece",
+    "reward_rank": "A",
+    "result_type": "dice",
+    "dice": 6,
+    "quantity": 30,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "Dice_ticket_02",
+    "reward_type": "item",
+    "reward_name": "Lost Piece",
+    "reward_rank": "A",
+    "result_type": "dice",
+    "dice": 6,
+    "quantity": 30,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   }
+  ],
+  "limited-bitpacked-response": [
+   {
+    "reward_id": "fork_Prokaryon",
+    "reward_type": "arc",
+    "reward_name": "Us.",
+    "reward_rank": "B",
+    "result_type": "dice",
+    "dice": 6,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "1019",
+    "reward_type": "character",
+    "reward_name": "Mint",
+    "reward_rank": "A",
+    "result_type": "points_gift",
+    "dice": 0,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "fork_dustbin",
+    "reward_type": "arc",
+    "reward_name": "Dangerous Game",
+    "reward_rank": "B",
+    "result_type": "dice",
+    "dice": 1,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "fork_appliance",
+    "reward_type": "arc",
+    "reward_name": "\"Real Music\"",
+    "reward_rank": "B",
+    "result_type": "dice",
+    "dice": 4,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "1033",
+    "reward_type": "character",
+    "reward_name": "Adler",
+    "reward_rank": "A",
+    "result_type": "dice",
+    "dice": 4,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "fork_wuhuakuang",
+    "reward_type": "arc",
+    "reward_name": "The Forgotten",
+    "reward_rank": "A",
+    "result_type": "dice",
+    "dice": 2,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "Dicelimite",
+    "reward_type": "item",
+    "reward_name": "Solid Dice",
+    "reward_rank": "S",
+    "result_type": "dice",
+    "dice": 3,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "fork_dustbin",
+    "reward_type": "arc",
+    "reward_name": "Dangerous Game",
+    "reward_rank": "B",
+    "result_type": "dice",
+    "dice": 1,
+    "quantity": 1,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "Dice_ticket_02",
+    "reward_type": "item",
+    "reward_name": "Lost Piece",
+    "reward_rank": "A",
+    "result_type": "dice",
+    "dice": 6,
+    "quantity": 30,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   },
+   {
+    "reward_id": "Dice_ticket_02",
+    "reward_type": "item",
+    "reward_name": "Lost Piece",
+    "reward_rank": "A",
+    "result_type": "dice",
+    "dice": 6,
+    "quantity": 30,
+    "timestamp_decoded": "2030-01-01 00:00:00",
+    "timestamp_raw_hex": "0000f3095f138b23",
+    "decoder_mode": null
+   }
+  ]
+ },
+ "structured": {
+  "monopoly": {
+   "hex": "464d6f6e6f706f6c794c6f74746572795265636f72644461746100000000004c00000001000000020000000b000000466f6f5f4974656d2c33000000000000000000010000000009000000466f6f5f4974656d001300000043617264506f6f6c5f4368617261637465720080e8d03adaa6de08",
+   "rows": [
+    {
+     "reward_id": "Foo_Item",
+     "reward_type": "item",
+     "reward_name": "",
+     "reward_rank": null,
+     "result_type": "dice",
+     "dice": 2,
+     "quantity": 3,
+     "timestamp_decoded": "2026-04-30 17:02:15",
+     "timestamp_raw_hex": "00a243eb689b7a23",
+     "decoder_mode": "heuristic_enriched"
+    }
+   ]
+  },
+  "monopoly_shift3": {
+   "hex": "0000000000000000306a7a737b837b63cb637aa3a32b93cb932a1b7b9323230aa30b030000000060020000080000001000000058000000307a7bfb4aa22b6b6399010000000000000000080000000048000000307a7bfb4aa22b6b0398000000180a9323837a7b63fb1a420b930b1ba32b9303004487d6d136f54600",
+   "rows": [
+    {
+     "reward_id": "Foo_Item",
+     "reward_type": "item",
+     "reward_name": "",
+     "reward_rank": null,
+     "result_type": "dice",
+     "dice": 2,
+     "quantity": 3,
+     "timestamp_decoded": "2026-04-30 17:02:15",
+     "timestamp_raw_hex": "00a243eb689b7a23",
+     "decoder_mode": "heuristic_enriched"
+    }
+   ]
+  },
+  "chase": {
+   "hex": "464d6f6e6f706f6c794c6f74746572795265636f72644461746100000000005900000001000000ffffffff12000000446963655f7469636b65745f30312c333000000000000000000001000000000f000000446963655f7469636b65745f3031001300000043617264506f6f6c5f4368617261637465720080e8d03adaa6de08",
+   "rows": [
+    {
+     "reward_id": "Dice_ticket_01",
+     "reward_type": "item",
+     "reward_name": "Warp Piece",
+     "reward_rank": "S",
+     "result_type": "chase_reward",
+     "dice": -4,
+     "quantity": 30,
+     "timestamp_decoded": "2026-04-30 17:02:15",
+     "timestamp_raw_hex": "00a243eb689b7a23",
+     "decoder_mode": "heuristic_enriched"
+    }
+   ]
+  },
+  "secondary": {
+   "hex": "464d6f6e6f706f6c794c6f74746572795265636f72644461746100000000004c000000010000000200000005000000313033330000000000020000000b000000426f6e75735f4974656d000500000031303333001300000043617264506f6f6c5f4368617261637465720080e8d03adaa6de08",
+   "rows": [
+    {
+     "reward_id": "1033",
+     "reward_type": "character",
+     "reward_name": "Adler",
+     "reward_rank": "A",
+     "result_type": "dice",
+     "dice": 2,
+     "quantity": 1,
+     "timestamp_decoded": "2026-04-30 17:02:15",
+     "timestamp_raw_hex": "00a243eb689b7a23",
+     "decoder_mode": "heuristic_enriched"
+    }
+   ]
+  }
+ },
+ "fork": {
+  "fork": {
+   "hex": "46466f726b4c6f74746572795265636f72644461746100000000002e000000010000000a000000666f726b5f76696e650014000000466f726b4c6f74746572795f416e48756e51750080e8d03adaa6de08",
+   "rows": [
+    {
+     "reward_id": "fork_vine",
+     "reward_type": "arc",
+     "reward_name": "Be Happy",
+     "reward_rank": "B",
+     "result_type": null,
+     "dice": null,
+     "quantity": null,
+     "timestamp_decoded": "2026-04-30 17:02:15",
+     "timestamp_raw_hex": "80e8d03adaa6de08",
+     "decoder_mode": "structured_fallback"
+    }
+   ]
+  },
+  "fork_shift5": {
+   "hex": "0000000000000000c0c8e84d6e8de98d8eae4c2e4faa6cec4d8e8c288c2e0c00000000000600002000000080010000c0e84d6eedcb2acdad8c450680020000c0e84d6e8de98d8eae4c2eef2bc80da9ce2daa0e00101d5a47dbd41b01",
+   "rows": [
+    {
+     "reward_id": "fork_vine",
+     "reward_type": "arc",
+     "reward_name": "Be Happy",
+     "reward_rank": "B",
+     "result_type": null,
+     "dice": null,
+     "quantity": null,
+     "timestamp_decoded": "2026-04-30 17:02:15",
+     "timestamp_raw_hex": "80e8d03adaa6de08",
+     "decoder_mode": "structured_fallback"
+    }
+   ]
+  }
+ }
+}

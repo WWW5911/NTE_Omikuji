@@ -1,0 +1,239 @@
+using System.Buffers.Binary;
+using System.Numerics;
+using System.Text;
+using NteOmikuji.Core.Export;
+using NteOmikuji.Core.Import;
+using NteOmikuji.Core.Protocol;
+using NteOmikuji.Core.Session;
+using Xunit;
+
+namespace NteOmikuji.Core.Tests;
+
+public class ArbitraryResultStringTests
+{
+    private const ulong Ticks = 639_131_653_353_040_000;
+
+    private static byte[] U32(uint value)
+    {
+        var bytes = new byte[4];
+        BinaryPrimitives.WriteUInt32LittleEndian(bytes, value);
+        return bytes;
+    }
+
+    private static byte[] U64(ulong value)
+    {
+        var bytes = new byte[8];
+        BinaryPrimitives.WriteUInt64LittleEndian(bytes, value);
+        return bytes;
+    }
+
+    private static byte[] FString(string value)
+    {
+        var raw = Encoding.UTF8.GetBytes(value + "\0");
+        return [.. U32((uint)raw.Length), .. raw];
+    }
+
+    private static byte[] Utf16FString(string value)
+    {
+        var raw = Encoding.Unicode.GetBytes(value + "\0");
+        return [.. U32(unchecked((uint)-(value.Length + 1))), .. raw];
+    }
+
+    private static byte[] Pack(ReadOnlySpan<byte> plain, int bits)
+    {
+        var packed = new BigInteger(plain, isUnsigned: true) << bits;
+        var output = new byte[plain.Length + 1];
+        packed.TryWriteBytes(output, out _, isUnsigned: true);
+        return output;
+    }
+
+    private static byte[] StructuredBlock(params byte[] row) =>
+        [.. StructuredParser.MonopolyMarker, 0, .. U32(0), .. U32((uint)row.Length), .. U32(1), .. row];
+
+    private static byte[] MonopolyRow(byte[] item, string result) =>
+        [.. U32(2), .. item, .. U32(0), .. U32(0), .. FString(""), .. FString(result), .. FString("CardPool_Character"), .. U64(Ticks)];
+
+    /// <summary>Builds a bit-packed heuristic response holding one record with a reward of any text.</summary>
+    private static byte[] HeuristicResponse(string rewardId)
+    {
+        byte[] rowBody = [.. U32(5 * 4), .. U32(1), .. FString(rewardId)];
+        var packedBody = Pack(rowBody, 2);
+        // The final packed byte holds only the carry, which is the terminator's slot.
+        var chunk = packedBody[..^1];
+        return [.. new byte[0x50], .. chunk, .. MonopolyDecoder.PermanentMarker, .. U64(Ticks * 4), .. new byte[20]];
+    }
+
+    [Theory]
+    [InlineData("fork_vine")]
+    [InlineData("Brand-New Reward 2.0")]
+    [InlineData("限定獎勵_星辰")]
+    [InlineData("Émile's prize (x)")]
+    public void DecodesRewardKeysOfAnyText(string text)
+    {
+        byte[] plain = [.. Encoding.UTF8.GetBytes(text), 0];
+        Assert.Equal(text, MonopolyDecoder.DecodeRewardKey(Pack(plain, 2)));
+        Assert.Equal(text, ArcDecoder.DecodeKey(Pack(plain, 1)));
+    }
+
+    [Theory]
+    [InlineData("98bdc9ad7dd9a5b99501", "fork_vine")]
+    [InlineData("10a58d9539bdc9b585b101", "DiceNormal")]
+    [InlineData("c4c0cccc00", "1033")]
+    public void KeepsDocumentedKeyExamples(string hex, string expected) =>
+        Assert.Equal(expected, MonopolyDecoder.DecodeRewardKey(Convert.FromHexString(hex)));
+
+    [Theory]
+    [InlineData("Brand-New Reward 2.0")]
+    [InlineData("限定獎勵_星辰")]
+    [InlineData("event:summer/2026")]
+    public void HeuristicDecoderKeepsRewardsWithUnknownPrefixes(string rewardId)
+    {
+        var row = Assert.Single(MonopolyDecoder.DecodeResponse(HeuristicResponse(rewardId), RewardCatalog.Empty));
+        Assert.Equal(rewardId, row.RewardId);
+        Assert.Equal("item", row.RewardType);
+        Assert.False(row.IsMappedReward);
+        Assert.Equal(1, row.Quantity);
+    }
+
+    [Fact]
+    public void MappedRewardStillGetsCanonicalIdAndName()
+    {
+        var row = Assert.Single(MonopolyDecoder.DecodeResponse(HeuristicResponse("FORK_NONOS"), RewardCatalog.Bundled.Value));
+        Assert.Equal("fork_nonos", row.RewardId);
+        Assert.True(row.IsMappedReward);
+        Assert.NotEqual("", row.RewardName);
+    }
+
+    [Fact]
+    public void StructuredRowKeepsUnicodeRewardAndSeparateResultText()
+    {
+        var payload = StructuredBlock(MonopolyRow(FString("活動獎勵 α,3"), "抽中了隱藏結果"));
+        var row = Assert.Single(MonopolyDecoder.DecodeResponse(payload, RewardCatalog.Empty));
+        Assert.Equal("活動獎勵 α", row.RewardId);
+        Assert.Equal(3, row.Quantity);
+        Assert.Equal("抽中了隱藏結果", row.ResultText);
+    }
+
+    [Fact]
+    public void StructuredRowReadsUtf16Strings()
+    {
+        var payload = StructuredBlock(MonopolyRow(Utf16FString("寬字元獎勵"), "寬字元獎勵"));
+        var row = Assert.Single(MonopolyDecoder.DecodeResponse(payload, RewardCatalog.Empty));
+        Assert.Equal("寬字元獎勵", row.RewardId);
+        Assert.Null(row.ResultText);
+    }
+
+    [Theory]
+    [InlineData("Item, Special Edition", "Item, Special Edition", 1)]
+    [InlineData("Item,0", "Item,0", 1)]
+    [InlineData("Item,7", "Item", 7)]
+    [InlineData(",7", ",7", 1)]
+    public void ItemSpecOnlySplitsAPositiveCount(string spec, string id, long count) =>
+        Assert.Equal((id, count), StructuredParser.ParseItemSpec(spec));
+
+    [Fact]
+    public void ExportPreservesTextAndAddsResultTextOnlyWhenPresent()
+    {
+        var withResult = new HistoryRow { RewardId = "限定", ResultText = "結果 ✓", PoolGroupId = "Lottery_Permanent", ResultType = "dice" };
+        var plain = new HistoryRow { RewardId = "限定", PoolGroupId = "Lottery_Permanent", ResultType = "dice" };
+        var history = new BannerHistory(BannerInfo.Permanent, [withResult, plain], [], [1]);
+
+        var export = ExportWriter.BuildHistory(history, new ExportContext("live_capture"));
+        var json = ExportWriter.ToJson(export);
+
+        Assert.Contains("\"reward_id\": \"限定\"", json);
+        Assert.Contains("\"result_text\": \"結果 ✓\"", json);
+        Assert.Null(export["records"]![1]!["result_text"]);
+    }
+
+    [Fact]
+    public void FileNameDropsPathCharactersFromUntrustedUid()
+    {
+        var name = ExportWriter.FileName(@"..\..\evil:1", "Limited", new DateTime(2026, 1, 2, 3, 4, 5));
+        Assert.Equal("evil1_Limited_20260102_030405.json", name);
+    }
+}
+
+public class RobustnessTests
+{
+    [Fact]
+    public void MalformedResponsesNeverThrow()
+    {
+        var random = new Random(1234);
+        for (var i = 0; i < 2000; i++)
+        {
+            var payload = new byte[random.Next(0, 400)];
+            random.NextBytes(payload);
+            MonopolyDecoder.DecodeResponse(payload, RewardCatalog.Empty);
+            ArcDecoder.DecodeResponse(payload, RewardCatalog.Empty);
+            MysteryBoxDecoder.DecodeResponse(payload, RewardCatalog.Empty);
+            AchievementDecoder.Extract(payload);
+            ServerRegions.ExtractServerId(payload);
+        }
+    }
+
+    [Fact]
+    public void SessionSeparatesInboundFromOutboundPackets()
+    {
+        var session = new HistorySession("192.0.2.1", RewardCatalog.Empty);
+        session.Process(new IpPacket("192.0.2.1", "198.51.100.1", 1, 2, [], false));
+        session.Process(new IpPacket("192.0.2.1", "198.51.100.1", 1, 2, [], true));
+        session.Process(new IpPacket("198.51.100.1", "192.0.2.1", 2, 1, [], false));
+
+        Assert.Equal(2, session.OutboundCount);
+        Assert.Equal(1, session.InboundCount);
+        Assert.Equal(3, session.PacketCount);
+    }
+
+    [Fact]
+    public void TruncatedStructuredBlocksAreIgnored()
+    {
+        byte[] block = [.. StructuredParser.MonopolyMarker, 0, 0, 0, 0, 0, 200, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0];
+        for (var length = 0; length <= block.Length; length++)
+        {
+            Assert.Empty(StructuredParser.ParseRecords(block[..length], StructuredRecordType.Monopoly));
+        }
+    }
+
+    [Theory]
+    [InlineData("99999999:abc,")]
+    [InlineData("-1:,")]
+    [InlineData("3:ab")]
+    [InlineData("0:?")]
+    public void CorruptFlowsAreRejected(string text) =>
+        Assert.Throws<InvalidDataException>(() => MitmproxyFlows.ReadFlows(Encoding.ASCII.GetBytes(text)));
+
+    [Fact]
+    public void DeeplyNestedFlowIsRejectedInsteadOfOverflowingTheStack()
+    {
+        var nested = "0:]";
+        for (var i = 0; i < 200; i++)
+        {
+            nested = $"{nested.Length}:{nested}]";
+        }
+        Assert.Throws<InvalidDataException>(() => MitmproxyFlows.ReadFlows(Encoding.ASCII.GetBytes(nested)));
+    }
+
+    [Fact]
+    public void PageRunStartsAtPageOneAndReportsGaps()
+    {
+        CapturedPage Page(int number) => new(number, HistoryKind.Permanent, [], 0, 5);
+        var (run, warnings) = HistoryAssembly.SelectRun([Page(1), Page(2), Page(4)]);
+
+        Assert.Equal([1, 2], run.Select(page => page.Page));
+        Assert.Equal("PAGE_GAP_DETECTED", Assert.Single(warnings).Code);
+        Assert.Equal([4], warnings[0].IgnoredPages!);
+    }
+
+    [Fact]
+    public void AchievementBufferIsBoundedPerFlow()
+    {
+        var collector = new AchievementCollector("192.0.2.1");
+        var chunk = new byte[1024 * 1024];
+        for (uint i = 0; i < 64; i++)
+        {
+            collector.Add(new IpPacket("198.51.100.1", "192.0.2.1", 1, 2, chunk, true, i * (uint)chunk.Length));
+        }
+        Assert.Empty(collector.Records);
+    }
+}

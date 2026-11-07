@@ -1,0 +1,124 @@
+﻿id,type,name,rank
+fork_appliance,arc,"""Real Music""",B
+fork_Arachne,arc,Eternal Waltz,S
+fork_BitGame,arc,Blow up the Crowd,S
+fork_BitterCake,arc,"The Good, The Bad, The Bitter",A
+fork_BlackBook,arc,Youthful Fantasy,S
+fork_BlastCandy,arc,Fluff of Fearlessness,S
+fork_bopu,arc,"Cosmos Daze, Wild Reverie",A
+fork_BoxingCandy,arc,Fluff of Fortitude,S
+fork_Butterfly,arc,Reality Refuge,S
+fork_Castle,arc,Call of the Twisted City,A
+fork_Crowbar,arc,Time Bandit,A
+fork_DemonBlade,arc,Ravenous Blade,S
+fork_Door,arc,The Wrong Gate,S
+fork_dustbin,arc,Dangerous Game,B
+fork_GoldRecord,arc,Voice of the Voyager,S
+fork_GoldWool,arc,What's Desired,S
+fork_jiaojuan,arc,Shiny Days,A
+fork_jingmotingyuan,arc,Camellia Society,S
+fork_Kite,arc,Watch Your Heads!,A
+fork_KnightCandy,arc,Fluff of Ferocity,S
+fork_koinobori,arc,A Time Will Come,A
+fork_lingganzhongjiezhe,arc,Mind Royale,A
+fork_LunarPhase,arc,Blushing Mirage,S
+fork_mamen,arc,Contemplative Cat,S
+fork_mofeikesi,arc,Good Boy's Grand Adventure,S
+fork_moon,arc,Stellar Veil,S
+fork_MotorCandy,arc,Fluff of Fleetness,S
+fork_Nakupeda,arc,Your Happiness is Priceless,S
+fork_NestBird,arc,Tears Beneath the Mask,S
+fork_nonos,arc,First Step to Success,B
+fork_oulaquantao,arc,Oraora!,A
+fork_PaperPlane,arc,Clear Skies,A
+fork_PoliceRat,arc,Hethereau's Keeper,S
+fork_Prokaryon,arc,Us.,B
+fork_rishi,arc,Day Off,S
+fork_Rose,arc,The Last Rose,S
+fork_snowman,arc,The Fools' Spring,A
+fork_spider,arc,"Failing You, Heavy in My Heart",A
+fork_ThiefCandy,arc,Fluff of Finesse,S
+fork_TigerTally,arc,Ready-Ready,S
+fork_Time,arc,Marching Beyond Time,S
+fork_tuansanlang,arc,The Great Thief,A
+fork_vine,arc,Be Happy,B
+fork_Whale,arc,Song of the Whale,S
+fork_worldrain,arc,The Rain That Shook the World,S
+fork_wuhuakuang,arc,The Forgotten,A
+fork_wushoutieyu,arc,Raging Flames,S
+fork_yaodao,arc,Drawn Blade,A
+fork_yuren,arc,Umbrella,A
+1003,character,Sakiri,S
+1004,character,Lacrimosa,S
+1008,character,Skia,A
+1010,character,Nanally,S
+1019,character,Mint,A
+1020,character,Haniel,A
+1021,character,Edgar,A
+1023,character,Baicang,S
+1025,character,Hathor,S
+1033,character,Adler,A
+1036,character,Zankou,S
+1039,character,Fadia,S
+1046,character,Zero,S
+1051,character,Zero,S
+1052,character,Hotori,S
+1054,character,Daffodill,S
+1055,character,Jiuyuan,S
+1056,character,Lacrimosa,S
+1070,character,Aurelia,A
+1071,character,Chaos,S
+1072,character,Linko,S
+1073,character,Chiz,S
+1075,character,Iroi,S
+1076,character,Shinku,S
+1091,character,Lacrimosa,S
+BussinessCard_MangHe_bsj,cosmetic,Trackside Shadow,S
+CharacterUpMaterial_lv3,item,Elite Hunter Guide,A
+CityAbility_UpMaterial,item,Dreamless Seed,B
+Dice_ticket_01,item,Warp Piece,S
+Dice_ticket_02,item,Lost Piece,A
+Dicelimite,item,Solid Dice,S
+DiceNormal,item,Fabricated Dice,S
+Fashion_1051_rpg_level3_Base,cosmetic,Glory Days,S
+Fashion_1051_rpg_level3_Dye1,cosmetic,Glory Days - Braveheart,S
+Fashion_1051_rpg_level3_Dye2,cosmetic,Glory Days - Starfall,S
+Fashion_1075_rpg_level2_Base,cosmetic,Archmage,S
+Fashion_character_1004_01,cosmetic,Gilded Rhapsody,S
+Fashion_character_1010,cosmetic,Phoenix Kick,S
+Fashion_character_1010_swimsuit,cosmetic,Sunny Surf,S
+Fashion_character_1019_swimsuit,cosmetic,Saltwater Taffy,S
+Fashion_character_1036_03,cosmetic,Autumn Vignette,S
+Fashion_character_1051_07,cosmetic,Perfect Partners,S
+Fashion_character_1051_swimsuit,cosmetic,Cloudless Summer,S
+Fashion_character_1052_01,cosmetic,Priceless Orchid,S
+Fashion_character_1071_01,cosmetic,Clear Skies,S
+Fashion_character_1072_01,cosmetic,Surfing Among Stars,S
+Fashion_character_1076_01,cosmetic,Student of Terrasea,S
+Fashion_Glide_1004,cosmetic,Tomato Duo,A
+Fashion_Glide_1010,cosmetic,Underboss-of-the-Underboss,A
+Fashion_Glide_1036,cosmetic,Scarlet Sash,A
+Fashion_Glide_1052,cosmetic,Orchid Breeze,A
+Fashion_Glide_1071,cosmetic,Skyrider,A
+Fashion_Glide_1072,cosmetic,Sheepcopter,A
+Fashion_Glide_1075,cosmetic,Sheepcopter,A
+Fashion_Glide_1076,cosmetic,Overcast Canopy,A
+Fashion_vehicle_1004_V021,cosmetic,Tomato Cruise - Livery,S
+Fashion_vehicle_1010_V008,cosmetic,Tiger Incoming! - Livery,S
+Fashion_vehicle_1036_V043,cosmetic,Sandy Mirage - Livery,S
+Fashion_vehicle_1052_V024,cosmetic,Autumn Haze - Livery,S
+Fashion_vehicle_1071_V010,cosmetic,Hound Blitz - Livery,S
+Fashion_vehicle_1075_V006,cosmetic,Three's Company - Livery,S
+Fashion_vehicle_1076_V024,cosmetic,Hidden Dragon - Livery,S
+Fashion_vehicleSkin_1052_V016,cosmetic,Golden Breeze - Livery,S
+Fons,item,Fons,A
+Frame_MangHe_bsj,cosmetic,Heartbeat Moment,S
+Frame_MangHe_shinku,cosmetic,Ember Trail,S
+Frame_MangHe_summer_01,cosmetic,Endless Summer,S
+Gold,item,Beetle Coin,B
+SpecialGift_letter,item,A Handwritten Letter,S
+SpecialGift_ticket,item,Floe Cinema Ticket,A
+vehicle026,item,Porsche 918 Spyder,S
+vehicle039,item,Draco,S
+Vehicle044,item,Tide,S
+weeklycloneboss_selectbox_02,item,Anomaly Pilgrimage Material Selection Box,S

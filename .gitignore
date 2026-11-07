@@ -1,0 +1,7 @@
+bin/
+obj/
+*.user
+.vs/
+publish/
+dist/
+# The Python exporter is kept as a local reference, with its own git history.

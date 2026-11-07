@@ -1,0 +1,450 @@
+﻿id,name,description,quality,target,rewards
+battle_10,Here It Comes! V,Use Ultimate ×300.,execellent,300,Annulith:20
+battle_11,Speed Above All I,Trigger Critical Dodge ×10.,normal,10,Annulith:5
+battle_12,Speed Above All II,Trigger Critical Dodge ×50.,normal,50,Annulith:5
+battle_13,Speed Above All III,Trigger Critical Dodge ×100.,normal,100,Annulith:5
+battle_14,Speed Above All IV,Trigger Critical Dodge ×200.,high,200,Annulith:10
+battle_15,Speed Above All V,Trigger Critical Dodge ×300.,execellent,300,Annulith:20
+battle_16,Crumbles at Touch I,"In battle, Break enemies ×5.",normal,5,Annulith:5
+battle_17,Crumbles at Touch II,"In battle, Break enemies ×10.",normal,10,Annulith:5
+battle_18,Crumbles at Touch III,"In battle, Break enemies ×50.",normal,50,Annulith:5
+battle_19,Crumbles at Touch IV,"In battle, Break enemies ×100.",high,100,Annulith:10
+battle_20,Crumbles at Touch V,"In battle, Break enemies ×200.",execellent,200,Annulith:20
+battle_21,Harvest Season I,Trigger Blossom ×10.,normal,10,Annulith:5
+battle_22,Harvest Season II,Trigger Blossom ×50.,high,50,Annulith:10
+battle_23,Harvest Season III,Trigger Blossom ×200.,execellent,200,Annulith:20
+battle_24,Devil Within I,Trigger Hexed ×10.,normal,10,Annulith:5
+battle_25,Devil Within II,Trigger Hexed ×50.,high,50,Annulith:10
+battle_26,Devil Within III,Trigger Hexed ×200.,execellent,200,Annulith:20
+battle_27,Stopped Thinking I,Trigger Remora ×10.,normal,10,Annulith:5
+battle_28,Stopped Thinking II,Trigger Remora ×50.,high,50,Annulith:10
+battle_29,Stopped Thinking III,Trigger Remora ×200.,execellent,200,Annulith:20
+battle_30,Death Nova I,Trigger Nova ×10.,normal,10,Annulith:5
+battle_31,Death Nova II,Trigger Nova ×50.,high,50,Annulith:10
+battle_32,Death Nova III,Trigger Nova ×200.,execellent,200,Annulith:20
+battle_33,Scarlet Corruption I,Trigger Scorch ×10.,normal,10,Annulith:5
+battle_34,Scarlet Corruption II,Trigger Scorch ×50.,high,50,Annulith:10
+battle_35,Scarlet Corruption III,Trigger Scorch ×200.,execellent,200,Annulith:20
+battle_36,Soul Color I,Trigger Stain ×10.,normal,10,Annulith:5
+battle_37,Soul Color II,Trigger Stain ×50.,high,50,Annulith:10
+battle_38,Soul Color III,Trigger Stain ×200.,execellent,200,Annulith:20
+battle_39,Bumper Harvest I,Trigger Charge ×10.,normal,10,Annulith:5
+battle_40,Bumper Harvest II,Trigger Charge ×50.,high,50,Annulith:10
+battle_41,Bumper Harvest III,Trigger Charge ×200.,execellent,200,Annulith:20
+battle_42,Malevolence Unbound I,Trigger Discord ×10.,normal,10,Annulith:5
+battle_43,Malevolence Unbound II,Trigger Discord ×50.,high,50,Annulith:10
+battle_44,Malevolence Unbound III,Trigger Discord ×200.,execellent,200,Annulith:20
+battle_49,Variation Movement I,Cast Skill ×10.,normal,10,Annulith:5
+battle_50,Variation Movement II,Cast Skill ×50.,normal,50,Annulith:5
+battle_51,Variation Movement III,Cast Skill ×100.,normal,100,Annulith:5
+battle_52,Variation Movement IV,Cast Skill ×200.,high,200,Annulith:10
+battle_53,Variation Movement V,Cast Skill ×300.,execellent,300,Annulith:20
+battle_54,Death is the Final Movement of All Life I,Defeat enemies with Ultimate ×10.,normal,10,Annulith:5
+battle_55,Death is the Final Movement of All Life II,Defeat enemies with Ultimate ×50.,high,50,Annulith:10
+battle_56,Death is the Final Movement of All Life III,Defeat enemies with Ultimate ×200.,execellent,200,Annulith:20
+battle_6,Here It Comes! I,Use Ultimate ×10.,normal,10,Annulith:5
+battle_63,Come At Me!,"In battle, have a single character with a Shield of over 5,000 points.",normal,5000,Annulith:5
+battle_64,Non-Lethal Defense,"In battle, have a single character with a Shield of over 10,000 points.",high,10000,Annulith:10
+battle_65,Absolute Defense,"In battle, have a single character with a Shield of over 30,000 points.",execellent,30000,Annulith:20
+battle_7,Here It Comes! II,Use Ultimate ×50.,normal,50,Annulith:5
+battle_8,Here It Comes! III,Use Ultimate ×100.,normal,100,Annulith:5
+battle_9,Here It Comes! IV,Use Ultimate ×200.,high,200,Annulith:10
+develop_1,Hethereau Beginner,Raise Hunter Level to Lvl 10.,normal,10,Annulith:5
+develop_10,One-Man Army IV,Raise 1 character to Lvl 80.,high,1,Annulith:10
+develop_11,Four-Man Squad I,Raise 4 characters to Lvl 20.,normal,4,Annulith:5
+develop_12,Four-Man Squad II,Raise 4 characters to Lvl 40.,normal,4,Annulith:5
+develop_13,Four-Man Squad III,Raise 4 characters to Lvl 60.,high,4,Annulith:10
+develop_14,Four-Man Squad IV,Raise 4 characters to Lvl 80.,execellent,4,Annulith:20
+develop_15,There are seven more fighters just as tough as me!,Raise 8 characters to Lvl 80.,execellent,8,Annulith:20
+develop_16,Touching the Forbidden Edge I,Raise 1 Arc to Lvl 20.,normal,1,Annulith:5
+develop_17,Touching the Forbidden Edge II,Raise 1 Arc to Lvl 40.,normal,1,Annulith:5
+develop_18,Touching the Forbidden Edge III,Raise 1 Arc to Lvl 60.,normal,1,Annulith:5
+develop_19,Touching the Forbidden Edge IV,Raise 1 Arc to Lvl 80.,high,1,Annulith:10
+develop_2,The Master Shows the Way…,Raise Hunter Level to Lvl 20.,normal,20,Annulith:5
+develop_20,Duel Master I,Raise 4 Arcs to Lvl 20.,normal,4,Annulith:5
+develop_21,Duel Master II,Raise 4 Arcs to Lvl 40.,normal,4,Annulith:5
+develop_22,Duel Master III,Raise 4 Arcs to Lvl 60.,high,4,Annulith:10
+develop_23,Duel Master IV,Raise 4 Arcs to Lvl 80.,execellent,4,Annulith:20
+develop_24,Duel Master V,Raise 8 Arcs to Lvl 80.,execellent,8,Annulith:20
+develop_25,The Nameless,Upgrade 1 Orange Console Module to Lvl 10.,normal,1,Annulith:5
+develop_26,Stick Fighter,Upgrade 1 Orange Console Module to Lvl 20.,normal,1,Annulith:5
+develop_27,Half-Hearted Devotion,Upgrade 6 Orange Console Modules to Lvl 10.,normal,6,Annulith:5
+develop_28,Retro King,Upgrade 6 Orange Console Modules to Lvl 20.,high,6,Annulith:10
+develop_29,Hardcore Gamer,Upgrade 1 Orange Console Cartridge to Lvl 10.,normal,1,Annulith:5
+develop_3,Ultra-Spec Growth,Raise Hunter Level to Lvl 30.,high,30,Annulith:10
+develop_30,Platinum Trophy,Upgrade 1 Orange Console Cartridge to Lvl 20.,normal,1,Annulith:5
+develop_31,Digital Collectibles,Upgrade 3 Orange Console Cartridges to Lvl 10.,normal,3,Annulith:5
+develop_32,World Dominator!,Upgrade 3 Orange Console Cartridges to Lvl 20.,high,3,Annulith:10
+develop_33,Definition of Power I,Upgrade any character's Skill ×5.,normal,5,Annulith:5
+develop_34,Definition of Power II,Upgrade any character's Skill ×20.,high,20,Annulith:10
+develop_35,Definition of Power III,Upgrade any character's Skill ×50.,execellent,50,Annulith:20
+develop_36,Final Turn I,Upgrade any character's Ultimate level ×5.,normal,5,Annulith:5
+develop_37,Final Turn II,Upgrade any character's Ultimate level ×20.,high,20,Annulith:10
+develop_38,Final Turn III,Upgrade any character's Ultimate level ×50.,execellent,50,Annulith:20
+develop_39,Consecutive Normal Punches I,Upgrade any character's Basic Attack ×5.,normal,5,Annulith:5
+develop_4,I Haven't Reached My Limit Yet,Raise Hunter Level to Lvl 40.,high,40,Annulith:10
+develop_40,Consecutive Normal Punches II,Upgrade any character's Basic Attack ×20.,high,20,Annulith:10
+develop_41,Consecutive Normal Punches III,Upgrade any character's Basic Attack ×50.,execellent,50,Annulith:20
+develop_42,Invited Guest,Obtain a total of 5 characters.,normal,5,Annulith:5
+develop_43,Travel Companions,Obtain a total of 10 characters.,normal,10,Annulith:5
+develop_44,Careful Maintenance,Obtain 1 Arc.,normal,1,Annulith:5
+develop_45,Fine Collection,Obtain a total of 10 Arcs.,normal,10,Annulith:5
+develop_46,True Connoisseur,Obtain a total of 50 Arcs.,normal,50,Annulith:5
+develop_47,Glory Hunter,Obtain a total of 100 Arcs.,high,100,Annulith:10
+develop_48,Coins Keep Rolling In,"Obtain a total of 100,000 Beetle Coins.",normal,100000,Annulith:5
+develop_49,Big Spender,"Obtain a total of 500,000 Beetle Coins.",normal,500000,Annulith:5
+develop_5,SSS-Class Anomaly Conqueror,Raise Hunter Level to Lvl 50.,execellent,50,Annulith:20
+develop_50,Walking Collector,"Obtain a total of 1,000,000 Beetle Coins.",normal,1000000,Annulith:5
+develop_51,Entomologist,"Obtain a total of 10,000,000 Beetle Coins.",high,10000000,Annulith:10
+develop_52,Luck and Strategy Combined,Make 10 rolls.,normal,10,Annulith:5
+develop_53,Dice Never Leave Your Hand,Make 100 rolls.,high,100,Annulith:10
+develop_54,Fate in Your Hands a Thousand Times,"Make 1,000 rolls.",execellent,1000,Annulith:20
+develop_6,I Acknowledge You as the Strongest,Raise Hunter Level to Lvl 60.,execellent,60,Annulith:20
+develop_7,One-Man Army I,Raise 1 character to Lvl 20.,normal,1,Annulith:5
+develop_8,One-Man Army II,Raise 1 character to Lvl 40.,normal,1,Annulith:5
+develop_9,One-Man Army III,Raise 1 character to Lvl 60.,normal,1,Annulith:5
+explore_1,Oraoraoraoraora!,Complete Anomaly Commission: Backstreet Boxer,high,1,Annulith:10
+explore_10,Where Did My Inspiration Go?!,Complete Anomaly Commission: Inspiration Terminator,high,1,Annulith:10
+explore_11,"Red Light, Green Light",Complete Anomaly Commission: After School,high,1,Annulith:10
+explore_12,Rain's Lament,Complete Anomaly Commission: Prepare for Rain,high,1,Annulith:10
+explore_13,Pop Art,Complete Anomaly Commission: Lightspeed Tagger,high,1,Annulith:10
+explore_14,Cherry Blush Returns to Evening White,Complete Anomaly Commission: Crimson Hexblade,high,1,Annulith:10
+explore_15,It's starting to clear up now!,Complete Anomaly Commission: Dragon Gate Substitute,high,1,Annulith:10
+explore_16,Blackjack I,"Open 1 ""21's Gift.""",normal,1,Annulith:5
+explore_17,Blackjack II,"Open 10 ""21's Gifts.""",normal,10,Annulith:5
+explore_18,Blackjack III,"Open 50 ""21's Gifts.""",normal,50,Annulith:5
+explore_19,33729 I,"Unlock 1 ""ReroRero Phone Booth.""",normal,1,Annulith:5
+explore_2,Muda Muda Muda!,Complete Anomaly Commission: Rooftop Boxer,high,1,Annulith:10
+explore_20,33729 II,"Unlock 5 ""ReroRero Phone Booths.""",normal,5,Annulith:5
+explore_21,33729 III,"Unlock 10 ""ReroRero Phone Booths.""",normal,10,Annulith:5
+explore_22,Orichalcum Cage,Reach Divination Lvl 3.,normal,1,Annulith:5
+explore_23,Mithiril Cage,Reach Divination Lvl 5.,high,1,Annulith:10
+explore_24,Adamant Cage,Reach Divination Lvl 10.,execellent,1,Annulith:20
+explore_25,Skyline I,Unlock a total of 1 Wertheimer Tower.,normal,1,Annulith:5
+explore_26,Skyline II,Unlock a total of 5 Wertheimer Towers.,normal,5,Annulith:5
+explore_27,Urban Life Starting from Zero,Log in for 1 day in total,normal,1,Annulith:5
+explore_28,Day Seven,Log in for 7 days in total,normal,7,Annulith:5
+explore_29,New Hethereau Resident,Log in for 30 days in total,high,30,Annulith:10
+explore_3,Silent Testimony,Complete Anomaly Commission: Case of Serial Explosion,high,1,Annulith:10
+explore_30,Tow Shadow,Complete Anomaly Commission: Invasion! Octopus Trailer!,high,1,Annulith:10
+explore_31,Ghost of Whitetail Ridge,Complete Anomaly Commission: Ghost of Whitetail Ridge,high,1,Annulith:10
+explore_32,Extreme Rally Fanatic,Complete Anomaly Commission: Ghost Boulevard Wild Rally,high,1,Annulith:10
+explore_33,"Beep, boop boop! Beep boop beep!",Complete Anomaly Commission: Beat King,high,1,Annulith:10
+explore_34,Little Bear's Patchwork,Complete Anomaly Commission: Sad Bears Don't Cry,high,1,Annulith:10
+explore_35,Quickcharge Compatible,Complete Anomaly Commission: Power Saver,high,1,Annulith:10
+explore_36,Night of K.O.,Complete Anomaly Commission: Party Boxer,high,1,Annulith:10
+explore_37,ONE ON ONE!,Complete Anomaly Commission: Court Boxer,high,1,Annulith:10
+explore_38,Never Stop Leaping,Complete Anomaly Commission: Heaven's Forsaken,high,1,Annulith:10
+explore_39,Another round?,Complete Anomaly Commission: Wandering Puppets,high,1,Annulith:10
+explore_4,Snap! Don't Blink!,Complete Anomaly Commission: Brand Anniversary,high,1,Annulith:10
+explore_40,You Moved First!,Complete Anomaly Commission: Change Your Perspective?,high,1,Annulith:10
+explore_41,52 Hertz,Complete Anomaly Commission: Deep Blue Sorrow,high,1,Annulith:10
+explore_42,Reverse Mystery Box,Complete Anomaly Commission: Whose Leak Is This?,high,1,Annulith:10
+explore_43,What You See Is Real,Complete Anomaly Commission: This is not a painting,high,1,Annulith:10
+explore_44,New Colors,Complete Anomaly Commission: Plot Hole Repair Project,high,1,Annulith:10
+explore_45,Nightmare Begins,Reach an ending in Anomaly Commission: Nightmare-Bound,high,1,Annulith:10
+explore_46,Meow Meow Championship,Complete Anomaly Commission: Yarn Ball or Fons?,high,1,Annulith:10
+explore_47,Clear Weather?,Complete Anomaly Commission: Prayers for Clear Skies,high,1,Annulith:10
+explore_48,Let It Go,Complete Anomaly Commission: Clearing After Snowfall,high,1,Annulith:10
+explore_49,All Good Things Must Come to an End,Complete Anomaly Commission: Kindness Hard to Refuse,high,1,Annulith:10
+explore_5,Normal Summon!,Complete Anomaly Commission: C's Cube,high,1,Annulith:10
+explore_50,Into the Empty Nest,Complete Anomaly Commission: Call of the Lost,high,1,Annulith:10
+explore_51,Butterfly in a Jar,Complete Anomaly Commission: Let's Go See a Movie,high,1,Annulith:10
+explore_54,Awakening Moment,Complete Anomaly Commission: The Book of Post-Adolescence,high,1,Annulith:10
+explore_55,Cagebreaker,Complete the Anomaly Commission: Sunken Door,high,1,Annulith:10
+explore_56,Thus Spoke Sunya,Complete the Anomaly Commission: Fawn Alone,high,1,Annulith:10
+explore_57,Falling Petals,Complete the Anomaly Commission: Twin Blooms,high,1,Annulith:10
+explore_58,Lights Out,Complete the Anomaly Commission: Lantern Parade,high,1,Annulith:10
+explore_59,This Bear Will Lead!,Complete the Anomaly Commission: Storybook Skirmish,high,1,Annulith:10
+explore_6,Special Summon!,Complete Anomaly Commission: C's Tower,high,1,Annulith:10
+explore_60,Broken Refrain,Complete the Anomaly Commission: Finale: Da Capo,high,1,Annulith:10
+explore_7,Welcome!,Complete Anomaly Commission: Red Door,high,1,Annulith:10
+explore_8,KeepOut!!,Complete Anomaly Commission: Ride Assault,high,1,Annulith:10
+explore_9,In books there lies…,Complete Anomaly Commission: Video Cemetery,high,1,Annulith:10
+friendship_11,Kiroumaru's Second Caretaker,Reach Sakiri Affection Lvl 5.,high,5,Annulith:10
+friendship_12,Eternal Home,Reach Sakiri Affection Lvl 10.,execellent,10,Annulith:20
+friendship_14,Friendly Sparring,Reach Daffodill Affection Lvl 5.,high,5,Annulith:10
+friendship_15,As Far as the Eye Can See,Reach Daffodill Affection Lvl 10.,execellent,10,Annulith:20
+friendship_17,Personal Encyclopedia,Reach Edgar Affection Lvl 5.,high,5,Annulith:10
+friendship_18,Clear Answer,Reach Edgar Affection Lvl 10.,execellent,10,Annulith:20
+friendship_2,The Combo Called Mint Chocolate,Reach Mint Affection Lvl 5.,high,5,Annulith:10
+friendship_23,"Keep It Up, Key Player!",Reach Nanally Affection Lvl 5.,high,5,Annulith:10
+friendship_24,Coluccis' Irreplaceable Right Hand,Reach Nanally Affection Lvl 10.,execellent,10,Annulith:20
+friendship_3,The Wind That Lingers for You,Reach Mint Affection Lvl 10.,execellent,10,Annulith:20
+friendship_32,Me?,Give Mint gifts ×3.,normal,3,Annulith:5
+friendship_33,All for me?,Give Mint gifts ×10.,high,10,Annulith:10
+friendship_34,Best Buds,Give Baicang gifts ×3.,normal,3,Annulith:5
+friendship_35,"""Such Generosity!""",Give Baicang gifts ×10.,high,10,Annulith:10
+friendship_36,Sunya Care Guide,Give Adler gifts ×3.,normal,3,Annulith:5
+friendship_37,Enlightenment Will Remember…,Give Adler gifts ×10.,high,10,Annulith:10
+friendship_38,Beware of Hungry Ghosts,Give Sakiri gifts ×3.,normal,3,Annulith:5
+friendship_39,Kiroumaru! No Eating!,Give Sakiri gifts ×10.,high,10,Annulith:10
+friendship_40,Grateful for Your Care,Give Daffodill gifts ×3.,normal,3,Annulith:5
+friendship_41,Sincere Intentions,Give Daffodill gifts ×10.,high,10,Annulith:10
+friendship_42,Will Treasure This…,Give Edgar gifts ×3.,normal,3,Annulith:5
+friendship_43,Treasured Memories,Give Edgar gifts ×10.,high,10,Annulith:10
+friendship_46,No B-Bribes Allowed!,Give Nanally gifts ×3.,normal,3,Annulith:5
+friendship_47,Gladly Accepted!,Give Nanally gifts ×10.,high,10,Annulith:10
+friendship_5,Slacking Buddy,Reach Baicang Affection Lvl 5.,high,5,Annulith:10
+friendship_54,Making Connections,Reach Affection Lvl 5 with 5 characters total.,normal,5,Annulith:5
+friendship_55,Social Butterfly,Reach Affection Lvl 5 with 10 characters total.,high,10,Annulith:10
+friendship_56,Affection Collector,Reach Affection Lvl 10 with 5 characters total.,execellent,5,Annulith:20
+friendship_58,Reliable Partner,Reach Skia Affection Lvl 5.,high,5,Annulith:10
+friendship_59,Part of the Routine,Reach Skia Affection Lvl 10.,execellent,10,Annulith:20
+friendship_6,All Prayers for You,Reach Baicang Affection Lvl 10.,execellent,10,Annulith:20
+friendship_60,Social Networking,Give Skia gifts ×3.,normal,3,Annulith:5
+friendship_61,Too Kind…,Give Skia gifts ×10.,high,10,Annulith:10
+friendship_68,Plans with You,Reach Hathor Affection Lvl 5.,high,5,Annulith:10
+friendship_69,Exclusive Channel,Reach Hathor Affection Lvl 10.,execellent,10,Annulith:20
+friendship_70,Rationality Offline,Give Hathor gifts ×3.,normal,3,Annulith:5
+friendship_71,"Delivery of the ""Exception""",Give Hathor gifts ×10.,high,10,Annulith:10
+friendship_73,Rose's Blessing,Reach Jiuyuan Affection Lvl 5.,high,5,Annulith:10
+friendship_74,Nightingale's Favor,Reach Jiuyuan Affection Lvl 10.,execellent,10,Annulith:20
+friendship_75,Do Not Feed the Riddler,Give Jiuyuan gifts ×3.,normal,3,Annulith:5
+friendship_76,Rose of the Lost,Give Jiuyuan gifts ×10.,high,10,Annulith:10
+friendship_78,Wanna Be Friends?,Reach Haniel Affection Lvl 5.,high,5,Annulith:10
+friendship_79,Sharing Earbuds,Reach Haniel Affection Lvl 10.,execellent,10,Annulith:20
+friendship_8,The Second Pillar,Reach Adler Affection Lvl 5.,high,5,Annulith:10
+friendship_80,Does this count as free?,Give Haniel gifts ×3.,normal,3,Annulith:5
+friendship_81,President of the Paranormal Studies Support Club,Give Haniel gifts ×10.,high,10,Annulith:10
+friendship_88,Within Paradise,Reach Fadia Affection Lvl 5.,high,5,Annulith:10
+friendship_89,Loving Gaze,Reach Fadia Affection Lvl 10.,execellent,10,Annulith:20
+friendship_9,Highest Priority Order,Reach Adler Affection Lvl 10.,execellent,10,Annulith:20
+friendship_90,Beware of Addiction,Give Fadia gifts ×3.,normal,3,Annulith:5
+friendship_91,Enjoy a Little More,Give Fadia gifts ×10.,high,10,Annulith:10
+friendship_92,Rice Ball Partner,Reach Chiz Affection Lvl 5.,high,5,Annulith:10
+friendship_93,Where My Heart Finds Peace,Reach Chiz Affection Lvl 10.,execellent,10,Annulith:20
+friendship_94,Exclusive Sales Rep,Give Chiz gifts ×3.,normal,3,Annulith:5
+friendship_95,More Precious Than Fons,Give Chiz gifts ×10.,high,10,Annulith:10
+friendship_96,Bond & Harmony,Reach Aurelia Affection Lvl 5.,high,5,Annulith:10
+friendship_97,Dearest Friend,Reach Aurelia Affection Lvl 10.,execellent,10,Annulith:20
+friendship_98,In This Moment,Gift Aurelia 3 times.,normal,3,Annulith:5
+friendship_99,Spring and Sea,Gift Aurelia 10 times.,high,10,Annulith:10
+interest_1,Water Soluble,Collapse in water due to stamina depletion.,normal,1,Annulith:5
+interest_10,Fluffy Addiction,Pet small animals ×10.,normal,10,Annulith:5
+interest_11,Zootopia,Pet small animals ×50.,high,50,Annulith:10
+interest_12,Just One More Pet… Please!,Pet small animals ×100.,execellent,100,Annulith:20
+interest_13,Witness Journal,"Complete the ""Photography"" series of easter egg quests.",normal,1,Annulith:5
+interest_14,Non-Intrusive Documentation,"Complete the ""Bird Enthusiast Guide"" easter egg quest.",execellent,1,Annulith:20
+interest_15,The Dart's Fantastic Journey,"Complete the ""Find the Dart"" easter egg quest.",high,1,Annulith:10
+interest_16,A Pack of Spicy Sticks Promise,"Complete the ""Little Boy at the Vending Machine"" easter egg quest.",normal,1,Annulith:5
+interest_17,Fake Car Owner Chronicles,"Complete the ""Car Enthusiast"" easter egg quest.",normal,1,Annulith:5
+interest_18,Photo Op with Anomalies,"Complete the ""Anomaly Photographer"" series easter egg quests.",execellent,1,Annulith:20
+interest_19,World Changer,"Complete the ""The Look of Eclipse"" series easter egg quests.",high,1,Annulith:10
+interest_2,Leap of Faith,Fall from the wrong height.,normal,1,Annulith:5
+interest_21,Broken Machine's Generosity,"Complete the ""Broken Vending Machine"" easter egg quest.",normal,1,Annulith:5
+interest_22,Pets' Secret Cafeteria,"Complete the ""Pet Shop Empty Bowl"" easter egg quest.",normal,1,Annulith:5
+interest_23,"Honest Body, Lying Lips","Complete the ""Radio Listener"" easter egg quest.",high,1,Annulith:10
+interest_24,Vehicle Destroyer,"Complete the ""Vehicle Brothers"" easter egg quest.",execellent,1,Annulith:20
+interest_25,Gangster Dreams,"Complete the ""The Great Coluccis"" easter egg quest.",normal,1,Annulith:5
+interest_26,Next Time for Sure!,"Complete the ""Deadline Pressure"" easter egg quest.",normal,1,Annulith:5
+interest_27,The Devoured Melody,"Complete the ""Campgrounds - Careless Tourist"" easter egg quest.",high,1,Annulith:10
+interest_28,Multi-Location Check-in Expert,"Complete the ""Other World Tourist"" easter egg quest.",high,1,Annulith:10
+interest_29,The Other Side of the Legend,"Complete the ""Nanally Anomaly Rumors"" easter egg quest.",normal,1,Annulith:5
+interest_3,Fate's Calling,Perform divination 1 time.,normal,1,Annulith:5
+interest_30,Omnic Crisis…?,"Complete the ""Robot Command Conflict"" easter egg quest.",normal,1,Annulith:5
+interest_31,Danzaburou Will Never Be Enslaved!,"Complete the ""Danzaburou"" series easter egg quests.",high,1,Annulith:10
+interest_32,Wind Walker,Experience a weather change for the first time.,high,1,Annulith:10
+interest_33,The Whisker's Net Catches All,"After summoning Officer Whisker using the Arc Hethereau's Keeper, get punished by the Whisker.",execellent,1,Annulith:20
+interest_34,Stars Falling Like Rain,Witness a meteor shower.,execellent,1,Annulith:20
+interest_35,365 Miles,Unlock the ReroRero Phone Booth on top of the Midas Arc Workshop.,execellent,1,Annulith:20
+interest_36,The Sound of Music,Play the piano.,high,1,Annulith:10
+interest_37,It's 100!,Roll 100 with dice.,normal,1,Annulith:5
+interest_38,I'll Be Back,Restart at the bonfire 10 times after defeat.,normal,10,Annulith:5
+interest_39,Mind the Hot Chocolate,Receive burn damage 33 times.,normal,33,Annulith:5
+interest_4,Worldline Convergence,Perform 10 Divinations.,high,10,Annulith:10
+interest_40,Hold Your Breath,Take Mold damage 33 times.,normal,33,Annulith:5
+interest_41,"Nah, I'd Win","Fail ""Test Your Luck"" at the Lucky Fuzzy 33 times.",normal,33,Annulith:5
+interest_42,Pinky Promise,"Gaze at the night sky with Linko at Hethereau Skytower, and make a pinky promise beneath the stars.",normal,1,Annulith:5
+interest_5,Omens of Impending Change,Perform 50 Divinations.,execellent,50,Annulith:20
+interest_6,Mysterious Big Eater,Fill up the Hunger Bar ×5.,normal,5,Annulith:5
+interest_7,Pac-man!,Fill up the Hunger Bar ×20.,high,20,Annulith:10
+interest_8,The Art of Inhaling Food,Fill up the Hunger Bar ×50.,execellent,50,Annulith:20
+interest_9,Can I Pet It!,Pet small animals 1 time.,normal,1,Annulith:5
+Life_1,Trying to Breathe in the Concrete Jungle,Upgrade Life Skills once.,normal,1,Annulith:5
+Life_100,Silent Fall,Encounter Daffodill training in Miguel District.,normal,1,Annulith:5
+Life_101,Hmm! Hmm! Observation Log,"Encounter Edgar at Nacupeda Park, studying and copying Nacupeda.",normal,1,Annulith:5
+Life_102,Guardian of Order,"Encounter Skia at the street-side bulletin board, checking the announcements.",normal,1,Annulith:5
+Life_103,Thoughtful Butler,Encounter Adler shopping for groceries at Origami Market.,normal,1,Annulith:5
+Life_104,A Glass of Water: Half Full,"Obtain 1 ""Glass of Water"" at the auction.",normal,1,Annulith:5
+Life_105,Our Path,"Obtain 1 ""Dream Path"" at the auction.",normal,1,Annulith:5
+Life_106,Who Says True Love Weighs You Down?,"Obtain 1 ""Butterflies to Flowers"" at the auction.",normal,1,Annulith:5
+Life_107,The Kapé,"Obtain 1 ""Celebrations to: Kapé"" at the auction.",normal,1,Annulith:5
+Life_108,Future Audience,"Obtain 1 ""Azure Strings"" at the auction.",normal,1,Annulith:5
+Life_109,Because I Love Soccer,"Obtain 1 ""Golden Flying Ball"" at the auction.",normal,1,Annulith:5
+Life_13,"Business Power, Full Throttle!",Accumulate 5 stars in Active Tycoon Gameplay.,normal,5,Annulith:5
+Life_14,Chosen by the Stars,Accumulate 10 stars in Active Tycoon Gameplay.,high,10,Annulith:10
+Life_15,Golden Age,Accumulate 20 stars in Active Tycoon Gameplay.,execellent,20,Annulith:20
+Life_16,Full of Energy!,Spend a total of 50 City Stamina.,normal,50,Annulith:5
+Life_17,Burn Your Cosmos,Spend a total of 500 City Stamina.,high,500,Annulith:10
+Life_18,High-End Business War,"Spend a total of 2,000 City Stamina.",execellent,2000,Annulith:20
+Life_19,Mysterious Touch,Upgrade Anomaly Furniture once.,normal,1,Annulith:5
+Life_2,Player One,Upgrade Life Skills ×10.,high,10,Annulith:10
+Life_20,Connecting Hearts with Furniture,Upgrade Anomaly Furniture ×10.,high,10,Annulith:10
+Life_21,Advanced Revelations,Upgrade Anomaly Furniture ×50.,execellent,50,Annulith:20
+Life_22,"Going Once, Going Twice",Participate in 1 auction.,normal,1,Annulith:5
+Life_23,Bidding Fanatic,Participate in 10 auctions.,high,10,Annulith:10
+Life_24,Everything Has a Price,Participate in 100 auctions.,execellent,100,Annulith:20
+Life_3,Max Out City Life!,Upgrade Life Skills ×50.,execellent,50,Annulith:20
+Life_31,Unit-01,Obtain 1 vehicle.,normal,1,Annulith:5
+Life_32,Mobile Trio,Obtain 3 vehicles.,high,3,Annulith:10
+Life_33,The Seven,Obtain 7 vehicles.,execellent,7,Annulith:20
+Life_4,Want Some Beans?,Unlock 1 coffee shop.,normal,1,Annulith:5
+Life_5,Coffee Connoisseur in Training,Unlock 3 coffee shops.,high,3,Annulith:10
+Life_6,Regional Flavor Master,Unlock 5 coffee shops.,execellent,5,Annulith:20
+Life_67,Real Estate Qualified,Acquire your first house.,normal,1,Annulith:5
+Life_68,Dual Residence Plan,Obtain a total of 2 houses.,high,2,Annulith:10
+Life_69,Life Winner,Obtain a total of 4 houses.,execellent,4,Annulith:20
+Life_70,More Than Four Walls,Acquire furniture for the first time.,normal,1,Annulith:5
+Life_71,Storage Enthusiast,Obtain a total of 50 furniture.,high,50,Annulith:10
+Life_72,The Room Comes Alive,Obtain a total of 100 furniture.,execellent,100,Annulith:20
+Life_76,Every Move is Magic,Win a prize from the claw machine once.,normal,1,Annulith:5
+Life_77,Plushie Maniac,Successfully grab prizes from the claw machine ×10.,high,10,Annulith:10
+Life_78,Time to Teach!,Successfully grab prizes from the claw machine ×100.,high,100,Annulith:10
+Life_79,I Found The Fons by the Roadside,Turn in 10 Lost Items to the Security Office.,normal,10,Annulith:5
+Life_80,Honest Finder,Turn in 50 Lost Items to the Security Office.,high,50,Annulith:10
+Life_81,The Beacon of Humanity,Turn in 100 Lost Items to the Security Office.,high,100,Annulith:10
+Life_82,Brave Passerby,Stop 10 illegal city activities.,normal,10,Annulith:5
+Life_83,Whisker's Buddy,Stop 50 illegal city activities.,high,50,Annulith:10
+Life_84,Embodiment of Justice,Stop 100 illegal city activities.,execellent,100,Annulith:20
+Life_88,"""At First, I Refused…""",Find Mint learning Hair Care at the Pet Store.,normal,1,Annulith:5
+Life_89,Direct Hire,Find Nanally announcing the Coluccis' recruitment everywhere.,normal,1,Annulith:5
+Life_90,Bountiful Dreams,Find Nanally taking a nap.,normal,1,Annulith:5
+Life_91,Jelly Belly,Find Lacrimosa pondering how to carry large amounts of Tomato Jelly.,normal,1,Annulith:5
+Life_92,Once Upon a Dream,Find Lacrimosa fast asleep.,normal,1,Annulith:5
+Life_93,Expert Meets Expert,Find Hotori negotiating prices with the owner at Good Joe.,normal,1,Annulith:5
+Life_94,The Queen Wears Landric,Find Fadia returning from a shopping spree.,normal,1,Annulith:5
+Life_95,Speed Bows Down,Find Jiuyuan surrounded by Regalia service consultants.,normal,1,Annulith:5
+Life_96,New Energy Transport,Find Sakiri riding Kiroumaru around town.,normal,1,Annulith:5
+Life_97,Slacking Off Feels So Good,Find Baicang at Bagel eating his own melon.,normal,1,Annulith:5
+Life_98,Path of Balanced Efficiency,Encounter Hathor at the gas station after she just refueled.,normal,1,Annulith:5
+Life_99,You too?,Encounter Haniel cheering in the crowd at a Kokoro Rider show.,normal,1,Annulith:5
+Play_1,Mhm!,Receive Nacupeda's blessing.,normal,1,Annulith:5
+Play_10,Infinite Acceleration,Defeat the Meridian Racing Team.,normal,1,Annulith:5
+Play_11,Wind Barrier,Defeat the Tempestas Racing Team.,normal,1,Annulith:5
+Play_12,Uncrowned King,Defeat the Uncrowned King Racing Team.,normal,1,Annulith:5
+Play_13,Lightning Start,Win your first Racing PVP battle.,normal,1,Annulith:5
+Play_14,Speed Demon,Win 10 Racing PVP battles.,high,10,Annulith:10
+Play_15,King of Speed,Win 50 Racing PVP battles.,execellent,50,Annulith:20
+Play_17,Block Vanishing Act,Place 1st in Tetrominoes.,normal,1,Annulith:5
+Play_18,Space Management Master,Place 1st in Tetrominoes ×10.,high,10,Annulith:10
+Play_19,Less Is More,Place 1st in Tetrominoes ×30.,execellent,30,Annulith:20
+Play_2,Mhm! Mhm!,Receive 10 Nacupeda's blessings.,high,10,Annulith:10
+Play_27,First Pot of Gold,"Collect 10,000 Fons in a single round of Pink Paws Heist.",normal,10000,Annulith:5
+Play_28,Fons's Warudo,"Collect 50,000 Fons in a single round of Pink Paws Heist.",high,50000,Annulith:10
+Play_29,Ladon Approved,"Collect 100,000 Fons in a single round of Pink Paws Heist.",high,100000,Annulith:10
+Play_3,Mhm! Mhm! Mhm!,Receive 30 Nacupeda's blessings.,high,30,Annulith:10
+Play_30,First Passenger,Drive a taxi to pick up 5 passengers.,normal,5,Annulith:5;Vehicle020_skin_1_Painting:1
+Play_31,Swift at Your Service,Drive a taxi to pick up 10 passengers.,high,10,Annulith:10;Vehicle020_skin_1_CeilingLight:1
+Play_32,Have a Safe Trip,Drive a taxi to pick up 30 passengers.,high,30,Annulith:10
+Play_33,First Order,Complete City Commission ×1.,normal,1,Annulith:5
+Play_34,Skilled Courier,Complete City Commission ×10.,high,10,Annulith:10
+Play_35,City Neighbors,Complete City Commission ×30.,high,30,Annulith:10
+Play_36,Hethereau Shores,Catch a total of 50 fish in Sea Angler.,normal,50,Annulith:5
+Play_37,Every Angler's Dream,Catch a total of 100 fish in Sea Angler.,high,100,Annulith:10
+Play_38,Fishing God,Catch a total of 200 fish in Sea Angler.,high,200,Annulith:10
+Play_39,Breakout Together,Use a special spot in the scene to leave the Detention Facility and successfully escape.,high,1,Annulith:10
+Play_4,Mhm…?,Receive Nacupeda's punishment for the first time.,normal,1,Annulith:5
+Play_40,Dawn in Detention,Survive the first round of detention shenanigans and discover one surprise… like finding your socks still match.,normal,1,Annulith:5;PrisonCoin:1
+Play_41,Detention Strikes Back,Complete the next round of detention chaos and uncover two surprises—bonus points if nobody notices you napping.,high,1,Annulith:10;PrisonCoin:1
+Play_42,Return of the Dawn,"Master all the wacky encounters in detention and reap three unexpected rewards—because yes, even detention has its plot twists.",execellent,1,Annulith:20;Fons:10000
+Play_43,Fight Club,Participate in Fight Club for the first time.,normal,1,Annulith:5
+Play_44,Hethereau Brawler King,Win the championship in Fight Club for the first time.,high,1,Annulith:10;Title_PrisonFight_001:1
+Play_45,Rookie OP,"Earn a total of 10,000 Praise Jams on Bagel.",normal,10000,Annulith:5;Title_Bagel_001:1
+Play_46,Bagel Celebrity,"Earn a total of 50,000 Praise Jams on Bagel.",high,50000,Annulith:10;Title_Bagel_002:1
+Play_47,Influential User,"Earn a total of 100,000 Praise Jams on Bagel.",execellent,100000,Annulith:20;Title_Bagel_003:1
+Play_48,Stormwall,Defeat Lil' Nado on Easy Sparring.,normal,1,Annulith:5
+Play_49,Stormbreaker,Defeat Lil' Nado on Serious Match.,high,1,Annulith:10
+Play_5,Mhm? Mhm?,Receive 10 Nacupeda's punishments.,high,10,Annulith:10
+Play_50,I Am the Storm,Defeat Lil' Nado on Final Bout.,execellent,1,Annulith:20
+Play_51,Chest Master,Open 100 chests.,high,100,Annulith:10
+Play_54,Appraise It!,Obtain 7 pieces of equipment with an appraisal value of 33.,high,7,Annulith:10
+Play_55,Watch Your Step!,"In the Chocolate Volcano, defeat 3 monsters using lava.",high,3,Annulith:10
+Play_56,Continental Breakfast,"Clear Red Mist Invasion, Hop Once: Cake Ace, Hop Twice: Cake Ace, Defend Against Bubbles, Leave None Standing, and Baaastille for the first time.",high,1,Annulith:10
+Play_57,I Choose You!,Hire Mercenary Fuzzy once.,normal,1,Annulith:5
+Play_58,Miracle Spike,Land one perfect spike once in Volley Star.,high,1,Annulith:10
+Play_59,No Continues,Clear all the stages in Volley Star.,high,1,Annulith:10
+Play_6,Mhm? Mhm? Mhm?!,Receive 30 Nacupeda's punishments.,high,30,Annulith:10
+Play_60,Crowned Champions!,Win the championship in Volley Star's Championship mode.,high,1,Annulith:10
+Play_61,Court Conqueror,Reach No. 1 in the Volley Star World Rankings.,high,1,Annulith:10
+Play_62,Global Elite,Place in the top 10 of the Volley Star World Rankings.,normal,1,Annulith:5
+Play_63,Going Pro,Recruit 3 players in Volley Star.,normal,3,Annulith:5
+Play_64,Full Roster,Recruit 7 players in Volley Star.,high,7,Annulith:10
+Play_65,Maxed Out,Max out 1 player's talent in Volley Star.,high,1,Annulith:10
+Play_7,End of Fun,Defeat the Sunday Racing Team.,normal,1,Annulith:5
+Play_8,Wild Mini Cars,Defeat the Coastal Drift Racing Team.,normal,1,Annulith:5
+Play_9,Lightning Speed: Dead End,Defeat the Full Speed Ahead Racing Team.,normal,1,Annulith:5
+Playstation_001,Ultimate Anomaly Hunter III,Upgrade 1 character to Lvl 60.,normal,1,Annulith:5
+Playstation_002,Ultimate Anomaly Hunter II,Upgrade 1 character to Lvl 40.,normal,1,Annulith:5
+Playstation_003,Ultimate Anomaly Hunter I,Upgrade 1 character to Lvl 20.,normal,1,Annulith:5
+Playstation_004,Brawl III,Upgrade 1 Arc to Lvl 60.,normal,1,Annulith:5
+Playstation_005,Brawl II,Upgrade 1 Arc to Lvl 40.,normal,1,Annulith:5
+Playstation_006,Brawl I,Upgrade 1 Arc to Lvl 20.,normal,1,Annulith:5
+Playstation_007,Classic Clear,Upgrade 1 Orange Console Module to Lvl 20.,normal,1,Annulith:5
+Playstation_008,OG Legend,Upgrade 1 Orange Console Cartridge to Lvl 10.,normal,1,Annulith:5
+Playstation_009,Hyperdimensional Awakening,Increase Hunter Level to Lvl 35.,normal,35,Annulith:5
+Playstation_010,Rising Hunter,Increase Hunter Level to Lvl 25.,normal,25,Annulith:5
+Playstation_011,Flip-Flopping Future,Perform 10 Divinations.,normal,10,Annulith:5
+Playstation_012,33729,Unlock 5 ReroRero Phone Booths.,normal,5,Annulith:5
+Playstation_013,Mhm? Mhm? Mhm?!,Receive 30 Nacupeda's Punishments.,normal,30,Annulith:5
+Playstation_014,Mhm! Mhm! Mhm!,Receive 30 Nacupeda's Blessings.,normal,30,Annulith:5
+Playstation_015,Homecoming Day,Obtain your first house.,normal,1,Annulith:5
+Playstation_016,First Ride,Obtain 1 vehicle.,normal,1,Annulith:5
+Playstation_017,Speed Above All,Trigger Critical Dodge ×200.,normal,200,Annulith:5
+Playstation_018,Life-Sim,Upgrade Life Skills ×10.,normal,10,Annulith:5
+Playstation_019,Beetle Coin Researcher,"Obtain a total of 1,000,000 Beetle Coins.",normal,1000000,Annulith:5
+Playstation_020,Hit Me!,Open 21's Gift ×50.,normal,50,Annulith:5
+Playstation_021,Let's Start a Band!,Complete the A Legendary(?) Band's First Page series quests.,normal,1,Annulith:5
+Playstation_022,Alea Jacta Est,Complete the Unforeseen Yet Foretold series quests.,normal,1,Annulith:5
+Playstation_023,Ultimate Racer,Obtain 7 vehicles.,normal,7,Annulith:5
+Playstation_024,Neon Master,Upgrade Life Skills ×50.,normal,50,Annulith:5
+Playstation_025,Beetle Bounty,"Obtain a total of 10,000,000 Beetle Coins.",normal,10000000,Annulith:5
+Playstation_026,Ultimate Anomaly Hunter IV,Upgrade 1 character to Lvl 80.,normal,1,Annulith:5
+Playstation_027,Brawl IV,Upgrade 1 Arc to Lvl 80.,normal,1,Annulith:5
+Playstation_028,Limits of 8-bit,Upgrade 3 Orange Console Cartridges to Lvl 20.,normal,3,Annulith:5
+Playstation_029,It's Snowing!,Complete the A Retrograde Poem for You series quests.,normal,1,Annulith:5
+Playstation_030,Free Pass,Unlock a total of 5 Wertheimer Towers.,normal,5,Annulith:5
+Playstation_031,Fate's Echo,Reach Divination Lvl 10.,normal,1,Annulith:5
+Playstation_032,Lone Signal,Complete Anomaly Commission: Deep Blue Sorrow,normal,1,Annulith:5
+Playstation_033,It said go for it!,Defeat enemies with Ultimate ×500.,normal,500,Annulith:5
+Playstation_034,Affection Master,Reach Affection Lvl 10 with 5 characters total.,normal,5,Annulith:5
+Playstation_035,Variation Movement,Cast Redirect Skill ×300.,normal,300,Annulith:5
+quest_1,Where Dreams Begin!,"Complete the ""Unforeseen Yet Foretold"" series quests.",execellent,1,Annulith:20
+quest_10,A Rainy Day in Hethereau,"Complete the ""Weather Watch"" series quests.",high,1,Annulith:10
+quest_11,"""Win Friends and Influence People""","Complete the ""Seeing and Believing"" series quests.",high,1,Annulith:10
+quest_12,The Wall Artist,"Complete the ""Another Art on the Wall"" series quests.",high,1,Annulith:10
+quest_13,Alice's Baking Wonderland,"Complete the ""Sweet Cakes, Bitter Cakes…"" series quests.",high,1,Annulith:10
+quest_14,"Rules, Compliance, Containment","Complete the ""Deal? Deal!"" series quests.",execellent,1,Annulith:20
+quest_15,Want to eat… Tomato Jelly,"Complete the ""Tomato Jelly Rampage: Live Report!"" series quests.",execellent,1,Annulith:20
+quest_16,Don't Stop Me Now!,"Complete the ""Drift Away, Legend!"" series quests.",high,1,Annulith:10
+quest_17,Beep! Citizen ID,"Complete the ""New Anomaly Citizen ID!"" series quests.",high,1,Annulith:10
+quest_18,The Last Bite is the Setting Sun,"Complete the ""Let's Go, Delicious Investigators!"" series quests.",high,1,Annulith:10
+quest_19,Yesterday Rose as Always,"Complete the ""Books Are Like Old Friends"" series quests.",high,1,Annulith:10
+quest_2,Photo Studio Fright Night,"Complete the ""Good Business, Better Treasure"" series quests.",execellent,1,Annulith:20
+quest_20,It's! Snowing!,"Complete the ""A Retrograde Poem for You"" series quests.",high,1,Annulith:10
+quest_21,A Letter from the Past,"Complete the ""Miles Apart"" series quests.",high,1,Annulith:10
+quest_22,"Heroes Not Selling, Help Us Out","Complete the ""Heroes Don't Always Arrive in Moments of Glory"" series quests.",high,1,Annulith:10
+quest_24,Life Is One Long Journey,"Complete the ""Goodbye, Yellow Flag"" series quests.",high,1,Annulith:10
+quest_25,The Train Keeps Moving,Complete the A Legendary(?) Band's First Page series quest.,execellent,1,Annulith:20
+quest_29,Debts and Dues,Complete Questline: The Scarlet Letter Analysis.,execellent,1,Annulith:20
+quest_3,The Moon and Six Fons,"Complete the ""Pawn Moonlight"" series quests.",execellent,1,Annulith:20
+quest_30,Detention Blues,"Complete the ""A Breeze Through the Cage"" questline.",high,1,Annulith:10
+quest_31,Dreams Adrift,"Complete the ""Dreamwalk Corridor"" questline.",execellent,1,Annulith:20
+quest_32,Dragon Hunter,"Clear ""999 Nights"" on Normal difficulty.",execellent,1,Annulith:20;Title_FinalTower_001:1
+quest_33,Fuzzy Hero,"Clear ""999 Nights"" on Hard difficulty.",high,1,Annulith:10;Title_FinalTower_002:1
+quest_34,Legend of Warren,"Clear ""999 Nights"" on Nightmare difficulty.",execellent,1,Annulith:20;Title_FinalTower_003:1
+quest_36,Adventure Awaits,Leave the Fuzzy Village.,high,1,Annulith:10
+quest_37,One Fuzzy Move Ahead,Complete Quest: The Fuzzy's Gambit.,high,1,Annulith:10
+quest_38,Gone Bad,Complete Quest: Fuzzy Club.,high,1,Annulith:10
+quest_39,Nothing Really Happened,Complete Quest: All Quiet in the Future.,high,1,Annulith:10
+quest_4,Taygedo the Rizzler,"Complete the ""Love that Begins with Lies"" series quests.",execellent,1,Annulith:20
+quest_40,Sword or Guitar?,Complete Quest: Rex Fuzzendae.,high,1,Annulith:10
+quest_41,Fuzzy's Precious! Grrgl!,Complete Quest: Gone Fuzzy.,high,1,Annulith:10
+quest_42,Hardworking Fuzzy,Complete Quest: The Hero Is a Part-Timer.,high,1,Annulith:10
+quest_43,Clear Horizon,"Complete the Fogden Game series quests.
+",execellent,1,Annulith:20
+quest_5,Just Like Autumn,"Complete the ""Where Words Sprout, Fall Unfolds"" series quests.",execellent,1,Annulith:20
+quest_6,300% Sync Rate!,"Complete the ""We! Are! One!"" series quests.",high,1,Annulith:10
+quest_7,Waste Sorting,"Complete the ""Fluffed Away?!"" series quests.",high,1,Annulith:10
+quest_8,Guess Who I Am?,"Complete the ""Transform! Huhehaha!"" series quests.",high,1,Annulith:10
+quest_9,"Small Size, Big Appetite!","Complete ""The Records Collector"" series quests.",high,1,Annulith:10

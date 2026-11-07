@@ -1,0 +1,54 @@
+@using NteOmikuji.Core.Analysis
+
+<div class="columns" role="img" aria-label="@Summary">
+    @foreach (var bucket in Buckets)
+    {
+        <div class="column" title="@bucket.Label：@bucket.Count @Unit">
+            @if (bucket.Count == Peak && Peak > 0)
+            {
+                <span class="column-value">@bucket.Count</span>
+            }
+            <span class="column-bar" style="height:@Height(bucket.Count)"></span>
+        </div>
+    }
+</div>
+<div class="column-axis">
+    @if (Buckets.Count <= 12)
+    {
+        @foreach (var bucket in Buckets)
+        {
+            <span>@bucket.Label</span>
+        }
+    }
+    else
+    {
+        <span>@Buckets[0].Label</span>
+        <span>@Buckets[^1].Label</span>
+    }
+</div>
+<details class="data-table">
+    <summary>數據表</summary>
+    <table class="mini">
+        <tbody>
+            @foreach (var bucket in Buckets)
+            {
+                <tr><td>@bucket.Label</td><td class="num">@bucket.Count.ToString("N0")</td></tr>
+            }
+        </tbody>
+    </table>
+</details>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<CountBucket> Buckets { get; set; } = [];
+
+    [Parameter]
+    public string Unit { get; set; } = "";
+
+    private int Peak => Buckets.Count == 0 ? 0 : Buckets.Max(bucket => bucket.Count);
+
+    private string Summary => string.Join("、", Buckets.Where(bucket => bucket.Count > 0).Take(20).Select(bucket => $"{bucket.Label} {bucket.Count} {Unit}"));
+
+    private string Height(int count) =>
+        count == 0 ? "0" : $"{Math.Max(2, 100.0 * count / Math.Max(1, Peak)).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)}%";
+}

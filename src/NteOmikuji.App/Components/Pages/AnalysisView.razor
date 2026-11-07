@@ -1,0 +1,157 @@
+@using NteOmikuji.Core.Analysis
+
+<div class="analysis" id="analysis">
+    @if (_data.TotalPulls == 0)
+    {
+        <p class="no-match">這個卡池還沒有抽取紀錄。</p>
+    }
+    else
+    {
+        @if (_data.HasExcessPointsRewards)
+        {
+            <div class="alert" id="old-decoding" role="status">這份紀錄的集點獎勵比遊戲實際給的多，可能有抽數被舊版誤判，以下的抽數與間隔會不準。重新擷取一次歷史紀錄即可更正。</div>
+        }
+        <div class="tiles">
+            <div class="tile hero">
+                <span>距上次 S</span>
+                <strong id="since-top">@_data.PullsSinceTopRank</strong>
+                <small>抽</small>
+            </div>
+            <div class="tile"><span>總抽數</span><strong id="total-pulls">@_data.TotalPulls.ToString("N0")</strong></div>
+            <div class="tile"><span>S 數量</span><strong id="top-count">@_data.TopRankCount</strong></div>
+            <div class="tile"><span>S 比例</span><strong>@Percent(_data.TopRankRate)</strong></div>
+            <div class="tile"><span>S 平均間隔</span><strong id="average">@(_data.AverageInterval?.ToString("0.0") ?? "—")</strong></div>
+            <div class="tile"><span>最短 / 最長</span><strong>@(_data.ShortestInterval?.ToString() ?? "—") / @(_data.LongestInterval?.ToString() ?? "—")</strong></div>
+            @if (_data.LimitedCount > 0)
+            {
+                <div class="tile"><span>S 限定數量</span><strong id="limited-count">@_data.LimitedCount</strong></div>
+                <div class="tile"><span>距上次限定</span><strong id="since-limited">@_data.PullsSinceLimited</strong></div>
+            }
+        </div>
+        <p class="hint">
+            S 指對應維護裡歸類為 S 角色、S 弧盤及其限定的項目；服裝、車皮與降落傘只統計，不影響間隔。範圍 @_data.FirstDate 至 @_data.LastDate。
+            最舊一筆 S 之前的紀錄可能超出遊戲保留範圍，因此標為「至少」且不計入平均。
+        </p>
+
+        <div class="chart-grid">
+            <section class="chart wide">
+                <h3>每次 S 花了幾抽</h3>
+                @if (_data.TopRankPulls.Count == 0)
+                {
+                    <p class="no-match">尚未抽到 S。</p>
+                }
+                else
+                {
+                    <ol class="interval-list" id="intervals">
+                        @foreach (var pull in _data.TopRankPulls)
+                        {
+                            <li>
+                                <span class="interval-name" title="@pull.RewardId">@pull.Name</span>
+                                <span class="interval-tag">@pull.FocusLabel@(pull.Source is { } source ? $"・{source}" : "")</span>
+                                <span class="interval-track">
+                                    <span class="@(pull.IsLimited ? "interval-bar limited" : "interval-bar")" style="width:@Width(pull.PullsSpent, _maxInterval)"></span>
+                                    <span class="interval-value">@(pull.IsLowerBound ? "至少 " : "")@pull.PullsSpent</span>
+                                </span>
+                                <span class="interval-date">@pull.Timestamp[..Math.Min(10, pull.Timestamp.Length)]</span>
+                            </li>
+                        }
+                    </ol>
+                }
+            </section>
+
+            <FocusBreakdown Data="_data" />
+
+            <section class="chart">
+                <h3>稀有度組成（含道具）</h3>
+                <div class="stack" role="img" aria-label="@RarityText">
+                    @foreach (var (bucket, index) in _data.RarityMix.Where(bucket => bucket.Count > 0).Select((bucket, index) => (bucket, index)))
+                    {
+                        <span class="@($"stack-part tier-{TierClass(bucket.Label)}")" style="flex-grow:@bucket.Count" title="@bucket.Label：@bucket.Count 抽"></span>
+                    }
+                </div>
+                <ul class="legend">
+                    @foreach (var bucket in _data.RarityMix)
+                    {
+                        <li><i class="@($"swatch tier-{TierClass(bucket.Label)}")"></i>@bucket.Label <b>@bucket.Count</b> <small>@Percent((double)bucket.Count / _data.TotalPulls)</small></li>
+                    }
+                </ul>
+            </section>
+
+            @if (_data.DiceRolls.Count > 0)
+            {
+                <section class="chart">
+                    <h3>骰子點數分布</h3>
+                    <ColumnChart Buckets="_data.DiceRolls" Unit="次" />
+                </section>
+            }
+
+            <section class="chart @(_data.DiceRolls.Count == 0 ? "" : "wide")">
+                <h3>每@(_data.TimeUnit)抽數</h3>
+                <ColumnChart Buckets="_data.PullsOverTime" Unit="抽" />
+            </section>
+
+            <section class="chart">
+                <h3>最常獲得</h3>
+                <ol class="rank-list">
+                    @foreach (var bucket in _data.TopRewards)
+                    {
+                        <li>
+                            <span class="interval-name">@bucket.Label</span>
+                            <span class="interval-track">
+                                <span class="interval-bar" style="width:@Width(bucket.Count, _data.TopRewards[0].Count)"></span>
+                                <span class="interval-value">@bucket.Count</span>
+                            </span>
+                        </li>
+                    }
+                </ol>
+            </section>
+
+            @if (_data.ResultKinds.Count > 0)
+            {
+                <section class="chart">
+                    <h3>結果類型</h3>
+                    <table class="mini">
+                        <tbody>
+                            @foreach (var bucket in _data.ResultKinds)
+                            {
+                                <tr><td>@bucket.Label</td><td class="num">@bucket.Count.ToString("N0")</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </section>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private BannerAnalysis _data = null!;
+    private int _maxInterval = 1;
+
+    [Parameter, EditorRequired]
+    public BannerHistory History { get; set; } = null!;
+
+    [Parameter]
+    public Func<HistoryRow, string>? NameOf { get; set; }
+
+    private string RarityText => string.Join("、", _data.RarityMix.Select(bucket => $"{bucket.Label} {bucket.Count} 抽"));
+
+    protected override void OnParametersSet()
+    {
+        _data = HistoryAnalyzer.Analyze(History, NameOf);
+        _maxInterval = Math.Max(1, _data.TopRankPulls.Select(pull => pull.PullsSpent).DefaultIfEmpty(1).Max());
+    }
+
+    private static string Percent(double? value) => value is null ? "—" : value.Value.ToString("0.0%");
+
+    private static string Width(int value, int max) =>
+        $"{Math.Max(1.5, 100.0 * value / Math.Max(1, max)).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)}%";
+
+    private static string TierClass(string label) => label switch
+    {
+        "S" => "s",
+        "A" => "a",
+        "B" => "b",
+        _ => "none",
+    };
+}

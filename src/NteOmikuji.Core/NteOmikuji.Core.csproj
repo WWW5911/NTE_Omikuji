@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Seeds for the editable files the app creates in its mappings folder. -->
+    <EmbeddedResource Include="Mappings\rewards.csv" LogicalName="mappings.rewards.csv" />
+    <EmbeddedResource Include="Mappings\achievements.csv" LogicalName="mappings.achievements.csv" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="NteOmikuji.Core.Tests" />
+  </ItemGroup>
+
+</Project>

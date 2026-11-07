@@ -1,0 +1,272 @@
+@using System.Globalization
+@using NteOmikuji.Core.Mapping
+@implements IDisposable
+@inject ExporterState State
+
+<div class="panel results editor" id="mapping-editor">
+    <div class="toolbar">
+        <div>
+            <h2 class="editor-title">對應維護</h2>
+            <p class="hint" id="editor-summary">@State.Rewards.Entries.Count 筆對應，@Drafts.Count 筆紀錄中出現但未對應。修改後會立刻存檔並更新歷史紀錄。</p>
+        </div>
+        <div class="actions">
+            <button id="editor-undo" disabled="@(!State.CanUndoMapping)" @onclick="State.UndoMapping">復原</button>
+            <button id="editor-fill" title="加入內建資料有、這裡沒有的項目，並填入空白欄位。已填寫的內容不會被改動。" @onclick="State.FillMappingsFromBundled">從內建補齊</button>
+            <button id="editor-folder" @onclick="OpenFolderAsync">開啟資料夾</button>
+        </div>
+    </div>
+
+    <div class="toolbar">
+        <div class="actions">
+            <input id="editor-search" class="filter" placeholder="搜尋 ID 或名稱…" aria-label="搜尋" @bind="_search" @bind:event="oninput" />
+            <select id="editor-filter" aria-label="篩選" @bind="_filter">
+                <option value="all">全部</option>
+                <option value="unmapped">未對應（@Drafts.Count）</option>
+                <option value="missing">缺顯示中的語言</option>
+                @foreach (var focus in RewardSchema.AllFocus)
+                {
+                    <option value="@RewardSchema.FocusCode(focus)">@RewardSchema.FocusLabel(focus)（@FocusCount(focus)）</option>
+                }
+            </select>
+        </div>
+        <div class="actions locale-picker">
+            <span class="hint">語言欄</span>
+            @foreach (var locale in State.Rewards.Locales)
+            {
+                var localeCode = locale;
+                <label class="check"><input type="checkbox" data-locale="@localeCode" checked="@State.IsLocaleVisible(localeCode)" @onchange="change => State.SetLocaleVisible(localeCode, change.Value is true)" /> @LocaleLabel(localeCode)</label>
+            }
+            <input id="new-locale" class="locale-input" placeholder="新語言，如 pt-br" aria-label="新增語言代碼" @bind="_newLocale" />
+            <button id="add-locale" @onclick="AddLocale">新增語言</button>
+        </div>
+    </div>
+
+    <div class="toolbar new-row">
+        <input id="new-id" placeholder="新增項目的 ID（遊戲裡的字串）" aria-label="新增項目 ID" @bind="_newId" />
+        <button id="add-row" class="primary" @onclick="AddRow">新增項目</button>
+        @if (_formMessage is { } message)
+        {
+            <span class="hint" id="form-message" role="alert">@message</span>
+        }
+    </div>
+
+    <div class="table-wrap">
+        <table class="records editor-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    @foreach (var locale in VisibleLocales)
+                    {
+                        <th>@LocaleLabel(locale)</th>
+                    }
+                    <th class="col-type">類型</th>
+                    <th class="col-rank">稀有</th>
+                    <th class="col-focus" title="S 類會計入 S 數量並重新計算間隔；服裝、車皮與降落傘只統計。沒有設定的項目依稀有度與 ID 自動歸類。">關注類別</th>
+                    <th class="col-count" title="這個帳號的紀錄中出現的次數">次數</th>
+                    <th class="col-action"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var row in VisibleRows)
+                {
+                    var entry = row;
+                    <tr @key="@($"{entry.Id}:{State.MappingWriteFailures}")" data-id="@entry.Id" class="@(IsDraft(entry) ? "draft" : "")">
+                        <td class="id-cell">
+                            <span class="id-text" title="@entry.Id">@entry.Id</span>
+                            @if (IsDraft(entry))
+                            {
+                                <span class="badge">未對應</span>
+                            }
+                        </td>
+                        @foreach (var locale in VisibleLocales)
+                        {
+                            var localeCode = locale;
+                            <td>
+                                <input class="cell" title="@entry.Names.GetValueOrDefault(localeCode, "")" data-col="@localeCode" aria-label="@entry.Id @LocaleLabel(localeCode)" value="@entry.Names.GetValueOrDefault(localeCode, "")"
+                                       placeholder="@PlaceholderFor(entry, localeCode)" @onchange="change => SetName(entry.Id, localeCode, change.Value as string)" />
+                            </td>
+                        }
+                        <td class="col-type">
+                            <input class="cell" data-col="type" list="reward-types" aria-label="@entry.Id 類型" value="@entry.Type" @onchange="change => Update(entry.Id, current => current with { Type = change.Value as string ?? string.Empty })" />
+                        </td>
+                        <td class="col-rank">
+                            <input class="cell" data-col="rank" list="reward-ranks" aria-label="@entry.Id 稀有度" value="@entry.Rank" @onchange="change => Update(entry.Id, current => current with { Rank = change.Value as string ?? string.Empty })" />
+                        </td>
+                        <td class="col-focus">
+                            <select class="cell" data-col="focus" aria-label="@entry.Id 關注類別" @onchange="change => SetFocus(entry.Id, change.Value as string)">
+                                @foreach (var focus in RewardSchema.AllFocus)
+                                {
+                                    <option value="@RewardSchema.FocusCode(focus)" selected="@(focus == entry.Focus)">@RewardSchema.FocusLabel(focus)</option>
+                                }
+                            </select>
+                        </td>
+                        <td class="col-count num">@State.SeenRewards.GetValueOrDefault(entry.Id)</td>
+                        <td class="col-action">
+                            @if (!IsDraft(entry))
+                            {
+                                <button class="link-button" data-action="delete" aria-label="刪除 @entry.Id" @onclick="() => State.DeleteReward(entry.Id)">刪除</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        @if (VisibleRows.Count == 0)
+        {
+            <p class="no-match">沒有符合條件的項目。</p>
+        }
+    </div>
+    <datalist id="reward-types">
+        <option value="character"></option>
+        <option value="arc"></option>
+        <option value="cosmetic"></option>
+        <option value="item"></option>
+    </datalist>
+    <datalist id="reward-ranks">
+        <option value="S"></option>
+        <option value="A"></option>
+        <option value="B"></option>
+    </datalist>
+</div>
+
+@code {
+    private string _search = "";
+    private string _filter = "all";
+    private string _newLocale = "";
+    private string _newId = "";
+    private string? _formMessage;
+
+    private IReadOnlyList<string> VisibleLocales => State.Rewards.Locales.Where(State.IsLocaleVisible).ToList();
+
+    /// <summary>Rewards seen in history with no row yet. Editing one creates its row.</summary>
+    private List<RewardEntry> Drafts
+    {
+        get
+        {
+            var known = State.Rewards.Entries.Select(entry => entry.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return State.SeenRewards.Keys.Where(id => !known.Contains(id)).Order(StringComparer.Ordinal)
+                .Select(id => new RewardEntry(id, RewardCatalog.InferType(id), "", null, new Dictionary<string, string>()))
+                .ToList();
+        }
+    }
+
+    private List<RewardEntry> VisibleRows =>
+        Drafts.Concat(State.Rewards.Entries).Where(Matches).ToList();
+
+    private bool IsDraft(RewardEntry entry) => !State.Rewards.Entries.Any(known => known.Id.Equals(entry.Id, StringComparison.OrdinalIgnoreCase));
+
+    private int FocusCount(RewardFocus focus) => Drafts.Concat(State.Rewards.Entries).Count(entry => entry.Focus == focus);
+
+    private void SetFocus(string id, string? code)
+    {
+        if (RewardSchema.TryParseFocus(code ?? "", out var focus) && focus is not null)
+        {
+            Update(id, current => current with { FocusOverride = focus });
+        }
+    }
+
+    private bool Matches(RewardEntry entry)
+    {
+        var passes = _filter switch
+        {
+            "unmapped" => IsDraft(entry),
+            "missing" => VisibleLocales.Any(locale => !entry.Names.ContainsKey(locale)),
+            "all" => true,
+            _ => RewardSchema.FocusCode(entry.Focus) == _filter,
+        };
+        return passes && (_search.Length == 0
+            || entry.Id.Contains(_search, StringComparison.OrdinalIgnoreCase)
+            || entry.Names.Values.Any(name => name.Contains(_search, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    protected override void OnInitialized() => State.Changed += OnStateChanged;
+
+    private void OnStateChanged() => _ = InvokeAsync(StateHasChanged);
+
+    /// <summary>Shows what the reward falls back to, so a blank cell explains what people will see.</summary>
+    private static string PlaceholderFor(RewardEntry entry, string locale) =>
+        entry.Names.GetValueOrDefault(RewardSchema.English) ?? entry.Names.Values.FirstOrDefault() ?? "";
+
+    private static string LocaleLabel(string locale)
+    {
+        switch (locale)
+        {
+            case RewardSchema.Chinese:
+                return "中文";
+            case RewardSchema.English:
+                return "英文";
+        }
+        try
+        {
+            return CultureInfo.GetCultureInfo(locale).NativeName;
+        }
+        catch (CultureNotFoundException)
+        {
+            return locale;
+        }
+    }
+
+    private void SetName(string id, string locale, string? value) => Update(id, current =>
+    {
+        var names = current.Names.ToDictionary();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            names.Remove(locale);
+        }
+        else
+        {
+            names[locale] = value.Trim();
+        }
+        return current with { Names = names };
+    });
+
+    /// <summary>
+    /// Applies one field to the latest saved row. The row from the last render can be
+    /// stale when cells change in quick succession, and would undo the earlier edit.
+    /// </summary>
+    private void Update(string id, Func<RewardEntry, RewardEntry> change)
+    {
+        var current = State.Rewards.Entries.FirstOrDefault(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase))
+            ?? Drafts.First(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+        State.SaveReward(change(current));
+    }
+
+    private void AddLocale()
+    {
+        if (State.AddLocale(_newLocale))
+        {
+            _newLocale = "";
+        }
+    }
+
+    private void AddRow()
+    {
+        var id = _newId.Trim();
+        if (id.Length == 0)
+        {
+            _formMessage = "請先輸入 ID。";
+            return;
+        }
+        if (State.Rewards.Entries.Any(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase)))
+        {
+            _formMessage = $"{id} 已經存在，已為你篩選出來。";
+            _filter = "all";
+            _search = id;
+            return;
+        }
+        // An explicit category keeps the row even before any name is typed.
+        State.SaveReward(new RewardEntry(id, RewardCatalog.InferType(id), "", RewardSchema.InferFocus(id, "", RewardCatalog.InferType(id)), new Dictionary<string, string>()));
+        _formMessage = null;
+        _newId = "";
+        _filter = "all";
+        _search = id;
+    }
+
+    private async Task OpenFolderAsync()
+    {
+        Directory.CreateDirectory(State.MappingFolder);
+        await Launcher.Default.OpenAsync(new Uri(State.MappingFolder));
+    }
+
+    public void Dispose() => State.Changed -= OnStateChanged;
+}

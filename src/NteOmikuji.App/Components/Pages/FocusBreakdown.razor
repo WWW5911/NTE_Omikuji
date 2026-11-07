@@ -1,0 +1,51 @@
+@using NteOmikuji.Core.Analysis
+
+<section class="chart" id="focus-counts">
+    <h3>關注項目統計</h3>
+    @if (Data.FocusCounts.Count == 0)
+    {
+        <p class="no-match">這個卡池還沒有關注的項目。</p>
+    }
+    else
+    {
+        var peak = Data.FocusCounts.Max(bucket => bucket.Count);
+        <ol class="rank-list">
+            @foreach (var bucket in Data.FocusCounts)
+            {
+                <li data-focus="@bucket.Label">
+                    <span class="interval-name">@bucket.Label</span>
+                    <span class="interval-track">
+                        <span class="interval-bar" style="width:@($"{Math.Max(1.5, 100.0 * bucket.Count / peak).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)}%")"></span>
+                        <span class="interval-value">@bucket.Count</span>
+                    </span>
+                </li>
+            }
+        </ol>
+    }
+</section>
+
+@if (Data.CosmeticItems.Count > 0)
+{
+    <section class="chart" id="cosmetics">
+        <h3>獲得的服裝、車皮與降落傘</h3>
+        <div class="scroll-list">
+            <table class="mini">
+                <tbody>
+                    @foreach (var item in Data.CosmeticItems)
+                    {
+                        <tr>
+                            <td title="@item.RewardId">@item.Name</td>
+                            <td>@item.FocusLabel</td>
+                            <td class="num">@item.Timestamp[..Math.Min(10, item.Timestamp.Length)]</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public BannerAnalysis Data { get; set; } = null!;
+}

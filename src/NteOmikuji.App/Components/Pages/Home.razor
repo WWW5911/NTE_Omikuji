@@ -1,0 +1,367 @@
+﻿@page "/"
+@implements IDisposable
+@inject ExporterState State
+
+<div class="shell">
+    <aside class="panel side">
+        <header class="brand">
+            <h1>NTE Omikuji</h1>
+            <p>把遊戲流量解碼成可匯入追蹤工具的 JSON。</p>
+        </header>
+
+        <section>
+            <h2>即時擷取</h2>
+            <label for="address">網路介面</label>
+            <select id="address" @bind="_localIp" disabled="@(!IsIdle)">
+                @foreach (var address in _addresses)
+                {
+                    <option value="@address.Ip">@address.Ip（@address.InterfaceName）</option>
+                }
+            </select>
+
+            <label for="backend">擷取方式</label>
+            <select id="backend" @bind="_backend" disabled="@(!IsIdle)">
+                <option value="@CaptureBackendKind.Auto">自動（建議）</option>
+                <option value="@CaptureBackendKind.Npcap">只用已安裝的 Npcap</option>
+                <option value="@CaptureBackendKind.RawSocket">內建擷取（免安裝）</option>
+            </select>
+
+            <label class="check debug-option"><input id="record-packets" type="checkbox" @bind="_recordPackets" disabled="@(!IsIdle)" /> 記錄除錯封包</label>
+            @if (_recordPackets)
+            {
+                <p class="hint" id="record-packets-hint">只記錄歷史紀錄的 UDP 封包，不含登入用的 TCP，存到程式旁的 debug_packets。內容可能含帳號資料，分享前請先確認。</p>
+            }
+
+            @if (State.Status is ExporterStatus.Capturing or ExporterStatus.Stopping)
+            {
+                <button id="stop" class="primary danger" @onclick="StopAsync" disabled="@(State.Status == ExporterStatus.Stopping)">
+                    @(State.Status == ExporterStatus.Stopping ? "停止中…" : "停止擷取")
+                </button>
+            }
+            else
+            {
+                <button id="start" class="primary" @onclick="Start" disabled="@(!IsIdle || string.IsNullOrEmpty(_localIp))">開始擷取</button>
+            }
+            <p class="hint">不需要安裝任何東西。開始時 Windows 會請你同意系統管理員權限，這是讀取網路封包所必需的。</p>
+            <p class="hint">請在遊戲主選單按下開始前啟動，才能取得成就與帳號資訊。接著開啟歷史紀錄，從第 1 頁往下捲動。</p>
+        </section>
+
+        <section>
+            <h2>匯入</h2>
+            <label class="file" for="flows">.flows 擷取檔、匯出的 JSON，或對應表 CSV / JSON（可多選）</label>
+            <InputFile id="flows" OnChange="ImportAsync" accept=".flows,.json,.csv" multiple disabled="@(!IsIdle)" />
+        </section>
+
+        <section>
+            <h2>對應表</h2>
+            <p class="hint" id="mapping-status">已載入 @State.MappedRewardCount 筆獎勵@(UnmappedTotal > 0 ? $"，{UnmappedTotal} 筆未對應" : "")。</p>
+            <label for="language">顯示語言</label>
+            <select id="language" value="@State.DisplayLanguage" @onchange="change => State.SetDisplayLanguage(change.Value as string ?? RewardSchema.Chinese)">
+                @foreach (var locale in State.Rewards.Locales)
+                {
+                    <option value="@locale" selected="@(locale == State.DisplayLanguage)">@LanguageLabel(locale)</option>
+                }
+            </select>
+            @if (State.MappingIssues.Count > 0)
+            {
+                <ul class="issues" id="mapping-issues">
+                    @foreach (var issue in State.MappingIssues.Take(5))
+                    {
+                        <li>@issue</li>
+                    }
+                </ul>
+            }
+            <div class="button-row">
+                <button id="open-editor" class="@(_showEditor ? "active" : "")" @onclick="() => _showEditor = !_showEditor">@(_showEditor ? "返回紀錄" : "維護對應")</button>
+                <button id="reload-mappings" @onclick="State.ReloadMappings">重新載入</button>
+            </div>
+        </section>
+
+        <section>
+            <h2>帳號</h2>
+            <label for="uid">使用者 UID</label>
+            <input id="uid" list="accounts" @bind="_userUid" @bind:after="() => State.SelectAccount(_userUid)" placeholder="@(string.IsNullOrEmpty(State.Account) ? "未偵測到（可留白）" : State.Account)" />
+            <datalist id="accounts">
+                @foreach (var account in State.Accounts)
+                {
+                    <option value="@account"></option>
+                }
+            </datalist>
+            <label for="server">伺服器</label>
+            <select id="server" @bind="_serverId" @bind:after="() => State.SetServer(_serverId)">
+                <option value="">@(State.ServerId is { } detected ? $"目前：{detected}" : "未指定")</option>
+                @foreach (var (id, server) in ServerRegions.Known)
+                {
+                    <option value="@id">@server.Name（@id）</option>
+                }
+            </select>
+        </section>
+
+        <section class="activity">
+            <h2>活動紀錄</h2>
+            <ul aria-live="polite">
+                @foreach (var line in State.Activity.Take(40))
+                {
+                    <li>@line</li>
+                }
+            </ul>
+        </section>
+    </aside>
+
+    <main class="content">
+        <div class="stats">
+            <div class="stat"><span>狀態</span><strong id="status">@StatusText</strong></div>
+            <div class="stat"><span>來源</span><strong>@(State.CaptureName ?? "—")</strong></div>
+            <div class="stat"><span>封包（收 / 送）</span><strong id="packets" data-in="@State.InboundCount" data-out="@State.OutboundCount">@State.InboundCount.ToString("N0") / @State.OutboundCount.ToString("N0")</strong></div>
+            <div class="stat"><span>紀錄</span><strong id="record-count">@State.Histories.Sum(history => history.Rows.Count).ToString("N0")</strong></div>
+            <div class="stat"><span>成就</span><strong>@State.Achievements.Count.ToString("N0")</strong></div>
+        </div>
+
+        @if (State.Error is { } error)
+        {
+            <div class="alert error" role="alert">@error</div>
+        }
+        @if (State.Notice is { } notice)
+        {
+            <div class="alert">@notice</div>
+        }
+        @if (State.FallbackReason is { } fallback)
+        {
+            <div class="alert">Npcap 無法使用，已改用原始通訊端：@fallback</div>
+        }
+
+        @if (_showEditor)
+        {
+            <MappingEditor />
+        }
+        else if (State.Histories.Count == 0)
+        {
+            <div class="panel empty">
+                <h2>還沒有紀錄</h2>
+                <p>開始即時擷取，或匯入 .flows / JSON 檔。紀錄會自動累積保存在程式旁的 user_data 資料夾。</p>
+                <p>任何獎勵字串都會保留：對照表裡沒有的項目照樣匯出原文，並標記為「未對應」。</p>
+            </div>
+        }
+        else
+        {
+            <div class="panel results">
+                <div class="toolbar">
+                    <div class="view-switch">
+                        <button id="view-analysis" class="@(_showAnalysis ? "active" : "")" @onclick="() => _showAnalysis = true">分析</button>
+                        <button id="view-records" class="@(_showAnalysis ? "" : "active")" @onclick="() => _showAnalysis = false">紀錄</button>
+                    </div>
+                    <div class="tabs" role="tablist">
+                        @foreach (var history in State.Histories)
+                        {
+                            var kind = history.Banner.Kind;
+                            <button role="tab" class="@(kind == ActiveKind ? "tab active" : "tab")" aria-selected="@(kind == ActiveKind)" @onclick="() => _activeKind = kind">
+                                @history.Banner.Name <small>@history.Rows.Count</small>
+                            </button>
+                        }
+                    </div>
+                    <div class="actions">
+                        @if (!_showAnalysis)
+                        {
+                            <input id="filter" class="filter" placeholder="搜尋獎勵或結果…" aria-label="搜尋" @bind="_filter" @bind:event="oninput" />
+                            <label class="check"><input id="unmapped" type="checkbox" @bind="_unmappedOnly" /> 只看未對應（@UnmappedCount）</label>
+                        }
+                        <span class="saved" id="saved">@(State.LastSaved is { } saved ? $"已自動儲存 {saved:HH:mm:ss}" : "自動儲存")</span>
+                        <button id="copy" @onclick="CopyAsync">複製 JSON</button>
+                        <button id="folder" @onclick="() => OpenFolderAsync(State.DataFolder)">開啟 user_data</button>
+                    </div>
+                </div>
+
+                @if (Active is { } active)
+                {
+                    @foreach (var warning in active.Warnings)
+                    {
+                        <div class="alert">@warning.Reason</div>
+                    }
+                    @if (_showAnalysis)
+                    {
+                        <AnalysisView History="active" NameOf="State.DisplayName" />
+                    }
+                    else
+                    {
+                    <div class="table-wrap">
+                        <table class="records">
+                            <thead>
+                                <tr>
+                                    <th class="time">時間</th>
+                                    <th>獎勵</th>
+                                    <th class="narrow">稀有度</th>
+                                    <th class="narrow">類型</th>
+                                    <th class="narrow">數量</th>
+                                    <th>結果</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <Virtualize Items="FilteredRows" Context="row" ItemSize="38" SpacerElement="tr">
+                                    <tr>
+                                        <td class="time">@row.TimestampDecoded</td>
+                                        <td class="reward">
+                                            <span class="name">@State.DisplayName(row)</span>
+                                            @if (row.IsMappedReward)
+                                            {
+                                                <span class="id">@row.RewardId</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge">未對應</span>
+                                            }
+                                        </td>
+                                        <td class="narrow"><span class="@RankClass(row.RewardRank)">@(string.IsNullOrEmpty(row.RewardRank) ? "—" : row.RewardRank)</span></td>
+                                        <td class="narrow">@row.RewardType</td>
+                                        <td class="narrow">@(row.Quantity?.ToString() ?? "—")</td>
+                                        <td class="result">@ResultLabel(row)</td>
+                                    </tr>
+                                </Virtualize>
+                            </tbody>
+                        </table>
+                        @if (FilteredRows.Count == 0)
+                        {
+                            <p class="no-match">沒有符合條件的紀錄。</p>
+                        }
+                    </div>
+                    }
+                }
+            </div>
+        }
+    </main>
+</div>
+
+@code {
+    private IReadOnlyList<LocalAddress> _addresses = [];
+    private string? _localIp;
+    private CaptureBackendKind _backend = CaptureBackendKind.Auto;
+    private HistoryKind? _activeKind;
+    private string _filter = "";
+    private bool _unmappedOnly;
+    private string? _userUid;
+    private string _serverId = "";
+    private bool _showAnalysis = true;
+    private bool _showEditor;
+    private bool _recordPackets;
+
+    private int UnmappedTotal => State.SeenRewards.Keys.Count(id => !State.Rewards.Entries.Any(entry => entry.Id.Equals(id, StringComparison.OrdinalIgnoreCase)));
+
+    private static string LanguageLabel(string locale)
+    {
+        try
+        {
+            return locale == RewardSchema.Chinese ? "中文" : locale == RewardSchema.English ? "English" : System.Globalization.CultureInfo.GetCultureInfo(locale).NativeName;
+        }
+        catch (System.Globalization.CultureNotFoundException)
+        {
+            return locale;
+        }
+    }
+
+    private bool IsIdle => State.Status == ExporterStatus.Idle;
+
+    private string StatusText => State.Status switch
+    {
+        ExporterStatus.Capturing => "擷取中",
+        ExporterStatus.Stopping => "停止中",
+        ExporterStatus.Importing => "匯入中",
+        _ => "待命",
+    };
+
+    private BannerHistory? Active =>
+        State.Histories.FirstOrDefault(history => history.Banner.Kind == _activeKind) ?? State.Histories.FirstOrDefault();
+
+    private HistoryKind? ActiveKind => Active?.Banner.Kind;
+
+    private int UnmappedCount => Active?.Rows.Count(row => !row.IsMappedReward) ?? 0;
+
+    private List<HistoryRow> FilteredRows =>
+        (Active?.Rows ?? []).Where(row => (!_unmappedOnly || !row.IsMappedReward) && Matches(row)).ToList();
+
+    protected override void OnInitialized()
+    {
+        _addresses = LocalAddresses.List();
+        _localIp = LocalAddresses.Preferred() ?? _addresses.FirstOrDefault()?.Ip;
+        State.Changed += OnStateChanged;
+        if (Elevation.TakePendingCapture() is { } pending)
+        {
+            _localIp = pending.LocalIp;
+            _backend = pending.Backend;
+            _recordPackets = pending.RecordPackets;
+            State.Start(pending.LocalIp, pending.Backend, pending.RecordPackets);
+        }
+    }
+
+    private void OnStateChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private bool Matches(HistoryRow row) =>
+        _filter.Length == 0
+        || row.RewardId.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+        || row.RewardName.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+        || State.DisplayName(row).Contains(_filter, StringComparison.OrdinalIgnoreCase)
+        || row.ResultType.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+        || (row.ResultText?.Contains(_filter, StringComparison.OrdinalIgnoreCase) ?? false);
+
+    private static string ResultLabel(HistoryRow row)
+    {
+        var label = row.ResultType switch
+        {
+            "dice" => $"骰子 {row.Dice}",
+            "points_gift" => "集點獎勵",
+            "chase_reward" => "追逐獎勵",
+            "single_pull" => "單抽",
+            "" or "unknown" => "—",
+            var other => other,
+        };
+        return row.ResultText is null ? label : $"{label}：{row.ResultText}";
+    }
+
+    private static string RankClass(string? rank) => rank switch
+    {
+        "S" => "rank rank-s",
+        "A" => "rank rank-a",
+        "B" => "rank rank-b",
+        _ => "rank rank-none",
+    };
+
+    private void Start()
+    {
+        if (_localIp is not null)
+        {
+            State.Start(_localIp, _backend, _recordPackets);
+        }
+    }
+
+    private Task StopAsync() => State.StopAsync();
+
+    private async Task ImportAsync(InputFileChangeEventArgs change)
+    {
+        const long maxFileBytes = 1024L * 1024 * 1024;
+        const int maxFiles = 50;
+        var files = new List<(string Name, byte[] Bytes)>();
+        foreach (var file in change.GetMultipleFiles(maxFiles))
+        {
+            await using var stream = file.OpenReadStream(maxFileBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            files.Add((file.Name, buffer.ToArray()));
+        }
+        await State.ImportAsync(files);
+        _activeKind = null;
+    }
+
+    private async Task CopyAsync()
+    {
+        if (Active is { } active)
+        {
+            await Clipboard.Default.SetTextAsync(State.ExportJson(active));
+        }
+    }
+
+    private static async Task OpenFolderAsync(string folder)
+    {
+        Directory.CreateDirectory(folder);
+        await Launcher.Default.OpenAsync(new Uri(folder));
+    }
+
+    public void Dispose() => State.Changed -= OnStateChanged;
+}
