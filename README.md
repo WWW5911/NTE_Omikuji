@@ -137,7 +137,12 @@ most-obtained rewards. Boards also show dice rolls and result types.
 | --- | --- | --- |
 | 總覽 | 1920×1080 | Overall luck and all three pools with their pity and S history |
 | 運氣 | 1080×1080 | The luck tier, where it falls on the bell curve, and each pool |
-| 單池 | 1080×1350 | One pool's figures and how many pulls each S took |
+| 單池 | 1080×1350 | One pool's or event's figures and how many pulls each S took |
+
+The **分享** button on a pool's or event's page opens 單池 with it selected. An event's
+image counts only that event's pulls and rewards, but each reward's pull count runs
+back across earlier events because pity carries over, and it has no luck tag or pity
+meter of its own.
 
 Each comes in a pale 櫻 and a dark 墨 color scheme. Your UID is left out unless you
 tick the box, and then its middle is masked. The percentage on 運氣 is a normal

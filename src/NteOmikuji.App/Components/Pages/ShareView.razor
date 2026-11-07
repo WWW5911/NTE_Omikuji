@@ -5,7 +5,13 @@
 @inject IJSRuntime JS
 
 <div class="page" id="share">
-    <h2 class="page-title">分享圖</h2>
+    <div class="toolbar">
+        <h2 class="page-title">分享圖</h2>
+        @if (OnBack.HasDelegate)
+        {
+            <button id="share-back" @onclick="() => OnBack.InvokeAsync()">返回卡池頁</button>
+        }
+    </div>
     <div class="panel share-controls">
         <div class="tabs" role="group" aria-label="範本">
             @foreach (var (id, label) in Templates)
@@ -15,10 +21,16 @@
         </div>
         @if (_template == "pool")
         {
-            <select id="share-pool" aria-label="卡池" @bind="_poolIndex">
-                @for (var index = 0; index < (_card?.Pools.Count ?? 0); index++)
+            <select id="share-pool" aria-label="卡池或活動" @bind="_selected">
+                @foreach (var (kind, label) in Pools)
                 {
-                    <option value="@index">@_card!.Pools[index].Label</option>
+                    <optgroup label="@label">
+                        <option value="@Key(new ShareTarget(kind))">@label（全部）</option>
+                        @foreach (var group in EventsOf(kind))
+                        {
+                            <option value="@Key(new ShareTarget(kind, group.Id))">@group.Name（@group.Pulls 抽）</option>
+                        }
+                    </optgroup>
                 }
             </select>
         }
@@ -58,35 +70,68 @@
 @code {
     private static readonly (string Id, string Label)[] Templates = [("overview", "總覽"), ("luck", "運氣"), ("pool", "單池")];
     private static readonly (string Id, string Label)[] Themes = [("sakura", "櫻"), ("sumi", "墨")];
+    private static readonly (HistoryKind Kind, string Label)[] Pools =
+    [
+        (HistoryKind.LimitedCharacter, "限定棋盤"),
+        (HistoryKind.Permanent, "常駐棋盤"),
+        (HistoryKind.ArcMiracleBox, "弧盤研募"),
+    ];
+
+    // Kept for the session, so moving between pages does not reset the chosen colors.
+    private static string _theme = "sakura";
+
+    [Parameter]
+    public ShareTarget? Target { get; set; }
+
+    [Parameter]
+    public EventCallback OnBack { get; set; }
 
     private ElementReference _canvas;
-    private ShareCard? _card;
     private string _template = "overview";
-    private string _theme = "sakura";
-    private int _poolIndex;
+    private string _selected = Key(new ShareTarget(HistoryKind.LimitedCharacter));
     private bool _showUid;
     private bool _busy;
     private bool _savedFile;
     private string? _message;
 
-    protected override void OnInitialized() => State.Changed += OnStateChanged;
+    protected override void OnInitialized()
+    {
+        State.Changed += OnStateChanged;
+        if (Target is { } target)
+        {
+            _template = "pool";
+            _selected = Key(target);
+        }
+    }
+
+    private static string Key(ShareTarget target) => $"{target.Kind}|{target.BannerId}";
+
+    private ShareTarget SelectedTarget
+    {
+        get
+        {
+            var parts = _selected.Split('|', 2);
+            return new ShareTarget(Enum.Parse<HistoryKind>(parts[0]), parts[1].Length == 0 ? null : parts[1]);
+        }
+    }
+
+    /// <summary>The standard board has one lasting event, so only the other pools list theirs.</summary>
+    private IReadOnlyList<BannerGroup> EventsOf(HistoryKind kind) =>
+        kind != HistoryKind.Permanent && State.Histories.FirstOrDefault(history => history.Banner.Kind == kind) is { } history
+            ? HistoryAnalyzer.Banners(history, State.DisplayName, State.BannerName)
+            : [];
 
     private void OnStateChanged() => _ = InvokeAsync(StateHasChanged);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        _card = ShareCardBuilder.Build(State.Histories, State.DisplayName, State.UnsetBanners, DateOnly.FromDateTime(DateTime.Now), _showUid ? State.Account : null);
-        await JS.InvokeVoidAsync("nteShare.draw", _canvas, _card, _template, _theme, _poolIndex);
-        if (firstRender)
-        {
-            // The pool list reads the card, which exists only after this first pass.
-            StateHasChanged();
-        }
+        var card = ShareCardBuilder.Build(State.Histories, State.DisplayName, State.UnsetBanners, DateOnly.FromDateTime(DateTime.Now), _showUid ? State.Account : null, State.BannerName, SelectedTarget);
+        await JS.InvokeVoidAsync("nteShare.draw", _canvas, card, _template, _theme);
     }
 
     private async Task<byte[]> ImageAsync() => Convert.FromBase64String(await JS.InvokeAsync<string>("nteShare.png", _canvas));
 
-    private string FileLabel => _template == "pool" && _card is { } card ? card.Pools[_poolIndex].Kind : _template;
+    private string FileLabel => _template == "pool" ? ShareCardBuilder.FileLabel(SelectedTarget) : _template;
 
     private async Task SaveAsync()
     {

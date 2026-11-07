@@ -38,6 +38,29 @@ public class ShareCardTests
         return new BannerHistory(banner, rows, [], []);
     }
 
+    /// <summary>Two events, oldest first: "Old" has an S after 30 pulls, then "New" 10 plain pulls and an S after 20 more.</summary>
+    private static BannerHistory TwoEvents(BannerInfo banner)
+    {
+        var rows = new List<HistoryRow>();
+        var second = 0;
+        void Add(int count, string id, string? reward)
+        {
+            for (var i = 1; i < count; i++)
+            {
+                rows.Add(Row(second++, banner: id));
+            }
+            rows.Add(reward is null ? Row(second++, banner: id) : Row(second++, RewardFocus.SLimitedCharacter, reward, id));
+        }
+        Add(30, "Lottery_Old", "old");
+        Add(10, "Lottery_New", null);
+        Add(20, "Lottery_New", "new");
+        rows.Reverse();
+        return new BannerHistory(banner, rows, [], []);
+    }
+
+    private static SharePool Selected(BannerHistory history, ShareTarget? target) =>
+        ShareCardBuilder.Build([history], null, null, Today, null, id => id == "Lottery_New" ? "明音凜" : null, target).Selected;
+
     private static ShareCard Card(params BannerHistory[] histories) => ShareCardBuilder.Build(histories, null, null, Today);
 
     [Fact]
@@ -110,6 +133,73 @@ public class ShareCardTests
         Assert.Null(pool.LuckNote);
         Assert.Equal(LuckModel.LabelOf((LuckTier)luck.Tier), luck.Label);
         Assert.Equal((2, 100), (luck.Hits, luck.Pulls));
+    }
+
+    [Fact]
+    public void AnEventCountsOnlyItsOwnPullsAndKeepsItsPool()
+    {
+        var selected = Selected(TwoEvents(BannerInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
+
+        Assert.Equal(("明音凜", "限定棋盤"), (selected.Label, selected.Context));
+        Assert.Equal((30, 1, 1), (selected.TotalPulls, selected.TopCount, selected.LimitedCount));
+    }
+
+    [Fact]
+    public void AnEventsRewardCountsPullsAcrossEvents()
+    {
+        var selected = Selected(TwoEvents(BannerInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
+
+        var reward = Assert.Single(selected.Rewards);
+        Assert.Equal(("new", 30, false), (reward.Name, reward.Pulls, reward.AtLeast));
+    }
+
+    [Fact]
+    public void AnEventHasNoPityOrLuckOfItsOwn()
+    {
+        var selected = Selected(TwoEvents(BannerInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
+
+        Assert.Equal((null, null, null, null), (selected.Luck, selected.LuckNote, selected.Pity, selected.LimitedPity));
+    }
+
+    [Fact]
+    public void AnEventKeepsItsPoolsScale()
+    {
+        var limited = Selected(TwoEvents(BannerInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_New"));
+        var arc = Selected(TwoEvents(BannerInfo.ArcMiracleBox), new ShareTarget(HistoryKind.ArcMiracleBox, "Lottery_New"));
+
+        Assert.Equal((90, 70), (limited.Scale, limited.RisesFrom));
+        Assert.Equal((60, null), (arc.Scale, arc.RisesFrom));
+    }
+
+    [Fact]
+    public void AWholePoolCanBeSelected()
+    {
+        var selected = Selected(TwoEvents(BannerInfo.Permanent), new ShareTarget(HistoryKind.Permanent));
+
+        Assert.Equal(("常駐棋盤", null, 60), (selected.Label, selected.Context, selected.TotalPulls));
+    }
+
+    [Fact]
+    public void AnUnknownEventFallsBackToItsPool()
+    {
+        var selected = Selected(TwoEvents(BannerInfo.LimitedCharacter), new ShareTarget(HistoryKind.LimitedCharacter, "Lottery_Gone"));
+
+        Assert.Equal(("限定棋盤", 60), (selected.Label, selected.TotalPulls));
+    }
+
+    [Fact]
+    public void WithoutATargetTheFirstPoolIsSelected()
+    {
+        Assert.Equal("限定棋盤", Selected(TwoEvents(BannerInfo.LimitedCharacter), null).Label);
+    }
+
+    [Theory]
+    [InlineData(HistoryKind.Permanent, null, "Permanent")]
+    [InlineData(HistoryKind.LimitedCharacter, "Lottery_New-2", "Lottery_New-2")]
+    [InlineData(HistoryKind.LimitedCharacter, "..\\evil/明:音", "___evil____")]
+    public void FileLabelsKeepOnlyPlainCharacters(HistoryKind kind, string? id, string expected)
+    {
+        Assert.Equal(expected, ShareCardBuilder.FileLabel(new ShareTarget(kind, id)));
     }
 
     [Fact]

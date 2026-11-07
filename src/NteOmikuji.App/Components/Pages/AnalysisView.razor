@@ -14,7 +14,13 @@
                 }
             }
         </div>
-        <span class="hint">範圍 @_data.FirstDate 至 @_data.LastDate</span>
+        <div class="actions">
+            <span class="hint">範圍 @_data.FirstDate 至 @_data.LastDate</span>
+            @if (OnShare.HasDelegate && _data.TotalPulls > 0)
+            {
+                <button id="share-this" @onclick="() => OnShare.InvokeAsync()">分享</button>
+            }
+        </div>
     </div>
     @if (_data.TotalPulls == 0)
     {
@@ -217,6 +223,9 @@
 
     [Parameter]
     public string Title { get; set; } = "";
+
+    [Parameter]
+    public EventCallback OnShare { get; set; }
 
     [Parameter]
     public IReadOnlyList<string> UnsetBanners { get; set; } = [];

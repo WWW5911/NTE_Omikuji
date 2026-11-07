@@ -12,6 +12,9 @@ public sealed record ShareReward(string Name, int Pulls, bool AtLeast, bool Limi
 /// <param name="LimitedCount">Null for a pool without limited rewards.</param>
 /// <param name="LuckNote">Why there is no luck tag, when there is none.</param>
 /// <param name="Rewards">Top-rank rewards, newest first.</param>
+/// <param name="Context">The pool an event belongs to, when this covers one event.</param>
+/// <param name="Scale">Pulls at which the pool guarantees its top reward.</param>
+/// <param name="RisesFrom">The pull from which the odds improve, when the pool has such a point.</param>
 public sealed record SharePool(
     string Kind,
     string Label,
@@ -28,9 +31,16 @@ public sealed record SharePool(
     string? LuckNote,
     PityStatus? Pity,
     PityStatus? LimitedPity,
-    IReadOnlyList<ShareReward> Rewards);
+    IReadOnlyList<ShareReward> Rewards,
+    int Scale,
+    int? RisesFrom,
+    string? Context = null);
+
+/// <summary>A pool to share, or one event within it.</summary>
+public sealed record ShareTarget(HistoryKind Kind, string? BannerId = null);
 
 /// <summary>What a share image shows. It carries only what is drawn, and the account only when asked and masked.</summary>
+/// <param name="Selected">The pool or event the single pool template shows.</param>
 public sealed record ShareCard(
     string? FirstDate,
     string? LastDate,
@@ -39,6 +49,7 @@ public sealed record ShareCard(
     int TotalLimited,
     ShareLuck? Overall,
     IReadOnlyList<SharePool> Pools,
+    SharePool Selected,
     IReadOnlyList<string> TierLabels,
     string? MaskedUid,
     string Footer);
@@ -49,12 +60,16 @@ public static class ShareCardBuilder
     private const int VisibleUidEnd = 2;
 
     /// <param name="uid">Shown masked when given.</param>
+    /// <param name="bannerName">The name of an event's featured reward.</param>
+    /// <param name="target">What the single pool template shows. Defaults to the first pool.</param>
     public static ShareCard Build(
         IReadOnlyList<BannerHistory> histories,
         Func<HistoryRow, string>? nameOf,
         IReadOnlyCollection<string>? unsetBanners,
         DateOnly today,
-        string? uid = null)
+        string? uid = null,
+        Func<string, string?>? bannerName = null,
+        ShareTarget? target = null)
     {
         var pools = new[] { BannerInfo.LimitedCharacter, BannerInfo.Permanent, BannerInfo.ArcMiracleBox }
             .Select(banner => Pool(banner, histories.FirstOrDefault(history => history.Banner.Kind == banner.Kind), nameOf, unsetBanners))
@@ -68,10 +83,15 @@ public static class ShareCardBuilder
             data.Sum(item => item.LimitedCount),
             ToShare(LuckModel.Combine(data.Select(item => item.Luck))),
             pools.Select(pool => pool.Share).ToList(),
+            Selected(pools.Select(pool => pool.Share).ToList(), histories, nameOf, bannerName, target),
             Enum.GetValues<LuckTier>().Select(LuckModel.LabelOf).ToList(),
             MaskUid(uid),
             $"NTE Omikuji {ExportWriter.ExporterVersion}・{today:yyyy-MM-dd}");
     }
+
+    /// <summary>A file name part for a target. Event IDs come from the game, so only plain characters are kept.</summary>
+    public static string FileLabel(ShareTarget target) => string.Concat(
+        (target.BannerId ?? target.Kind.ToString()).Select(letter => char.IsAsciiLetterOrDigit(letter) || letter is '_' or '-' ? letter : '_'));
 
     /// <summary>Hides the middle of an account ID. Too short an ID to mask is not shown at all.</summary>
     public static string? MaskUid(string? uid) =>
@@ -89,6 +109,45 @@ public static class ShareCardBuilder
         return z >= 0 ? 1 - tail : tail;
     }
 
+    private static SharePool Selected(
+        IReadOnlyList<SharePool> pools,
+        IReadOnlyList<BannerHistory> histories,
+        Func<HistoryRow, string>? nameOf,
+        Func<string, string?>? bannerName,
+        ShareTarget? target)
+    {
+        var whole = pools.FirstOrDefault(pool => pool.Kind == target?.Kind.ToString()) ?? pools[0];
+        if (target?.BannerId is not { } id || histories.FirstOrDefault(history => history.Banner.Kind == target.Kind) is not { } history
+            || HistoryAnalyzer.Banners(history, nameOf, bannerName).FirstOrDefault(group => group.Id == id) is not { } group)
+        {
+            return whole;
+        }
+
+        // Pity carries across events, so an event has no pity or luck of its own to show.
+        var data = HistoryAnalyzer.Analyze(history, nameOf, id);
+        return whole with
+        {
+            Label = group.Name,
+            Context = whole.Label,
+            TotalPulls = data.TotalPulls,
+            TopCount = data.TopRankCount,
+            LimitedCount = data.LimitedCount,
+            Average = data.AverageInterval,
+            Shortest = data.ShortestInterval,
+            Longest = data.LongestInterval,
+            FirstDate = data.FirstDate,
+            LastDate = data.LastDate,
+            Luck = null,
+            LuckNote = null,
+            Pity = null,
+            LimitedPity = null,
+            Rewards = Rewards(data),
+        };
+    }
+
+    private static List<ShareReward> Rewards(BannerAnalysis data) =>
+        data.TopRankPulls.Select(pull => new ShareReward(pull.Name, pull.PullsSpent, pull.IsLowerBound, pull.IsLimited)).ToList();
+
     private static (SharePool Share, BannerAnalysis? Data) Pool(BannerInfo banner, BannerHistory? history, Func<HistoryRow, string>? nameOf, IReadOnlyCollection<string>? unsetBanners)
     {
         var label = HistoryCsv.PoolName(banner.Kind);
@@ -96,7 +155,7 @@ public static class ShareCardBuilder
         var hasLimited = banner.Kind != HistoryKind.Permanent;
         if (history is null)
         {
-            return (new SharePool(banner.Kind.ToString(), label, topLabel, 0, 0, hasLimited ? 0 : null, null, null, null, null, null, null, "尚無紀錄", null, null, []), null);
+            return (new SharePool(banner.Kind.ToString(), label, topLabel, 0, 0, hasLimited ? 0 : null, null, null, null, null, null, null, "尚無紀錄", null, null, [], banner.Pity!.TopRankAt, banner.Pity.RisesFrom), null);
         }
 
         var data = HistoryAnalyzer.Analyze(history, nameOf, unsetBanners: unsetBanners);
@@ -105,8 +164,7 @@ public static class ShareCardBuilder
         var share = new SharePool(
             banner.Kind.ToString(), label, topLabel, data.TotalPulls, data.TopRankCount, hasLimited ? data.LimitedCount : null,
             data.AverageInterval, data.ShortestInterval, data.LongestInterval, data.FirstDate, data.LastDate,
-            ToShare(data.Luck), note, data.TopRankPity, data.LimitedPity,
-            data.TopRankPulls.Select(pull => new ShareReward(pull.Name, pull.PullsSpent, pull.IsLowerBound, pull.IsLimited)).ToList());
+            ToShare(data.Luck), note, data.TopRankPity, data.LimitedPity, Rewards(data), banner.Pity.TopRankAt, banner.Pity.RisesFrom);
         return (share, data);
     }
 

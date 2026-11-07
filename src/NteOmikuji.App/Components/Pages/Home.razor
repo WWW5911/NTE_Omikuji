@@ -30,7 +30,7 @@
                          Active="IsActive(HistoryKind.ArcMiracleBox)" ActiveBanner="@_banner" Expanded="_expanded.Contains(HistoryKind.ArcMiracleBox)"
                          OnOpen="banner => OpenPool(HistoryKind.ArcMiracleBox, banner)" OnToggle="() => Toggle(HistoryKind.ArcMiracleBox)" />
             <hr class="side-divider" />
-            <button id="nav-share" class="@SideClass(_page == Page.Share)" aria-current="@Current(_page == Page.Share)" @onclick="() => Show(Page.Share)">分享圖</button>
+            <button id="nav-share" class="@SideClass(_page == Page.Share)" aria-current="@Current(_page == Page.Share)" @onclick="() => OpenShare(null)">分享圖</button>
             <button id="nav-settings" class="@SideClass(_page == Page.Settings)" aria-current="@Current(_page == Page.Settings)" @onclick="() => OpenSettings(false)">
                 <span>獎勵與卡池設定</span>
                 @if (State.UnsetBanners.Count > 0)
@@ -66,7 +66,7 @@
         @switch (_page)
         {
             case Page.Share:
-                <ShareView />
+                <ShareView @key="_shareVisit" Target="_shareTarget" OnBack="BackFromShare" />
                 break;
             case Page.Settings:
                 <SettingsView @key="_settingsVisit" StartOnBanners="_settingsOnBanners" />
@@ -77,7 +77,7 @@
             case Page.Pool:
                 @if (State.Histories.FirstOrDefault(history => history.Banner.Kind == _pool) is { } poolHistory)
                 {
-                    <AnalysisView History="poolHistory" NameOf="State.DisplayName" BannerId="@_banner" Title="@PoolTitle(poolHistory)" UnsetBanners="State.UnsetBanners" />
+                    <AnalysisView History="poolHistory" NameOf="State.DisplayName" BannerId="@_banner" Title="@PoolTitle(poolHistory)" OnShare="() => OpenShare(new ShareTarget(_pool, _banner))" UnsetBanners="State.UnsetBanners" />
                 }
                 else
                 {
@@ -124,6 +124,8 @@
     private string? _banner;
     private bool _settingsOnBanners;
     private int _settingsVisit;
+    private ShareTarget? _shareTarget;
+    private int _shareVisit;
 
     private bool IsCapturing => State.Status is ExporterStatus.Capturing or ExporterStatus.Stopping;
 
@@ -173,6 +175,18 @@
         _settingsVisit++;
         Show(Page.Settings);
     }
+
+    private void OpenShare(ShareTarget? target)
+    {
+        _shareTarget = target;
+        _shareVisit++;
+        Show(Page.Share);
+    }
+
+    /// <summary>Only a share reached from a pool's page has a page to return to.</summary>
+    private EventCallback BackFromShare => _shareTarget is { } target
+        ? EventCallback.Factory.Create(this, () => OpenPool(target.Kind, target.BannerId))
+        : default;
 
     private void OpenPool(HistoryKind kind, string? banner)
     {

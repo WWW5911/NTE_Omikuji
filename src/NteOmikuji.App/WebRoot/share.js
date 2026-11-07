@@ -371,10 +371,10 @@ window.nteShare = (() => {
     function drawPool(card, pool, w, h) {
         const margin = 64;
         background(w, h);
-        text(pool.label, margin, 104, 60, theme.text, { weight: 700 });
+        text(pool.label, margin, 104, 60, theme.text, { weight: 700, max: w - margin * 2 - (pool.context ? 0 : 200) });
         if (pool.luck) tag(pool.luck.label, pool.luck.tier, w - margin, 54, 40, { right: true });
-        else note(pool.luckNote ?? "—", w - margin, 62, 30, { right: true });
-        const facts = [period(pool.firstDate, pool.lastDate)];
+        else if (pool.luckNote) note(pool.luckNote, w - margin, 62, 30, { right: true });
+        const facts = [pool.context, period(pool.firstDate, pool.lastDate)];
         if (pool.luck) facts.push(`${pool.luck.hits} 個／期望 ${pool.luck.expected.toFixed(1)} ± ${pool.luck.standardDeviation.toFixed(1)}（${signed(pool.luck.sigma)}）`);
         if (card.maskedUid) facts.push(`UID ${card.maskedUid}`);
         text(facts.filter(Boolean).join("・"), margin, 150, 25, theme.muted, { max: w - margin * 2 });
@@ -416,12 +416,12 @@ window.nteShare = (() => {
             text("限定", w - margin, cursor + 16, 22, theme.muted, { align: "right" });
         }
         bars(pool, margin, cursor + 40, w - margin * 2, h - 70 - (cursor + 40));
-        footer(card, w, h, margin, "新到舊；≥ 表示更早的抽數可能不在紀錄內。");
+        footer(card, w, h, margin, pool.context ? "新到舊；抽數含前期累積，因為保底會延續。" : "新到舊；≥ 表示更早的抽數可能不在紀錄內。");
     }
 
     function bars(pool, x, y, w, h) {
-        const scale = pool.pity?.threshold ?? 90;
-        const rise = pool.pity?.risesFrom;
+        const scale = pool.scale;
+        const rise = pool.risesFrom;
         const minRow = 34, maxRow = 54;
         const capacity = Math.floor((h - 8) / minRow);
         const clipped = pool.rewards.length > capacity;
@@ -453,14 +453,14 @@ window.nteShare = (() => {
         }
     }
 
-    function draw(canvas, card, template, themeName, poolIndex) {
+    function draw(canvas, card, template, themeName) {
         const [w, h] = SIZES[template];
         canvas.width = w;
         canvas.height = h;
         ctx = canvas.getContext("2d");
         theme = THEMES[themeName] ?? THEMES.sakura;
         if (template === "luck") drawLuck(card, w, h);
-        else if (template === "pool") drawPool(card, card.pools[poolIndex] ?? card.pools[0], w, h);
+        else if (template === "pool") drawPool(card, card.selected, w, h);
         else drawOverview(card, w, h);
     }
 
