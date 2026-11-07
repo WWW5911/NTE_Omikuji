@@ -135,6 +135,8 @@ h3 { font-size: 13px; font-weight: 600; }
 .summary .num { text-align: right; font-variant-numeric: tabular-nums; }
 .summary tr:last-child th, .summary tr:last-child td { border-bottom: 0; }
 .help-card .summary td { white-space: normal; }
+.schedule-active { color: var(--accent-ink); font-weight: 600; }
+.schedule-dates { font-variant-numeric: tabular-nums; }
 .recent-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
 .recent-list li { display: grid; grid-template-columns: 90px minmax(80px, 1fr) minmax(90px, 1fr) 72px; gap: 10px; align-items: center; min-height: 26px; }
 .recent-list .interval-date { text-align: left; }

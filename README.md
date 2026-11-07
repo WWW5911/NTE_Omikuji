@@ -25,6 +25,7 @@ Keep the exe in a writable folder of its own, because it creates these beside it
 | --- | --- |
 | `mappings\rewards.csv`, `achievements.csv` | Editable display names and ranks. Saving applies them at once and also corrects saved history. |
 | `mappings\banners.csv` | Each event's featured rewards, which decide what is limited on it. |
+| `mappings\schedule.csv` | Announced events and their periods, shown on 總覽 until they end. |
 | `user_data\<uid>_<banner>.json` | Cumulative history per account, in version 1 export format. Reloaded at start. |
 | `user_data\<uid>_<banner>_partial_<time>.json` | A capture that missed page 1, kept apart from the cumulative file. |
 
@@ -72,6 +73,11 @@ Replies have no limited flag, so **獎勵與卡池設定 > 活動卡池** lists 
 of each event. A reward is limited on the event that features it and an ordinary S
 on any other, whatever its category says. New events in your history appear there
 as 未設定 until you fill them in, and until then they follow the category.
+
+`schedule.csv` holds global server names and dates from announcements, with
+`estimate` set where the end date is projected. It only informs the 總覽 preview.
+A new event's `banner_id` stays blank, since its real ID is unknown until a capture
+shows it, and that first capture lists it as 未設定.
 
 A blank category follows the reward: `Fashion_Glide_` is 降落傘, `Fashion_vehicle_`
 is 車皮, any other `Fashion_` is 角色服裝, and S-rank characters and arcs are S 角色

@@ -6,7 +6,7 @@ using NteOmikuji.Core.Protocol;
 namespace NteOmikuji.Core.Mapping;
 
 /// <param name="Catalog">Null when a file could not be used, so the caller keeps its previous mappings.</param>
-public sealed record MappingLoadResult(RewardCatalog? Catalog, RewardTable Rewards, IReadOnlyList<string> Issues, BannerTable? Banners = null);
+public sealed record MappingLoadResult(RewardCatalog? Catalog, RewardTable Rewards, IReadOnlyList<string> Issues, BannerTable? Banners = null, IReadOnlyList<ScheduledBanner>? Schedule = null);
 
 /// <summary>Owns the user-editable mapping CSVs in a folder beside the app.</summary>
 public sealed class MappingStore(string folder)
@@ -14,6 +14,7 @@ public sealed class MappingStore(string folder)
     public const string RewardsFile = "rewards.csv";
     public const string AchievementsFile = "achievements.csv";
     public const string BannersFile = "banners.csv";
+    public const string ScheduleFile = "schedule.csv";
 
     /// <summary>The single-language rewards.csv from version 0.1, which holds no user edits if it still matches.</summary>
     private const string UneditedLegacySeedHash = "03d148c13979026e08eab92fe5390812e5b139be301d4d002945415e713c05d8";
@@ -32,7 +33,7 @@ public sealed class MappingStore(string folder)
     public void EnsureSeeded()
     {
         Directory.CreateDirectory(Folder);
-        foreach (var name in new[] { RewardsFile, AchievementsFile, BannersFile })
+        foreach (var name in new[] { RewardsFile, AchievementsFile, BannersFile, ScheduleFile })
         {
             var path = Path.Combine(Folder, name);
             if (!File.Exists(path))
@@ -53,8 +54,9 @@ public sealed class MappingStore(string folder)
             var rewards = ReadTable(RewardsFile);
             var banners = ReadBanners();
             var catalog = RewardCatalog.FromTables(rewards, ReadTable(AchievementsFile), issues, banners);
+            var schedule = BannerSchedule.Parse(ReadSchedule(), ScheduleFile, issues);
             _lastLoaded = Fingerprint();
-            return new MappingLoadResult(catalog, ToRewardTable(rewards), issues, ToBannerTable(banners));
+            return new MappingLoadResult(catalog, ToRewardTable(rewards), issues, ToBannerTable(banners), schedule);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
         {
@@ -177,7 +179,13 @@ public sealed class MappingStore(string folder)
         {
             Write(BannersFile, banners);
         }
-        return changed + changedBanners;
+        var schedule = ReadSchedule();
+        var changedSchedule = MergeBlanks(schedule, ReadSeed(ScheduleFile));
+        if (changedSchedule > 0)
+        {
+            Write(ScheduleFile, schedule);
+        }
+        return changed + changedBanners + changedSchedule;
     }
 
     public bool Undo()
@@ -401,6 +409,9 @@ public sealed class MappingStore(string folder)
         return table;
     }
 
+    private CsvTable ReadSchedule() =>
+        File.Exists(Path.Combine(Folder, ScheduleFile)) ? ReadTable(ScheduleFile) : new CsvTable(["id"]);
+
     private CsvTable ReadRewards()
     {
         var table = ReadTable(RewardsFile);
@@ -426,9 +437,8 @@ public sealed class MappingStore(string folder)
 
     private string Fingerprint()
     {
-        var banners = Path.Combine(Folder, BannersFile);
-        byte[] bannerBytes = File.Exists(banners) ? ReadShared(banners) : [];
-        return Convert.ToHexStringLower(SHA256.HashData([.. ReadShared(Path.Combine(Folder, RewardsFile)), .. ReadShared(Path.Combine(Folder, AchievementsFile)), .. bannerBytes]));
+        byte[] Optional(string name) => File.Exists(Path.Combine(Folder, name)) ? ReadShared(Path.Combine(Folder, name)) : [];
+        return Convert.ToHexStringLower(SHA256.HashData([.. ReadShared(Path.Combine(Folder, RewardsFile)), .. ReadShared(Path.Combine(Folder, AchievementsFile)), .. Optional(BannersFile), .. Optional(ScheduleFile)]));
     }
 
     private CsvTable ReadTable(string name)

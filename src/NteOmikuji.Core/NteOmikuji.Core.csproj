@@ -10,6 +10,7 @@
     <EmbeddedResource Include="Mappings\rewards.csv" LogicalName="mappings.rewards.csv" />
     <EmbeddedResource Include="Mappings\achievements.csv" LogicalName="mappings.achievements.csv" />
     <EmbeddedResource Include="Mappings\banners.csv" LogicalName="mappings.banners.csv" />
+    <EmbeddedResource Include="Mappings\schedule.csv" LogicalName="mappings.schedule.csv" />
   </ItemGroup>
 
   <ItemGroup>

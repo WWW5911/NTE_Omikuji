@@ -84,6 +84,39 @@
         }
     </section>
 
+    @if (_upcoming.Count > 0)
+    {
+        <section class="chart" id="schedule">
+            <h3>卡池預告</h3>
+            <div class="table-scroll">
+                <table class="summary">
+                    <thead>
+                        <tr>
+                            <th>狀態</th>
+                            <th>類型</th>
+                            <th>卡池</th>
+                            <th>限定大獎</th>
+                            <th>期間</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in _upcoming)
+                        {
+                            <tr data-schedule="@entry.Id">
+                                <td class="@(entry.PhaseOn(_today) == SchedulePhase.Active ? "schedule-active" : "")">@StatusText(entry)</td>
+                                <td>@(entry.IsArc ? "弧盤" : "棋盤")@(entry.IsRerun ? "・復刻" : "")</td>
+                                <th scope="row">@entry.Name(Language)</th>
+                                <td>@entry.FeaturedName(Language)</td>
+                                <td class="schedule-dates">@entry.Starts.ToString("M/d") – @entry.Ends.ToString("M/d")@(entry.IsEstimate ? "（預估）" : "")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="hint">期間以國際服為準，正確時間請以遊戲內公告為準；可在 mappings 資料夾的 schedule.csv 修改。</p>
+        </section>
+    }
+
     <section class="chart">
         <h3>各卡池統計</h3>
         <div class="table-scroll">
@@ -157,6 +190,18 @@
 
     private List<Pool> _pools = [];
     private List<(TopRankPull Pull, string Label)> _recent = [];
+    private IReadOnlyList<ScheduledBanner> _upcoming = [];
+    private DateOnly _today;
+
+    [Parameter]
+    public IReadOnlyList<ScheduledBanner> Schedule { get; set; } = [];
+
+    [Parameter]
+    public string Language { get; set; } = RewardSchema.Chinese;
+
+    private string StatusText(ScheduledBanner entry) => entry.PhaseOn(_today) == SchedulePhase.Active
+        ? $"進行中，剩 {entry.DaysLeft(_today)} 天"
+        : $"{entry.DaysUntilStart(_today)} 天後開始";
 
     [Parameter, EditorRequired]
     public IReadOnlyList<BannerHistory> Histories { get; set; } = [];
@@ -172,6 +217,8 @@
 
     protected override void OnParametersSet()
     {
+        _today = DateOnly.FromDateTime(DateTime.Now);
+        _upcoming = BannerSchedule.Visible(Schedule, _today);
         _pools =
         [
             Build(BannerInfo.LimitedCharacter, "限定棋盤", "S"),

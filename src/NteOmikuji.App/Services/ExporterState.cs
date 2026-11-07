@@ -105,6 +105,7 @@ public sealed class ExporterState : IDisposable
     public RewardTable Rewards { get; private set; } = RewardTable.Empty;
     public IReadOnlyDictionary<string, int> SeenRewards { get; private set; } = new Dictionary<string, int>();
     public BannerTable Banners { get; private set; } = BannerTable.Empty;
+    public IReadOnlyList<ScheduledBanner> Schedule { get; private set; } = [];
     public IReadOnlyDictionary<string, BannerUsage> SeenBanners { get; private set; } = new Dictionary<string, BannerUsage>();
 
     /// <summary>Events in the history with no row in banners.csv, so nothing marks what is limited on them.</summary>
@@ -458,7 +459,7 @@ public sealed class ExporterState : IDisposable
     private void OnMappingFileChanged(object sender, FileSystemEventArgs change)
     {
         // Editors raise several events per save, so wait for them to settle.
-        if (change.Name is MappingStore.RewardsFile or MappingStore.AchievementsFile or MappingStore.BannersFile)
+        if (change.Name is MappingStore.RewardsFile or MappingStore.AchievementsFile or MappingStore.BannersFile or MappingStore.ScheduleFile)
         {
             _mappingTimer.Change(MappingReloadDelay, Timeout.InfiniteTimeSpan);
         }
@@ -473,6 +474,7 @@ public sealed class ExporterState : IDisposable
             _catalog = catalog;
             Rewards = result.Rewards;
             Banners = result.Banners ?? BannerTable.Empty;
+            Schedule = result.Schedule ?? [];
             if (_session is { } session)
             {
                 session.Catalog = catalog;
