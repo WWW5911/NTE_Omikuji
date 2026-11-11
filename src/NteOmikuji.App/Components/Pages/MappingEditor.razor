@@ -156,8 +156,26 @@
         }
     }
 
-    private List<RewardEntry> VisibleRows =>
-        Drafts.Concat(State.Rewards.Entries).Where(Matches).ToList();
+    /// <summary>Where each row first showed up while this page is open, so a draft that gets its first name stays put.</summary>
+    private readonly Dictionary<string, int> _order = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Rows that were unmapped at some point while this page is open. They stay under the unmapped filter until the page closes.</summary>
+    private readonly HashSet<string> _wereDrafts = new(StringComparer.OrdinalIgnoreCase);
+
+    private List<RewardEntry> VisibleRows
+    {
+        get
+        {
+            var drafts = Drafts;
+            _wereDrafts.UnionWith(drafts.Select(entry => entry.Id));
+            var all = drafts.Concat(State.Rewards.Entries).ToList();
+            foreach (var entry in all)
+            {
+                _order.TryAdd(entry.Id, _order.Count);
+            }
+            return all.Where(Matches).OrderBy(entry => _order[entry.Id]).ToList();
+        }
+    }
 
     private bool IsDraft(RewardEntry entry) => !State.Rewards.Entries.Any(known => known.Id.Equals(entry.Id, StringComparison.OrdinalIgnoreCase));
 
@@ -175,7 +193,7 @@
     {
         var passes = _filter switch
         {
-            "unmapped" => IsDraft(entry),
+            "unmapped" => IsDraft(entry) || _wereDrafts.Contains(entry.Id),
             "missing" => VisibleLocales.Any(locale => !entry.Names.ContainsKey(locale)),
             "all" => true,
             _ => RewardSchema.FocusCode(entry.Focus) == _filter,
