@@ -13,10 +13,22 @@
             <button id="editor-undo" disabled="@(!State.CanUndoMapping)" @onclick="State.UndoMapping">復原</button>
             <button id="editor-update" title="下載最新的獎勵、成就和活動資料。你改過的內容不會被改動，可以用復原還原。" disabled="@State.UpdatingMappings" @onclick="() => State.UpdateMappingsAsync()">@(State.UpdatingMappings ? "更新中…" : "從 GitHub 更新")</button>
             <button id="editor-fill" title="加入內建資料有、這裡沒有的項目，並填入空白欄位。已填寫的內容不會被改動。" @onclick="State.FillMappingsFromBundled">從內建補齊</button>
+            <button id="editor-force" title="捨棄你的所有修改，改用 GitHub 或內建的資料。" disabled="@State.UpdatingMappings" @onclick="() => _confirmForce = !_confirmForce">強制覆蓋…</button>
             <button id="editor-folder" @onclick="OpenFolderAsync">開啟資料夾</button>
             <label class="check"><input id="editor-auto-update" type="checkbox" checked="@State.AutoUpdateMappings" @onchange="change => State.SetAutoUpdateMappings(change.Value is true)" /> 啟動時自動更新</label>
         </div>
     </div>
+    @if (_confirmForce)
+    {
+        <div class="alert toolbar" id="force-confirm" role="alertdialog" aria-label="強制覆蓋對應">
+            <span>要用哪一份資料覆蓋？你改過、清空、刪掉、新增的對應和語言欄都會被取代。覆蓋後可以按一次 <b>復原</b> 還原。</span>
+            <div class="actions">
+                <button id="force-github" class="danger" disabled="@State.UpdatingMappings" @onclick="() => ForceAsync(true)">用 GitHub 最新資料覆蓋</button>
+                <button id="force-bundled" class="danger" disabled="@State.UpdatingMappings" @onclick="() => ForceAsync(false)">用內建資料覆蓋</button>
+                <button id="force-cancel" @onclick="() => _confirmForce = false">取消</button>
+            </div>
+        </div>
+    }
     @if (State.MappingUpdateStatus is { } updateStatus)
     {
         <p class="hint" id="update-status" role="status">@updateStatus</p>
@@ -141,6 +153,13 @@
     private string _newLocale = "";
     private string _newId = "";
     private string? _formMessage;
+    private bool _confirmForce;
+
+    private async Task ForceAsync(bool fromGitHub)
+    {
+        _confirmForce = false;
+        await State.ForceReplaceMappingsAsync(fromGitHub);
+    }
 
     private IReadOnlyList<string> VisibleLocales => State.Rewards.Locales.Where(State.IsLocaleVisible).ToList();
 

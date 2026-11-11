@@ -30,8 +30,8 @@ public sealed class MappingStore(string folder)
 
     private static readonly string[] AchievementColumns = ["id", "name", "description", "quality", "target", "rewards"];
 
-    private readonly Stack<List<(string Path, byte[] Bytes)>> _undo = new();
-    private List<(string Path, byte[] Bytes)>? _openStep;
+    private readonly Stack<List<(string Path, byte[]? Bytes)>> _undo = new();
+    private List<(string Path, byte[]? Bytes)>? _openStep;
     private string _lastLoaded = "";
 
     public string Folder { get; } = folder;
@@ -241,6 +241,47 @@ public sealed class MappingStore(string folder)
         });
     }
 
+    /// <summary>
+    /// Replaces each given file with the source copy, dropping every edit, cleared cell, and deleted row made here.
+    /// The copy also becomes the baseline for the next update. One undo brings the old files back. Returns how many files changed.
+    /// </summary>
+    public int Replace(IReadOnlyDictionary<string, byte[]> sources)
+    {
+        var incoming = sources.ToDictionary(file => file.Key, file => ParseDownload(file.Key, file.Value));
+        return AsOneUndoStep(() =>
+        {
+            var changed = 0;
+            foreach (var (name, source) in incoming)
+            {
+                var text = source.ToText();
+                if (!File.Exists(Path.Combine(Folder, name)) || CurrentText(name) != text)
+                {
+                    WriteText(name, text);
+                    changed++;
+                }
+                Directory.CreateDirectory(Path.Combine(Folder, UpstreamFolder));
+                AtomicFile.WriteAllText(Path.Combine(Folder, UpstreamFolder, name), text, withBom: true);
+            }
+            return changed;
+        });
+    }
+
+    /// <summary>Replaces every updatable file with the copy built into the app. See <see cref="Replace"/>.</summary>
+    public int ReplaceWithBundled() => Replace(UpdatableFiles.ToDictionary(name => name, ReadSeedBytes));
+
+    /// <summary>The file as this app would write it, or null when it cannot be read as a table.</summary>
+    private string? CurrentText(string name)
+    {
+        try
+        {
+            return ReadTable(name).ToText();
+        }
+        catch (InvalidDataException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>Everything this writes comes back with one undo, even if it stops partway through.</summary>
     private int AsOneUndoStep(Func<int> change)
     {
@@ -359,8 +400,14 @@ public sealed class MappingStore(string folder)
         return true;
     }
 
-    private static void Restore(string path, byte[] bytes)
+    /// <summary>Null bytes mean the file did not exist before, so undoing removes it.</summary>
+    private static void Restore(string path, byte[]? bytes)
     {
+        if (bytes is null)
+        {
+            File.Delete(path);
+            return;
+        }
         var temporary = $"{path}.{Guid.NewGuid():N}.tmp";
         try
         {
@@ -552,12 +599,14 @@ public sealed class MappingStore(string folder)
 
     private static CsvTable ReadSeedRewards() => ReadSeed(RewardsFile);
 
-    private static CsvTable ReadSeed(string name)
+    private static CsvTable ReadSeed(string name) => CsvTable.Parse(CsvTable.DecodeText(ReadSeedBytes(name)));
+
+    private static byte[] ReadSeedBytes(string name)
     {
         using var seed = RewardCatalog.OpenSeed(name);
         using var buffer = new MemoryStream();
         seed.CopyTo(buffer);
-        return CsvTable.Parse(CsvTable.DecodeText(buffer.ToArray()));
+        return buffer.ToArray();
     }
 
     private CsvTable ReadEvents()
@@ -582,11 +631,13 @@ public sealed class MappingStore(string folder)
 
     private void WriteRewards(CsvTable table) => Write(RewardsFile, table);
 
-    private void Write(string name, CsvTable table)
+    private void Write(string name, CsvTable table) => WriteText(name, table.ToText());
+
+    private void WriteText(string name, string text)
     {
         var path = Path.Combine(Folder, name);
-        var before = ReadShared(path);
-        AtomicFile.WriteAllText(path, table.ToText(), withBom: true);
+        var before = File.Exists(path) ? ReadShared(path) : null;
+        AtomicFile.WriteAllText(path, text, withBom: true);
         if (_openStep is { } open)
         {
             open.Add((path, before));
@@ -597,7 +648,7 @@ public sealed class MappingStore(string folder)
         }
     }
 
-    private void PushUndo(List<(string Path, byte[] Bytes)> step)
+    private void PushUndo(List<(string Path, byte[]? Bytes)> step)
     {
         _undo.Push(step);
         if (_undo.Count > MaxUndoSteps)

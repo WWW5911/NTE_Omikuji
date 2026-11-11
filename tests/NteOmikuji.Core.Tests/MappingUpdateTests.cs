@@ -363,4 +363,49 @@ public sealed class MappingUpdateTests : IDisposable
         await Assert.ThrowsAsync<InvalidDataException>(() =>
             Updater(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(new byte[9 * 1024 * 1024]) }).DownloadAsync());
     }
+
+    [Fact]
+    public void ReplacingWithTheBuiltInCopyBringsBackDeletedRowsAndDropsEdits()
+    {
+        var seeded = Row(MappingStore.EventsFile, "Lottery_Nanali")!.Get("featured");
+        _store.SaveEvent("Lottery_Nanali", ["mine"]);
+        _store.DeleteReward("fork_exe");
+
+        Assert.Equal(2, _store.ReplaceWithBundled());
+
+        Assert.Equal(seeded, Row(MappingStore.EventsFile, "Lottery_Nanali")!.Get("featured"));
+        Assert.NotNull(Row(MappingStore.RewardsFile, "fork_exe"));
+        Assert.Equal(0, _store.ReplaceWithBundled());
+    }
+
+    [Fact]
+    public void OneUndoBringsBackWhatAReplaceOverwrote()
+    {
+        _store.SaveEvent("Lottery_Nanali", ["mine"]);
+        _store.DeleteReward("fork_exe");
+
+        _store.ReplaceWithBundled();
+        Assert.True(_store.Undo());
+
+        Assert.Equal("mine", Row(MappingStore.EventsFile, "Lottery_Nanali")!.Get("featured"));
+        Assert.Null(Row(MappingStore.RewardsFile, "fork_exe"));
+    }
+
+    [Fact]
+    public void AReplacedDownloadBecomesTheBaselineForTheNextUpdate()
+    {
+        _store.Replace(Files((MappingStore.EventsFile, "id,featured\nLottery_Xun,1052\n")));
+
+        Assert.Null(Row(MappingStore.EventsFile, "Lottery_Nanali"));
+        Assert.Equal(0, _store.ApplyUpdate(Files((MappingStore.EventsFile, "id,featured\nLottery_Xun,1052\n"))));
+    }
+
+    [Fact]
+    public void AReplaceThatIsNotAMappingFileChangesNothing()
+    {
+        Assert.Throws<InvalidDataException>(() => _store.Replace(Files((MappingStore.EventsFile, "<html></html>"))));
+
+        Assert.NotNull(Row(MappingStore.EventsFile, "Lottery_Nanali"));
+        Assert.False(_store.CanUndo);
+    }
 }

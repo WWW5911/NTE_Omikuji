@@ -501,6 +501,57 @@ public sealed class AppState : IDisposable
         }
     }
 
+    /// <summary>
+    /// Overwrites the mapping files with GitHub's or the built-in copy, dropping every local edit and deletion.
+    /// One undo brings the old files back.
+    /// </summary>
+    public async Task ForceReplaceMappingsAsync(bool fromGitHub)
+    {
+        if (UpdatingMappings)
+        {
+            return;
+        }
+        UpdatingMappings = true;
+        NotifyChanged();
+        var source = fromGitHub ? "GitHub" : "內建";
+        try
+        {
+            var skipped = "";
+            var changed = 0;
+            bool applied;
+            if (fromGitHub)
+            {
+                var download = await new MappingUpdater(UpdateClient, MappingUpdater.SourceOrDefault(_settings.MappingSource)).DownloadAsync();
+                if (download.Files.Count == 0)
+                {
+                    throw new InvalidDataException("來源沒有對應檔。");
+                }
+                skipped = download.Missing.Count > 0 ? $"來源沒有 {string.Join("、", download.Missing)}，這些檔案維持原樣。" : "";
+                applied = ChangeMappings(() => changed = _mappings.Replace(download.Files));
+            }
+            else
+            {
+                applied = ChangeMappings(() => changed = _mappings.ReplaceWithBundled());
+            }
+            if (applied)
+            {
+                MappingUpdateStatus = (changed > 0 ? $"已用{source}資料覆蓋 {changed} 個對應檔，可以按復原還原。" : $"對應資料已和{source}資料相同。") + skipped;
+                Log(MappingUpdateStatus);
+            }
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidDataException)
+        {
+            MappingUpdateStatus = $"無法用{source}資料覆蓋對應：{exception.Message}";
+            Log(MappingUpdateStatus);
+            Error = MappingUpdateStatus;
+        }
+        finally
+        {
+            UpdatingMappings = false;
+            NotifyChanged();
+        }
+    }
+
     /// <summary>Returns true when the language now exists, and shows it.</summary>
     public bool AddLocale(string locale)
     {
