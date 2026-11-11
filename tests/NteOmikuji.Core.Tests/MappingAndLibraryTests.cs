@@ -93,7 +93,7 @@ public class MappingStoreTests
         var result = store.Load();
 
         Assert.Empty(result.Issues);
-        Assert.Equal(136, result.Catalog!.RewardCount);
+        Assert.Equal(148, result.Catalog!.RewardCount);
         Assert.Equal(448, result.Catalog.AchievementCount);
         Assert.Equal(RewardCatalog.Bundled.Value.RewardCount, result.Catalog.RewardCount);
         var battle = result.Catalog.FindAchievement("BATTLE_10")!;

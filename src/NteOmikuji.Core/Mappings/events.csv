@@ -10,6 +10,8 @@ Lottery_Canhong,1036
 Lottery_LingKe,1072
 Lottery_HeiYu,1042
 Lottery_MingYin,1057
+Lottery_YeErMu,1090
+Lottery_Exe,1074
 ForkLottery_Nanali,fork_TigerTally
 ForkLottery_Xun,fork_Time
 ForkLottery_AnHunQu,fork_Rose
@@ -20,3 +22,5 @@ ForkLottery_Canhong,fork_DemonBlade
 ForkLottery_LingKe,fork_GoldRecord
 ForkLottery_HeiYu,fork_twinbirds
 ForkLottery_MingYin,fork_prism
+ForkLottery_YeErMu,fork_elyms
+ForkLottery_Exe,fork_exe
